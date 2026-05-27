@@ -1,0 +1,678 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!--
+            <com.qycx.MyTextureView
+                android:id="@+id/texture"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                />
+            -->
+
+        <com.qycx.MyTextureView
+            android:id="@+id/texture"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            />
+
+
+        <!--
+        <com.intel.realsense.librealsense.GLRsSurfaceView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:id="@+id/glSurfaceView"/>
+            -->
+        <!--
+        <com.qycx.smxj.myGLRsSurfaceView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:id="@+id/glSurfaceView"/>
+            -->
+
+        <!-- ViewStub for optional content -->
+        <ViewStub
+            android:id="@+id/view_stub_smxj"
+            android:inflatedId="@+id/inflated_layout"
+            android:layout="@layout/delayed_smxj_myglrssurfaceview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+
+        <!-- 人员列表容器，初始隐藏，点击按钮后显示在视频下方 -->
+        <LinearLayout
+            android:id="@+id/confMemListContainer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="2"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:background="#000000"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:id="@+id/confMem_list_menu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="right"
+                >
+
+                <!-- 调取成员视频按钮 -->
+                <RelativeLayout
+                    android:id="@+id/confMem_request_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:visibility="visible"
+                    android:layout_marginBottom="15dp"
+                    android:padding="1dp"
+                    android:layout_marginRight="16dp"
+                    >
+
+                    <ImageView
+                        android:id="@+id/confMem_request_iv"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_centerHorizontal="true"
+                        android:src="@drawable/confmem_request" />
+
+                    <TextView
+                        android:id="@+id/confMem_request_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/confMem_request_iv"
+                        android:layout_centerHorizontal="true"
+                        android:layout_marginTop="5dp"
+                        android:textColor="@android:color/white"
+                        android:text="调取"
+                        android:textSize="12sp" />
+
+                </RelativeLayout>
+
+
+                <!-- 隐藏成员列表按钮 -->
+                <RelativeLayout
+                    android:id="@+id/confMem_hide_list_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="15dp"
+                    android:layout_marginRight="16dp"
+                    >
+
+                    <ImageView
+                        android:id="@+id/confMem_hide_list_iv"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_centerHorizontal="true"
+                        android:src="@drawable/confmem_hide_list" />
+
+                    <TextView
+                        android:id="@+id/confMem_hide_list_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/confMem_hide_list_iv"
+                        android:layout_centerHorizontal="true"
+                        android:layout_marginTop="5dp"
+                        android:textColor="@android:color/white"
+                        android:text="隐藏"
+                        android:textSize="12sp" />
+
+                </RelativeLayout>
+
+
+
+            </LinearLayout>
+
+
+            <!-- 使用ScrollView包裹GridView以支持滑动 -->
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+
+                    <GridView
+                        android:id="@+id/confMemList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:numColumns="1"
+                        android:verticalSpacing="8dp"
+                        android:choiceMode="singleChoice"
+                        />
+
+
+
+                </LinearLayout>
+
+            </ScrollView>
+
+
+        </LinearLayout>
+
+
+
+
+    </LinearLayout>
+
+
+
+    <!-- 右侧菜单 -->
+    <LinearLayout
+        android:id="@+id/confMem_rightMenu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+
+        android:padding="16dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginBottom="40dp"
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        >
+
+        <!-- 互动按钮 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+
+
+            <!-- 显示成员列表按钮 -->
+            <RelativeLayout
+                android:id="@+id/confMem_list_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="15dp">
+
+                <ImageView
+                    android:id="@+id/confMem_list_iv"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_centerHorizontal="true"
+                    android:src="@drawable/confmem_list" />
+
+                <TextView
+                    android:id="@+id/confMem_list_tv"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/confMem_list_iv"
+                    android:layout_centerHorizontal="true"
+                    android:layout_marginTop="5dp"
+                    android:textColor="@android:color/white"
+                    android:text="中控"
+                    android:textSize="12sp" />
+
+            </RelativeLayout>
+
+
+
+
+
+        </LinearLayout>
+
+
+
+    </LinearLayout>
+
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        app:layout_constraintBottom_toTopOf="parent"
+        android:id="@+id/topMenu"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/av_frame_height"
+        android:background="#70000000">
+
+        <FrameLayout
+            android:visibility="invisible"
+            android:id="@+id/min_viewport"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="10dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="0.06">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:scaleType="center"
+                android:src="@drawable/nvr_back" />
+
+        </FrameLayout>
+
+
+        <TextView
+            android:visibility="invisible"
+            android:id="@+id/nvr_channel_name_title"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="25dp"
+            android:autoSizeMaxTextSize="@dimen/av_button_text_size"
+            android:autoSizeTextType="uniform"
+            android:drawableRight="@drawable/pull_up"
+            android:gravity="center_vertical"
+            android:lines="1"
+            android:padding="1dp"
+            android:text="@string/nvr_channel_name"
+            android:textColor="#ffffff"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintHeight_percent="0.5"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="0.2" />
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:visibility="invisible"
+        android:id="@+id/left_menu_relative"
+        android:layout_width="180dp"
+        android:layout_height="180dp"
+        android:layout_marginBottom="@dimen/av_frame_height"
+        android:padding="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent">
+
+        <TextView
+            android:id="@+id/up_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:background="@drawable/up_gesture_selector"
+            android:clickable="true"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/down_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:background="@drawable/down_gesture_selector"
+            android:clickable="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent" />
+
+        <TextView
+            android:id="@+id/left_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:background="@drawable/left_gesture_selector"
+            android:clickable="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/right_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:background="@drawable/right_gesture_selector"
+            android:clickable="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:visibility="invisible"
+        android:id="@+id/right_menu_relative"
+        android:layout_width="180dp"
+        android:layout_height="180dp"
+        android:layout_marginEnd="5dp"
+        android:layout_marginBottom="@dimen/av_frame_height"
+        android:padding="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent">
+
+        <TextView
+            android:id="@+id/long_focus_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/long_focus_gesture_selector"
+            android:clickable="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/short_focus_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:background="@drawable/short_focus_gesture_selector"
+            android:clickable="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!--        app:layout_constraintTop_toBottomOf="parent"-->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/more_info_menu"
+        android:visibility="invisible"
+        android:background="#70000000"
+        android:layout_width="match_parent"
+        android:layout_height="116dp"
+        android:layout_marginBottom="@dimen/av_frame_height"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <ImageView
+            android:layout_marginLeft="5dp"
+            android:id="@+id/rotatescreen"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:background="@android:color/transparent"
+            android:padding="1dp"
+            android:src="@drawable/screen_rotation"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintHeight_percent="@dimen/av_button_height_in_more"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="@dimen/av_button_width_in_more" />
+
+        <ImageView
+            android:layout_marginLeft="0dp"
+            android:id="@+id/changeCamera"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:background="@android:color/transparent"
+            android:padding="1dp"
+            android:src="@drawable/change_camera"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintHeight_percent="@dimen/av_button_height_in_more"
+            app:layout_constraintLeft_toRightOf="@id/rotatescreen"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="@dimen/av_button_width_in_more" />
+
+        <ImageView
+            android:layout_marginLeft="0dp"
+            android:id="@+id/localVideo"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:background="@android:color/transparent"
+            android:padding="1dp"
+            android:src="@drawable/local_video"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintHeight_percent="@dimen/av_button_height_in_more"
+            app:layout_constraintLeft_toRightOf="@id/changeCamera"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="@dimen/av_button_width_in_more" />
+        <TextView
+            android:layout_marginLeft="30dp"
+            app:layout_constraintLeft_toRightOf="@id/localVideo"
+            app:layout_constraintBottom_toTopOf="@id/meeting_launch"
+            android:textColor="#ffffff"
+            android:text="会议信息"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_chainStyle="spread"
+            android:id="@+id/meeting_info"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:layout_marginLeft="30dp"
+
+            app:layout_constraintLeft_toRightOf="@id/localVideo"
+            android:textColor="#ffffff"
+            android:text="召集人:"
+            app:layout_constraintTop_toBottomOf="@id/meeting_info"
+            app:layout_constraintBottom_toTopOf="@id/meeting_account"
+            android:id="@+id/meeting_launch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:layout_marginLeft="30dp"
+            app:layout_constraintLeft_toRightOf="@id/localVideo"
+            app:layout_constraintTop_toBottomOf="@id/meeting_launch"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:textColor="#ffffff"
+            android:text="分辨率:"
+            android:id="@+id/meeting_screen_info"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:layout_marginLeft="14dp"
+            app:layout_constraintLeft_toRightOf="@id/meeting_launch"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/meeting_id"
+            app:layout_constraintVertical_chainStyle="spread"
+            android:id="@+id/meeting_space"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:layout_marginLeft="14dp"
+            app:layout_constraintLeft_toRightOf="@id/meeting_launch"
+            android:textColor="#ffffff"
+            android:text="召集人ID:"
+            app:layout_constraintTop_toBottomOf="@id/meeting_space"
+            app:layout_constraintBottom_toTopOf="@id/meeting_screen_info"
+            android:id="@+id/meeting_id"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:layout_marginLeft="14dp"
+            app:layout_constraintLeft_toRightOf="@id/meeting_launch"
+            app:layout_constraintTop_toBottomOf="@id/meeting_id"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:textColor="#ffffff"
+            android:text="当前登录账号:"
+            android:id="@+id/meeting_account"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        app:layout_constraintTop_toBottomOf="parent"
+        tools:layout_height="@dimen/av_frame_height"
+        android:id="@+id/bottomMenu"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/av_frame_height"
+        android:background="#70000000"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent">
+
+
+        <!-- 将原来的TextView改为ImageView -->
+        <ImageView
+            android:id="@+id/btn_request"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@android:color/transparent"
+            android:padding="1dp"
+            android:src="@drawable/saying"
+            android:layout_marginStart="10dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintHeight_percent="@dimen/av_button_height"
+            app:layout_constraintHorizontal_chainStyle="spread_inside"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="@dimen/av_button_width" />
+        <ImageView
+            android:id="@+id/back_main_video"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@android:color/transparent"
+            android:padding="1dp"
+            android:src="@drawable/close_microphone"
+            app:layout_constraintHeight_percent="@dimen/av_button_height"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toRightOf="@id/btn_request"
+            app:layout_constraintRight_toLeftOf="@id/net_info_linear"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="@dimen/av_button_width" />
+
+        <LinearLayout
+            android:id="@+id/net_info_linear"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toRightOf="@id/back_main_video"
+            app:layout_constraintRight_toLeftOf="@id/nvr_control"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="0.3">
+
+            <TextView
+                android:id="@+id/tv_ioStatus_out"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:autoSizeMaxTextSize="@dimen/av_button_text_size"
+                android:autoSizeTextType="uniform"
+                android:gravity="center"
+                android:padding="1dp"
+                android:singleLine="true"
+                android:textColor="#ffffff"
+                app:layout_constraintLeft_toRightOf="@id/btn_request"
+                app:layout_constraintRight_toLeftOf="@id/tv_ioStatus_in" />
+
+            <TextView
+                android:id="@+id/tv_ioStatus_in"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:autoSizeMaxTextSize="@dimen/av_button_text_size"
+                android:autoSizeTextType="uniform"
+                android:gravity="center_vertical"
+                android:padding="1dp"
+                android:singleLine="true"
+                android:textColor="#ffffff" />
+
+        </LinearLayout>
+
+        <ImageView
+            android:visibility="gone"
+            android:id="@+id/nvr_control"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:autoSizeMaxTextSize="@dimen/av_button_text_size"
+            android:autoSizeTextType="uniform"
+            android:background="@android:color/transparent"
+            android:padding="1dp"
+            android:src="@drawable/nvr_control"
+            android:layout_marginRight="5dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintHeight_percent="@dimen/av_button_height"
+            app:layout_constraintLeft_toRightOf="@id/net_info_linear"
+            app:layout_constraintRight_toLeftOf="@id/back_to_video"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="@dimen/av_button_width" />
+        <ImageView
+            android:id="@+id/back_to_video"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@android:color/transparent"
+            android:padding="1dp"
+            android:src="@drawable/homepage"
+            android:layout_marginLeft="5dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintHeight_percent="@dimen/av_button_height"
+            app:layout_constraintLeft_toRightOf="@id/net_info_linear"
+            app:layout_constraintRight_toLeftOf="@id/nvr_control"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="@dimen/av_button_width" />
+        <ImageView
+            android:id="@+id/more_tv"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@android:color/transparent"
+            android:padding="1dp"
+            android:src="@drawable/more"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintHeight_percent="@dimen/av_button_height"
+            app:layout_constraintLeft_toRightOf="@id/back_to_video"
+            app:layout_constraintRight_toLeftOf="@id/btn_av"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="@dimen/av_button_width" />
+
+        <ImageView
+            android:id="@+id/btn_av"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintHeight_percent="@dimen/av_button_height"
+            app:layout_constraintWidth_percent="@dimen/av_button_width"
+            android:background="@android:color/transparent"
+            android:padding="1dp"
+            android:src="@drawable/exit_meeting"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toRightOf="@id/more_tv"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+
+
+
+
+    <TextView
+        android:id="@+id/tvTips"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/CONST_resId_releaseToVideo"
+        android:textColor="@color/gray1"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="130dp"
+        android:visibility="gone"
+        />
+
+    <ImageView
+        android:id="@+id/ivVoiceVideoSwitcher"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:src="@mipmap/icon_voice_input"
+        android:scaleType="fitXY"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="60dp"
+        android:visibility="gone"
+        />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+

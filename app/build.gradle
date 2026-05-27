@@ -1,0 +1,88 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.qycx'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.qycx"
+        minSdk 28
+        targetSdk 34
+        versionCode 810
+        versionName "8.10"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        ndk{
+            abiFilters "arm64-v8a"
+        }
+    }
+
+    signingConfigs {
+        release {
+            keyAlias 'qycx'
+            keyPassword System.getenv("QY_KEY_PASSWORD") ?: "CHANGE_ME_KEY_PASSWORD"
+            storeFile file('qycx.jks')
+            storePassword System.getenv("QY_STORE_PASSWORD") ?: "CHANGE_ME_STORE_PASSWORD"
+        }
+        debug {
+            keyAlias '1'
+            keyPassword System.getenv("QY_KEY_PASSWORD") ?: "CHANGE_ME_KEY_PASSWORD"
+            storeFile file('yuerinrkos.jks')
+            storePassword System.getenv("QY_STORE_PASSWORD") ?: "CHANGE_ME_STORE_PASSWORD"
+        }
+    }
+/*
+    signingConfigs {
+        release {
+            keyAlias 'qycx'
+            keyPassword System.getenv("QY_KEY_PASSWORD") ?: "CHANGE_ME_KEY_PASSWORD"
+            storeFile file('qycx.jks')
+            storePassword System.getenv("QY_STORE_PASSWORD") ?: "CHANGE_ME_STORE_PASSWORD"
+        }
+        debug {
+            keyAlias 'qycx'
+            keyPassword System.getenv("QY_KEY_PASSWORD") ?: "CHANGE_ME_KEY_PASSWORD"
+            storeFile file('qycx.jks')
+            storePassword System.getenv("QY_STORE_PASSWORD") ?: "CHANGE_ME_STORE_PASSWORD"
+        }
+    }
+
+*/
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+dependencies {
+    implementation (fileTree("libs"))
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.8.0"))
+    implementation 'com.tencent.bugly:crashreport:latest.release'
+    implementation 'commons-codec:commons-codec:1.16.0'
+	implementation 'org.greenrobot:eventbus:3.2.0'
+    implementation 'org.aviran.cookiebar2:cookiebar2:1.1.5'
+    implementation 'pub.devrel:easypermissions:3.0.0'
+    implementation 'androidx.lifecycle:lifecycle-process:2.6.1'
+    implementation 'com.tencent.bugly:crashreport:4.1.9.3'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation project(':tmpJavaLibrary')
+    implementation project(':tmpFfmpegLibrary')
+
+    //debugImplementation 'com.squareup.leakcanary:leakcanary-android:3.0-alpha-8'
+    //releaseImplementation 'com.squareup.leakcanary:leakcanary-android-no-op:1.6.3'
+
+}
