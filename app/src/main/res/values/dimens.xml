@@ -38,4 +38,10 @@
 	<item name="av_button_height_in_more" type="dimen" format="float">0.29</item>
 	<item name="av_button_width_in_more" type="dimen" format="float">0.08</item>
 
+	<dimen name="map_overlay_text_sp">12sp</dimen>
+	<dimen name="map_overlay_text_sp_compact">8sp</dimen>
+	<dimen name="map_overlay_text_sp_split_portrait">10sp</dimen>
+	<dimen name="map_split_compass_size_landscape">72dp</dimen>
+	<dimen name="map_split_compass_size_portrait">80dp</dimen>
+
 </resources>

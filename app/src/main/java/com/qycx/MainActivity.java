@@ -12,7 +12,6 @@ import static com.qycx.base.ctxQyTmpl.Consts.CONST_ctxType_qmc;
 import static com.qycx.base.dlgTalkProc_help.qyFuncs_Droid.bDone_retrieveAllImObjRules;
 import static com.qycx.base.dlgTalkProc_help.qyFuncs_Droid.talkToMessenger;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_refreshRecentFriendsReq;
-import static com.qycx.base.isTalkerQProc.addToIsTalkerQ;
 import static com.qycx.base.isTalkerQProc.findIsTalker;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_recv_accept;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_recv_cancel;
@@ -25,11 +24,8 @@ import static com.qycx.base.qyWmComm.Consts.CONST_qyWmParam_chkTalkDraw;
 import static com.qycx.base.qyWmComm.Consts.CONST_qyWmParam_closeTaskAv;
 import static com.qycx.base.qyWmComm.Consts.CONST_qyWmParam_closeWnd;
 import static com.qycx.base.qyWmComm.Consts.CONST_qyWmParam_doTask;
-import static com.qycx.base.qyWmComm.Consts.CONST_qyWm_postComm;
 import static com.qycx.base.qyWndContentType.Consts.CONST_fgType_talk_av2;
-import static com.qycx.base.qyWndContentType.Consts.CONST_qyWndContentType_mainWnd;
 import static com.qycx.base.tmpFunc.qyFuncs.myGetCurrentProcessId;
-import static com.qycx.base.tmpFunc.qyFuncs.myGetCurrentThreadId;
 import static com.qycx.base.tmpFunc.qyFuncs.myGetTickCount;
 import static com.qycx.base.tmpProc.qyFuncs.bTaskActive;
 
@@ -46,25 +42,35 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.DisplayMetrics;
+import android.util.TypedValue;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewParent;
+import android.view.Gravity;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager.widget.ViewPager;
 
-import com.qycx.anc.TmpLyra;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.qycx.anc.atFuncs;
@@ -93,14 +99,12 @@ import com.qycx.base.qyFuncs;
 import com.qycx.base.qyMcMainRealTimeMediaProc;
 import com.qycx.base.qyMcMainWndProc;
 import com.qycx.base.qyMcMainWndProc_isCli;
-import com.qycx.base.qyMcMain_global;
 import com.qycx.base.qyMcMain_qyMc_proc;
 import com.qycx.base.qyWmComm;
 import com.qycx.base.qyWndContentType;
 import com.qycx.base.showInfo_open;
 import com.qycx.base.test;
 import com.qycx.base.tmpFunc;
-import com.qycx.base.tmpResource;
 import com.qycx.base.util.Log;
 import com.qycx.base.util.javatuples.Pair;
 
@@ -139,6 +143,10 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     public final static int PAGE_TWO = 1;
     public final static int PAGE_THREE = 2;
     public final static int PAGE_FOUR=3;
+
+    public FragmentPagerAdapter_main getMainPagerAdapter() {
+        return mAdapter;
+    }
 
     //
     public MyHandler mHandler = null;
@@ -790,6 +798,36 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
     private static WeakReference<CookieBar> cookieBar;
 
+    /** 当前 notify 任务对应的 logicalPeer id（组 id 或用户 id）。 */
+    @Nullable
+    public static Long getNotifyAvLogicalPeerId() {
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        if (pQyMc == null) return null;
+        MainActivity mainActivity = (MainActivity) pQyMc.gui.hMainWnd;
+        if (mainActivity == null || mainActivity.var_common == null
+                || mainActivity.var_common.notifyTaskStatus == null
+                || !mainActivity.var_common.notifyTaskStatus.bExists_task) {
+            return null;
+        }
+        ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
+        if (pProcInfo == null) return null;
+        qmcTaskInfo.QMC_TASK_INFO pTaskInfo = qmcTaskInfo.qyFuncs.getQmcTaskInfoByIndex(
+                null, pProcInfo, mainActivity.var_common.notifyTaskStatus.index_taskInfo, "");
+        if (pTaskInfo == null) return null;
+        qmcTaskInfo.QMC_taskData_common taskData = pTaskInfo.getTaskData();
+        if (taskData == null || taskData.uiType != qmcTaskInfo.Consts.CONST_taskDataType_conf) return null;
+        if (!(taskData.msgU instanceof qnmCommProc_mis.MIS_MSG_TASK)) return null;
+        qnmCommProc_mis.MIS_MSG_TASK task = (qnmCommProc_mis.MIS_MSG_TASK) taskData.msgU;
+        if (task.addr_logicalPeer == null || task.addr_logicalPeer.idInfo == null) return null;
+        return task.addr_logicalPeer.idInfo.ui64Id;
+    }
+
+    public static boolean shouldSuppressAvNotifyUi(@NonNull MainActivity mainActivity) {
+        if (mainActivity.suppressAvNotifyUiForGroupId <= 0) return false;
+        Long peerId = getNotifyAvLogicalPeerId();
+        return peerId != null && peerId == mainActivity.suppressAvNotifyUiForGroupId;
+    }
+
     //
     public static int tmp_notify_avCall_ifForegrounded(Activity hParent) {
         if(hParent == null)
@@ -954,6 +992,17 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         //
         if (mainActivity.var_common.notifyTaskStatus.curNotify.bShown) {
             //
+            iErr = 0;
+            return iErr;
+        }
+        //
+        if (shouldSuppressAvNotifyUi(mainActivity)) {
+            Log.d("MAP_AV_DBG", "gui_notify_chk suppressed for map group="
+                    + mainActivity.suppressAvNotifyUiForGroupId);
+            if (mainActivity.var_common.notifyTaskStatus.curNotify.bShown) {
+                tmp_notify_cancel_ifForegrounded(hParent);
+                mainActivity.var_common.notifyTaskStatus.curNotify.bShown = false;
+            }
             iErr = 0;
             return iErr;
         }
@@ -1145,8 +1194,8 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
             //
             if  (  mAdapter.mFragment_map !=null )  {
-                if (mAdapter.mFragment_map instanceof  Fragment_null)  {
-                    Fragment_null fg = (Fragment_null) mAdapter.mFragment_map;
+                if (mAdapter.mFragment_map instanceof Fragment_map)  {
+                    Fragment_map fg = (Fragment_map) mAdapter.mFragment_map;
                     String str;
                     str = ""  +  m_test_talker_ui64Id  +  ", click me to start an av call";
                     if  (  fg.tv_content!=null) {
@@ -1365,10 +1414,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         }
 
         //
-        m_floatingView = findViewById(R.id.floating_fragment_container);
-        if  ( m_floatingView!=null) {
-            m_floatingView.setVisibility(View.GONE);
-        }
+        initFloatingAvShell();
 
         //
         this.m_str_title = getString(R.string.CONST_resId_appName);
@@ -1448,12 +1494,114 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
     ////////////////////////////
 
+    private FrameLayout m_floatingAvShell;
+    /** 内嵌 {@link Fragment_dlgTalk_av2} 的容器 */
     private FrameLayout m_floatingView;
+    private View m_floatingAvTitleBar;
+    private TextView m_btnFloatingAvFloat;
+    private TextView m_btnFloatingAvSplit;
+    private TextView m_btnFloatingAvFull;
     //
     private float fv_lastX, fv_lastY;
     private float fv_downX, fv_downY;
     //
     public Fragment     m_floatingView_fg;
+
+    private static final int FLOATING_AV_MODE_FLOAT = 0;
+    private static final int FLOATING_AV_MODE_SPLIT = 1;
+    private static final int FLOATING_AV_MODE_FULL = 2;
+    private static final float FLOATING_AV_MAP_HEIGHT_RATIO = 0.52f;
+    /** 横屏分屏：视频区宽度占内容区比例，可拖动，范围 30%～55%。 */
+    private static final float LANDSCAPE_SPLIT_VIDEO_MIN_RATIO = 0.30f;
+    private static final float LANDSCAPE_SPLIT_VIDEO_MAX_RATIO = 0.55f;
+    private static final float LANDSCAPE_SPLIT_VIDEO_DEFAULT_RATIO = 0.48f;
+    /** 竖屏分屏：视频区高度占内容区比例，可拖动，范围 30%～55%。 */
+    private static final float PORTRAIT_SPLIT_VIDEO_MIN_RATIO = 0.30f;
+    private static final float PORTRAIT_SPLIT_VIDEO_MAX_RATIO = 0.55f;
+    private static final float PORTRAIT_SPLIT_VIDEO_DEFAULT_RATIO = 0.48f;
+    /** 地图左侧工具条占位：marginStart 14 + 按钮 42 + 间距 16（与 layout_fg_map 一致）。 */
+    private static final float FLOATING_AV_MAP_LEFT_TOOLBAR_DP = 72f;
+    private View m_landscapeSplitDivider;
+    private View m_portraitSplitDivider;
+    private float landscapeSplitVideoWidthRatio = LANDSCAPE_SPLIT_VIDEO_DEFAULT_RATIO;
+    private float portraitSplitVideoHeightRatio = PORTRAIT_SPLIT_VIDEO_DEFAULT_RATIO;
+    private float splitDividerDragStartRawX;
+    private float splitDividerDragStartRawY;
+    private int splitDividerDragStartVideoW;
+    private int splitDividerDragStartVideoH;
+    /** 用户通过浮窗/分屏/全屏按钮选择的模式。 */
+    private int floatingAvUserMode = FLOATING_AV_MODE_FLOAT;
+    /** 当前实际应用的布局模式（离开地图 Tab 时分屏/全屏会临时降为浮窗）。 */
+    private int floatingAvDisplayMode = FLOATING_AV_MODE_FLOAT;
+    private boolean floatingAvTabBarHidden;
+
+    /** 地图页发起/加入组视频会议时抑制顶部 CookieBar 来电提示（>0 为组 id）。 */
+    public long suppressAvNotifyUiForGroupId = 0;
+
+    /** 地图悬浮视频会议：仅全屏保留点击视频时上下功能区滑动动画；浮窗/分屏为瞬时切换。 */
+    public boolean useMapFloatingAvMenuSlideAnimation() {
+        if (m_floatingView_fg == null) {
+            return true;
+        }
+        return floatingAvDisplayMode == FLOATING_AV_MODE_FULL;
+    }
+
+    /** 浮窗/分屏：上下功能区始终贴顶、贴底，不参与沉浸式滑出。 */
+    public boolean isMapFloatingAvMenuDocked() {
+        return m_floatingView_fg != null && floatingAvDisplayMode != FLOATING_AV_MODE_FULL;
+    }
+
+    /** 地图 Tab 内嵌视频会议：去掉 Fragment 顶部半透明 topMenu 蒙层。 */
+    public boolean shouldHideAvTopMenuOverlay() {
+        return m_floatingView_fg != null;
+    }
+
+    /** 地图内嵌视频会议 UI 是否正在显示，用于拦截重复打开视频会议。 */
+    public boolean isMapFloatingAvUiVisible() {
+        return m_floatingView_fg != null
+                && m_floatingAvShell != null
+                && m_floatingAvShell.getVisibility() == View.VISIBLE;
+    }
+
+    /** 当前为地图分屏嵌入（左/上视频 + 地图）。 */
+    public boolean isMapFloatingAvSplitEmbedded() {
+        return m_floatingView_fg != null && floatingAvDisplayMode == FLOATING_AV_MODE_SPLIT;
+    }
+
+    /** 视频会议分屏（横屏/竖屏）：地图 overlay 使用分屏字号。 */
+    public boolean isMapOverlayTextCompactEnabled() {
+        return isMapFloatingAvSplitEmbedded();
+    }
+
+    /** 分屏 overlay 字号资源：竖屏 10sp，横屏 15sp。 */
+    public int getMapOverlayTextCompactDimenResId() {
+        if (isMapFloatingAvSplitEmbedded() && !isLandscapeConfiguration()) {
+            return R.dimen.map_overlay_text_sp_split_portrait;
+        }
+        return R.dimen.map_overlay_text_sp_compact;
+    }
+
+    private void refreshMapFragmentOverlayTextScale() {
+        if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {
+            return;
+        }
+        Fragment_map mapFg = (Fragment_map) mAdapter.mFragment_map;
+        final boolean compact = isMapOverlayTextCompactEnabled();
+        Runnable apply = () -> {
+            if (mapFg.isAdded()) {
+                mapFg.applyMapOverlayTextCompact(compact);
+            }
+        };
+        if (mapFg.isAdded()) {
+            apply.run();
+            if (vPager != null) {
+                vPager.post(apply);
+                vPager.postDelayed(apply, 250);
+            }
+        } else if (vPager != null) {
+            vPager.postDelayed(apply, 150);
+        }
+    }
 
 
     /////////////////////////
@@ -1500,6 +1648,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
         //
         if  (  !bDone_retrieveAllImObjRules(pProcInfo.pMisCnt )  ) {
+            Log.d("MAP_AV_DBG", "makeFloatingView failed: im obj rules not ready");
             return -1;
         }
 
@@ -1507,19 +1656,33 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         do {
 
             //
-            if (!pProcInfo.cfg.bTest_floatingView) return -1;
+            if (!pProcInfo.cfg.bTest_floatingView) {
+                Log.d("MAP_AV_DBG", "makeFloatingView failed: bTest_floatingView false");
+                return -1;
+            }
 
-            if (this.m_floatingView_fg != null) return 0;
+            if (this.m_floatingView_fg != null) {
+                closeFloatingView();
+            }
 
             //
             if (this.m_bReadyToQuit) {
                 return -1;
             }
 
-            //
-            if (m_floatingView.getVisibility() != View.VISIBLE) {
-                m_floatingView.setVisibility(View.VISIBLE);
+            if (index_taskInfo >= 0
+                    && !qmcTaskInfo.qyFuncs.qmcTaskInfo_bAlive(null, pProcInfo, index_taskInfo)) {
+                Log.d("MAP_AV_DBG", "makeFloatingView failed: task not alive, idx=" + index_taskInfo);
+                return -1;
             }
+
+            ensureMapTabForFloatingAv(pQyMc);
+
+            //
+            if (m_floatingAvShell.getVisibility() != View.VISIBLE) {
+                m_floatingAvShell.setVisibility(View.VISIBLE);
+            }
+            applyFloatingAvDisplayMode(getDefaultFloatingAvModeForOrientation());
 
             //
             Fragment fg;
@@ -1534,17 +1697,21 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             CIsTalker talker = null;
             talker = findIsTalker(pMisCnt, talker_ui64Id);
             if (talker == null) {
+                Log.d("MAP_AV_DBG", "makeFloatingView failed: talker not found, id=" + talker_ui64Id);
                 break;
 
             }
 
             //
+            clearMapFloatingTalkUsage(talker);
             if (0 != talker.addIsTalkUsage(pMisCnt, this, 0)) {
+                Log.d("MAP_AV_DBG", "makeFloatingView failed: addIsTalkUsage, id=" + talker_ui64Id);
                 break;
             }
             //
             //
             if (0 != addTo_tmpTools(this, talker.m_var, "makeFloatingView")) {
+                Log.d("MAP_AV_DBG", "makeFloatingView failed: addTo_tmpTools, id=" + talker_ui64Id);
                 break;
             }
 
@@ -1564,24 +1731,33 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             pMgrVar.m_talkAvVar.m_iCmd = iCmd;
             pMgrVar.m_talkAvVar.m_Level = level;
             pMgrVar.m_talkAvVar.m_index_taskInfo1 = index_taskInfo;
+            pMgrVar.m_bNeedResumeTaskAv = false;
+            if (pMgrVar.av != null) {
+                pMgrVar.av.bNeedDoTaskAv = true;
+                pProcInfo.av.localAv.dwLastTickCnt_vCap = tmpFunc.qyFuncs.myGetTickCount(null);
+                pProcInfo.av.localAv.dwLastTickCnt_aCap = pProcInfo.av.localAv.dwLastTickCnt_vCap;
+            }
 
             //
             fg = Fragment_dlgTalk_av2.NewInstance(talker_ui64Id);
             if (fg == null) {
+                Log.d("MAP_AV_DBG", "makeFloatingView failed: NewInstance null, id=" + talker_ui64Id);
                 break;
             }
 
             //
             this.m_floatingView_fg = fg;
 
-            // 添加悬浮窗 Fragment77
+            // 添加悬浮窗 Fragment77（同步提交，避免连续关闭/打开竞态）
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.floating_fragment_container, fg)
-                    .commit();
+                    .commitNowAllowingStateLoss();
 
+            // 入会时须在 Fragment 就绪后应用浮窗布局（此前 sync 因 m_floatingView_fg 为空会跳过，分屏关闭后再开会仍残留分屏 shell 尺寸）
+            syncFloatingAvLayoutForCurrentTab();
 
             //
-            test_initFloatingDrag();
+            initFloatingAvDrag();
 
             //
             //talk_toAv(ui64Id, this);
@@ -1605,30 +1781,20 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         //
         if  (  this.m_floatingView_fg!=null)  {
 
-
-            //  这里要取消会议
-            if  (  this.m_floatingView_fg instanceof Fragment_dlgTalk_av2) {
-                Fragment_dlgTalk_av2 fg  = (Fragment_dlgTalk_av2)this.m_floatingView_fg;
-                fg.exitTaskAv();
-            }
-
-            // 先移除悬浮窗 Fragment77
+            // 先移除悬浮窗 Fragment（onDestroyView 内会 exitTaskAv，避免重复取消）
             getSupportFragmentManager().beginTransaction()
                     .remove( this.m_floatingView_fg)
-                    .commit();
+                    .commitNowAllowingStateLoss();
 
             //
             if  (  this.m_floatingView_fg instanceof Fragment_dlgTalk_av2) {
                 Fragment_dlgTalk_av2 fg  = (Fragment_dlgTalk_av2)this.m_floatingView_fg;
 
-                dlgTalkProc.DLG_TALK_var m_var = fg.m_talker.m_var;
-
                 //
+                resetMapFloatingAutoSpeakState(fg);
                 removeFrom_tmpTools(this,fg.m_talker.m_var, "closeFloatingView" );
-
-                //
-                if  (  fg.m_talker!=null){
-                    fg.m_talker.removeIsTalkUsage(m_var.m_pMisCnt, this);
+                if (fg.m_talker != null) {
+                    clearMapFloatingTalkUsage(fg.m_talker);
                 }
 
             }
@@ -1637,58 +1803,900 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             this.m_floatingView_fg=null;
 
             //
-            m_floatingView.setVisibility(View.GONE);
+            restoreMainContentAfterFloatingAv();
+            if (m_floatingAvShell != null) {
+                m_floatingAvShell.setVisibility(View.GONE);
+            }
 
         }
 
         return  0;
     }
 
-    //
-    private void test_initFloatingDrag() {
-        //
-        m_floatingView.setOnTouchListener(new View.OnTouchListener() {
+    /**
+     * 地图内嵌视频关闭时只释放 MainActivity 的 usage 槽位。
+     * CIsTalker.removeIsTalkUsage() 在最后一个 usage 被清空时会移除 talker，
+     * 组会议再次进入还需要这个 talker，因此这里不能调用它。
+     */
+    private void clearMapFloatingTalkUsage(@Nullable CIsTalker talker) {
+        if (talker == null || talker.mems == null) {
+            return;
+        }
+        for (qmCommFunc_mis.IsTalkUsage mem : talker.mems) {
+            if (mem != null && mem.obj_usr == this) {
+                mem.obj_usr = null;
+                mem.obj_usr_iType = 0;
+            }
+        }
+    }
+
+    /** 关闭地图视频窗时清掉上一次发言意图，避免下次进入被 chkAutoSpeak 自动申请发言。 */
+    private void resetMapFloatingAutoSpeakState(@Nullable Fragment_dlgTalk_av2 fg) {
+        if (fg == null || fg.m_talker == null || fg.m_talker.m_var == null) {
+            return;
+        }
+        dlgTalkProc.DLG_TALK_var mVar = fg.m_talker.m_var;
+        try {
+            if (dlgTalkProc_help.qyFuncs_Droid.dlgTalk_canSpeak(mVar.addr.idInfo.ui64Id)) {
+                fg.do_request(false);
+            }
+        } catch (Exception e) {
+            Log.d("MAP_AV_DBG", "resetMapFloatingAutoSpeakState: stop speak ignored " + e);
+        }
+        if (mVar.av != null) {
+            mVar.av.m_bState_canSpeak = false;
+        }
+    }
+
+    private void initFloatingAvShell() {
+        m_floatingAvShell = findViewById(R.id.floating_av_shell);
+        m_floatingView = findViewById(R.id.floating_fragment_container);
+        m_floatingAvTitleBar = findViewById(R.id.floating_av_title_bar);
+        m_btnFloatingAvFloat = findViewById(R.id.btn_floating_av_float);
+        m_btnFloatingAvSplit = findViewById(R.id.btn_floating_av_split);
+        m_btnFloatingAvFull = findViewById(R.id.btn_floating_av_full);
+        TextView btnClose = findViewById(R.id.btn_floating_av_close);
+        if (m_floatingAvShell != null) {
+            m_floatingAvShell.setVisibility(View.GONE);
+        }
+        if (m_btnFloatingAvFloat != null) {
+            m_btnFloatingAvFloat.setOnClickListener(v -> applyFloatingAvDisplayMode(FLOATING_AV_MODE_FLOAT));
+        }
+        if (m_btnFloatingAvSplit != null) {
+            m_btnFloatingAvSplit.setOnClickListener(v -> {
+                ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+                if (pQyMc != null) {
+                    ensureMapTabForFloatingAv(pQyMc);
+                }
+                applyFloatingAvDisplayMode(FLOATING_AV_MODE_SPLIT);
+            });
+        }
+        if (m_btnFloatingAvFull != null) {
+            m_btnFloatingAvFull.setOnClickListener(v -> {
+                ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+                if (pQyMc != null) {
+                    ensureMapTabForFloatingAv(pQyMc);
+                }
+                applyFloatingAvDisplayMode(FLOATING_AV_MODE_FULL);
+            });
+        }
+        if (btnClose != null) {
+            btnClose.setOnClickListener(v -> closeFloatingView());
+        }
+        initLandscapeSplitDivider();
+        initPortraitSplitDivider();
+    }
+
+    private int clampPortraitSplitVideoHeightPx(int embeddedContentH, int requestedH) {
+        int minH = Math.max(dpToPx(160), (int) (embeddedContentH * PORTRAIT_SPLIT_VIDEO_MIN_RATIO));
+        int maxH = (int) (embeddedContentH * PORTRAIT_SPLIT_VIDEO_MAX_RATIO);
+        return Math.max(minH, Math.min(maxH, requestedH));
+    }
+
+    private void initPortraitSplitDivider() {
+        if (m_floatingAvShell == null) {
+            return;
+        }
+        ViewGroup root = (ViewGroup) m_floatingAvShell.getParent();
+        if (root == null || m_portraitSplitDivider != null) {
+            return;
+        }
+        int touchH = dpToPx(30);
+        m_portraitSplitDivider = LayoutInflater.from(this)
+                .inflate(R.layout.layout_portrait_split_divider, root, false);
+        m_portraitSplitDivider.setVisibility(View.GONE);
+        FrameLayout.LayoutParams dlp = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, touchH);
+        dlp.gravity = Gravity.START | Gravity.TOP;
+        root.addView(m_portraitSplitDivider, dlp);
+        m_portraitSplitDivider.setOnTouchListener((v, event) -> {
+            if (floatingAvDisplayMode != FLOATING_AV_MODE_SPLIT || isLandscapeConfiguration()) {
+                return false;
+            }
+            if (m_floatingAvShell == null || vPager == null) {
+                return false;
+            }
+            FrameLayout.LayoutParams shellLp = (FrameLayout.LayoutParams) m_floatingAvShell.getLayoutParams();
+            RelativeLayout.LayoutParams vpLp = (RelativeLayout.LayoutParams) vPager.getLayoutParams();
+            if (shellLp == null || vpLp == null) {
+                return false;
+            }
+            int embeddedContentH = getEmbeddedContentHeightPx();
+            if (embeddedContentH <= 0) {
+                return false;
+            }
+            switch (event.getActionMasked()) {
+                    case MotionEvent.ACTION_DOWN:
+                    ViewParent parent = v.getParent();
+                    if (parent != null) {
+                        parent.requestDisallowInterceptTouchEvent(true);
+                    }
+                    splitDividerDragStartRawY = event.getRawY();
+                    splitDividerDragStartVideoH = shellLp.height;
+                        return true;
+                case MotionEvent.ACTION_MOVE: {
+                    int dy = (int) (event.getRawY() - splitDividerDragStartRawY);
+                    int newH = clampPortraitSplitVideoHeightPx(embeddedContentH, splitDividerDragStartVideoH + dy);
+                    if (newH != shellLp.height) {
+                        int contentW = getFloatingAvContentWidthPx();
+                        applyPortraitSplitVideoLayout(newH, contentW, embeddedContentH, vpLp, shellLp);
+                        vPager.post(this::notifyMapFloatingLayoutChanged);
+                    }
+                    return true;
+                }
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    ViewParent p = v.getParent();
+                    if (p != null) {
+                        p.requestDisallowInterceptTouchEvent(false);
+                    }
+                    notifyMapFloatingLayoutChanged();
+                    return true;
+                default:
+                    break;
+            }
+            return false;
+        });
+    }
+
+    private void applyPortraitSplitVideoLayout(int videoShellH, int contentW, int embeddedContentH,
+            @NonNull RelativeLayout.LayoutParams vpLp,
+            @NonNull FrameLayout.LayoutParams shellLp) {
+        videoShellH = clampPortraitSplitVideoHeightPx(embeddedContentH, videoShellH);
+        portraitSplitVideoHeightRatio = videoShellH / (float) embeddedContentH;
+
+        vpLp.topMargin = videoShellH;
+        vpLp.leftMargin = 0;
+        vpLp.rightMargin = 0;
+        vPager.setVisibility(View.VISIBLE);
+        vPager.setLayoutParams(vpLp);
+
+        shellLp.width = contentW;
+        shellLp.height = videoShellH;
+        shellLp.gravity = Gravity.TOP | Gravity.START;
+        m_floatingAvShell.setLayoutParams(shellLp);
+        m_floatingAvShell.setX(0f);
+        m_floatingAvShell.setY(0f);
+
+        positionPortraitSplitDivider(videoShellH, contentW);
+        if (m_floatingAvShell != null) {
+            m_floatingAvShell.requestLayout();
+        }
+        notifyMapFloatingAvShellResized();
+    }
+
+    private void positionPortraitSplitDivider(int videoShellH, int contentW) {
+        if (m_portraitSplitDivider == null) {
+            return;
+        }
+        FrameLayout.LayoutParams dlp = (FrameLayout.LayoutParams) m_portraitSplitDivider.getLayoutParams();
+        if (dlp == null) {
+            return;
+        }
+        int touchH = dlp.height > 0 ? dlp.height : dpToPx(30);
+        dlp.width = contentW;
+        dlp.gravity = Gravity.START | Gravity.TOP;
+        dlp.topMargin = Math.max(0, videoShellH - touchH / 2);
+        dlp.setMarginStart(0);
+        m_portraitSplitDivider.setLayoutParams(dlp);
+    }
+
+    private void updatePortraitSplitDividerVisibility() {
+        boolean show = floatingAvDisplayMode == FLOATING_AV_MODE_SPLIT
+                && !isLandscapeConfiguration()
+                && m_floatingView_fg != null;
+        if (!show) {
+            if (m_portraitSplitDivider != null) {
+                m_portraitSplitDivider.setVisibility(View.GONE);
+            }
+            return;
+        }
+        initPortraitSplitDivider();
+        if (m_portraitSplitDivider == null || m_floatingAvShell == null) {
+            return;
+        }
+        m_portraitSplitDivider.setVisibility(View.VISIBLE);
+        ViewGroup parent = (ViewGroup) m_portraitSplitDivider.getParent();
+        if (parent != null) {
+            parent.bringChildToFront(m_portraitSplitDivider);
+        }
+        FrameLayout.LayoutParams shellLp = (FrameLayout.LayoutParams) m_floatingAvShell.getLayoutParams();
+        if (shellLp != null && shellLp.height > 0) {
+            positionPortraitSplitDivider(shellLp.height, getFloatingAvContentWidthPx());
+        }
+    }
+
+    private void updateSplitDividersVisibility() {
+        updateLandscapeSplitDividerVisibility();
+        updatePortraitSplitDividerVisibility();
+    }
+
+    private boolean isLandscapeConfiguration() {
+        return getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+    }
+
+    private int clampLandscapeSplitVideoWidthPx(int contentW, int requestedW) {
+        int minW = Math.max(dpToPx(120), (int) (contentW * LANDSCAPE_SPLIT_VIDEO_MIN_RATIO));
+        int maxW = (int) (contentW * LANDSCAPE_SPLIT_VIDEO_MAX_RATIO);
+        return Math.max(minW, Math.min(maxW, requestedW));
+    }
+
+    private void initLandscapeSplitDivider() {
+        if (m_floatingAvShell == null) {
+            return;
+        }
+        ViewGroup root = (ViewGroup) m_floatingAvShell.getParent();
+        if (root == null) {
+            return;
+        }
+        if (m_landscapeSplitDivider != null) {
+            return;
+        }
+        int touchW = dpToPx(30);
+        m_landscapeSplitDivider = LayoutInflater.from(this)
+                .inflate(R.layout.layout_landscape_split_divider, root, false);
+        m_landscapeSplitDivider.setVisibility(View.GONE);
+        FrameLayout.LayoutParams dlp = new FrameLayout.LayoutParams(touchW, FrameLayout.LayoutParams.WRAP_CONTENT);
+        dlp.gravity = Gravity.START | Gravity.TOP;
+        root.addView(m_landscapeSplitDivider, dlp);
+        m_landscapeSplitDivider.setOnTouchListener((v, event) -> {
+            if (floatingAvDisplayMode != FLOATING_AV_MODE_SPLIT || !isLandscapeConfiguration()) {
+                return false;
+            }
+            if (m_floatingAvShell == null || vPager == null) {
+                return false;
+            }
+            FrameLayout.LayoutParams shellLp = (FrameLayout.LayoutParams) m_floatingAvShell.getLayoutParams();
+            RelativeLayout.LayoutParams vpLp = (RelativeLayout.LayoutParams) vPager.getLayoutParams();
+            if (shellLp == null || vpLp == null) {
+                return false;
+            }
+            int contentW = getFloatingAvContentWidthPx();
+            if (contentW <= 0) {
+                return false;
+            }
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    ViewParent parent = v.getParent();
+                    if (parent != null) {
+                        parent.requestDisallowInterceptTouchEvent(true);
+                    }
+                    splitDividerDragStartRawX = event.getRawX();
+                    splitDividerDragStartVideoW = shellLp.width;
+                    return true;
+                case MotionEvent.ACTION_MOVE: {
+                    int dx = (int) (event.getRawX() - splitDividerDragStartRawX);
+                    int newW = clampLandscapeSplitVideoWidthPx(contentW, splitDividerDragStartVideoW + dx);
+                    if (newW != shellLp.width) {
+                        applyLandscapeSplitVideoLayout(newW, contentW, getEmbeddedContentHeightPx(), vpLp, shellLp);
+                        vPager.post(this::notifyMapFloatingLayoutChanged);
+                    }
+                    return true;
+                }
+                    case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    ViewParent p = v.getParent();
+                    if (p != null) {
+                        p.requestDisallowInterceptTouchEvent(false);
+                    }
+                    notifyMapFloatingLayoutChanged();
+                        return true;
+                default:
+                    break;
+            }
+            return false;
+        });
+    }
+
+    private void applyLandscapeSplitVideoLayout(int videoShellW, int contentW, int embeddedContentH,
+            @NonNull RelativeLayout.LayoutParams vpLp,
+            @NonNull FrameLayout.LayoutParams shellLp) {
+        videoShellW = clampLandscapeSplitVideoWidthPx(contentW, videoShellW);
+        landscapeSplitVideoWidthRatio = videoShellW / (float) contentW;
+
+        vpLp.leftMargin = videoShellW;
+        vpLp.topMargin = 0;
+        vPager.setVisibility(View.VISIBLE);
+        vPager.setLayoutParams(vpLp);
+
+        shellLp.width = videoShellW;
+        shellLp.height = embeddedContentH;
+        shellLp.gravity = Gravity.START | Gravity.TOP;
+        m_floatingAvShell.setLayoutParams(shellLp);
+        m_floatingAvShell.setX(0f);
+        m_floatingAvShell.setY(0f);
+
+        positionLandscapeSplitDivider(videoShellW, embeddedContentH);
+        if (m_floatingAvShell != null) {
+            m_floatingAvShell.requestLayout();
+        }
+        notifyMapFloatingAvShellResized();
+    }
+
+    private void positionLandscapeSplitDivider(int videoShellW, int embeddedContentH) {
+        if (m_landscapeSplitDivider == null) {
+            return;
+        }
+        FrameLayout.LayoutParams dlp = (FrameLayout.LayoutParams) m_landscapeSplitDivider.getLayoutParams();
+        if (dlp == null) {
+            return;
+        }
+        int touchW = dlp.width > 0 ? dlp.width : dpToPx(30);
+        dlp.height = embeddedContentH;
+        dlp.gravity = Gravity.START | Gravity.TOP;
+        dlp.setMarginStart(Math.max(0, videoShellW - touchW / 2));
+        dlp.topMargin = 0;
+        m_landscapeSplitDivider.setLayoutParams(dlp);
+    }
+
+    private void updateLandscapeSplitDividerVisibility() {
+        boolean show = floatingAvDisplayMode == FLOATING_AV_MODE_SPLIT
+                && isLandscapeConfiguration()
+                && m_floatingView_fg != null;
+        if (!show) {
+            if (m_landscapeSplitDivider != null) {
+                m_landscapeSplitDivider.setVisibility(View.GONE);
+            }
+            return;
+        }
+        initLandscapeSplitDivider();
+        if (m_landscapeSplitDivider == null || m_floatingAvShell == null) {
+            return;
+        }
+        m_landscapeSplitDivider.setVisibility(View.VISIBLE);
+        ViewGroup parent = (ViewGroup) m_landscapeSplitDivider.getParent();
+        if (parent != null) {
+            parent.bringChildToFront(m_landscapeSplitDivider);
+        }
+        FrameLayout.LayoutParams shellLp = (FrameLayout.LayoutParams) m_floatingAvShell.getLayoutParams();
+        if (shellLp != null && shellLp.width > 0) {
+            positionLandscapeSplitDivider(shellLp.width, getEmbeddedContentHeightPx());
+        }
+    }
+
+    private void ensureMapTabForFloatingAv(@NonNull ctxQyMc.CCtxQyMc pQyMc) {
+        if (pQyMc.appParams != null && pQyMc.appParams.bENABLE_MAP_TAB && txt_map != null) {
+            txt_map.performClick();
+        }
+    }
+
+    private void setMainTabBarVisible(boolean visible) {
+        View lyTab = findViewById(R.id.ly_tab_bar);
+        View divTab = findViewById(R.id.div_tab_bar);
+        int v = visible ? View.VISIBLE : View.GONE;
+        if (lyTab != null) lyTab.setVisibility(v);
+        if (divTab != null) divTab.setVisibility(v);
+        floatingAvTabBarHidden = !visible;
+    }
+
+    private boolean isOnMapTab() {
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        if (pQyMc == null || pQyMc.appParams == null || !pQyMc.appParams.bENABLE_MAP_TAB) {
+                return false;
+            }
+        return vPager != null && vPager.getCurrentItem() == PAGE_FOUR;
+    }
+
+    /** 入会/旋转时默认布局：竖屏浮窗，横屏分屏（避免与左侧工具条、活动组条重叠）。 */
+    private int getDefaultFloatingAvModeForOrientation() {
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            return FLOATING_AV_MODE_SPLIT;
+        }
+        return FLOATING_AV_MODE_FLOAT;
+    }
+
+    /**
+     * 分屏/全屏仅在地图 Tab 嵌入；切到其他 Tab 时临时显示为悬浮窗，回到地图后恢复。
+     */
+    private int resolveEffectiveFloatingAvMode() {
+        if (isOnMapTab()) {
+            return floatingAvUserMode;
+        }
+        if (floatingAvUserMode == FLOATING_AV_MODE_SPLIT
+                || floatingAvUserMode == FLOATING_AV_MODE_FULL) {
+            return FLOATING_AV_MODE_FLOAT;
+        }
+        return floatingAvUserMode;
+    }
+
+    /** 用户切换浮窗/分屏/全屏，或 Tab/方向变化后调用。 */
+    private void applyFloatingAvDisplayMode(int mode) {
+        floatingAvUserMode = mode;
+        syncFloatingAvLayoutForCurrentTab();
+    }
+
+    private void syncFloatingAvLayoutForCurrentTab() {
+        if (m_floatingAvShell == null || vPager == null) {
+            return;
+        }
+        if (m_floatingView_fg == null
+                && m_floatingAvShell.getVisibility() != View.VISIBLE) {
+            return;
+        }
+        applyFloatingAvLayoutImpl(resolveEffectiveFloatingAvMode());
+        m_floatingAvShell.post(this::enforceFloatingAvSafeState);
+        m_floatingAvShell.postDelayed(this::enforceFloatingAvSafeState, 120);
+        m_floatingAvShell.postDelayed(this::enforceFloatingAvSafeState, 280);
+    }
+
+    /**
+     * 浮窗 / 分屏（竖屏上视频下地图，横屏左视频右地图）/ 全屏（覆盖整屏）。
+     * 仅在地图 Tab 下对分屏/全屏生效。
+     */
+    private void resetViewPagerForEmbeddedAv(RelativeLayout.LayoutParams vpLp) {
+        vpLp.width = RelativeLayout.LayoutParams.MATCH_PARENT;
+        vpLp.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+        vpLp.topMargin = 0;
+        vpLp.leftMargin = 0;
+        vpLp.rightMargin = 0;
+        vpLp.bottomMargin = 0;
+        vpLp.addRule(RelativeLayout.ABOVE, R.id.div_tab_bar);
+        vpLp.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
+        vpLp.addRule(RelativeLayout.ALIGN_PARENT_START, RelativeLayout.TRUE);
+        vpLp.addRule(RelativeLayout.ALIGN_PARENT_END, RelativeLayout.TRUE);
+    }
+
+    private void resetFloatingAvShellFrameParams(FrameLayout.LayoutParams shellLp) {
+        shellLp.gravity = Gravity.START | Gravity.TOP;
+        shellLp.setMargins(0, 0, 0, 0);
+    }
+
+    private void applyFloatingAvLayoutImpl(int mode) {
+        if (m_floatingAvShell == null || vPager == null) return;
+        floatingAvDisplayMode = mode;
+        m_floatingAvShell.setTranslationX(0f);
+        m_floatingAvShell.setTranslationY(0f);
+        m_floatingAvShell.bringToFront();
+
+        int contentH = getFloatingAvContentHeightPx();
+        int embeddedContentH = getEmbeddedContentHeightPx();
+        int contentW = getFloatingAvContentWidthPx();
+        if ((contentH <= 0 || contentW <= 0) && mode != FLOATING_AV_MODE_FULL) {
+            m_floatingAvShell.post(() -> applyFloatingAvLayoutImpl(mode));
+            return;
+        }
+        RelativeLayout.LayoutParams vpLp = (RelativeLayout.LayoutParams) vPager.getLayoutParams();
+        FrameLayout.LayoutParams shellLp = (FrameLayout.LayoutParams) m_floatingAvShell.getLayoutParams();
+        if (vpLp == null || shellLp == null) return;
+
+        setMainTabBarVisible(true);
+        resetViewPagerForEmbeddedAv(vpLp);
+        resetFloatingAvShellFrameParams(shellLp);
+        if (mode != FLOATING_AV_MODE_FULL) {
+            clearFloatingAvShellSystemInsets();
+        }
+        switch (mode) {
+            case FLOATING_AV_MODE_SPLIT: {
+                boolean isLandscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+                if (isLandscape) {
+                    int videoShellW = clampLandscapeSplitVideoWidthPx(contentW,
+                            (int) (contentW * landscapeSplitVideoWidthRatio));
+                    applyLandscapeSplitVideoLayout(videoShellW, contentW, embeddedContentH, vpLp, shellLp);
+                } else {
+                    int videoShellH = clampPortraitSplitVideoHeightPx(embeddedContentH,
+                            (int) (embeddedContentH * portraitSplitVideoHeightRatio));
+                    applyPortraitSplitVideoLayout(videoShellH, contentW, embeddedContentH, vpLp, shellLp);
+                }
+                break;
+            }
+            case FLOATING_AV_MODE_FULL: {
+                setMainTabBarVisible(false);
+                vpLp.height = 0;
+                vpLp.width = RelativeLayout.LayoutParams.MATCH_PARENT;
+                vpLp.topMargin = 0;
+                vpLp.addRule(RelativeLayout.ABOVE, R.id.div_tab_bar);
+                vPager.setVisibility(View.GONE);
+                vPager.setLayoutParams(vpLp);
+
+                shellLp.width = FrameLayout.LayoutParams.MATCH_PARENT;
+                shellLp.height = FrameLayout.LayoutParams.MATCH_PARENT;
+                shellLp.gravity = Gravity.FILL;
+                shellLp.setMargins(0, 0, 0, 0);
+                m_floatingAvShell.setLayoutParams(shellLp);
+                m_floatingAvShell.setX(0f);
+                m_floatingAvShell.setY(0f);
+                applyFloatingAvShellSystemInsets();
+                m_floatingAvShell.post(this::ensureFloatingAvShellFillParent);
+                m_floatingAvShell.postDelayed(this::ensureFloatingAvShellFillParent, 120);
+                break;
+            }
+            default: {
+                vPager.setVisibility(View.VISIBLE);
+                vPager.setLayoutParams(vpLp);
+
+                boolean isLandscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+                int shellW;
+                int shellH;
+                int topMargin = isLandscape ? dpToPx(56) : dpToPx(88);
+                int bottomMargin = getFloatingAvBottomInsetPx();
+                if (isLandscape) {
+                    shellW = Math.max(dpToPx(220), (int) (contentW * 0.34f));
+                    int desiredH = (int) (shellW * 4f / 3f);
+                    int maxH = Math.max(dpToPx(220), contentH - topMargin);
+                    shellH = Math.max(dpToPx(220), Math.min(desiredH, maxH));
+                } else {
+                    shellW = Math.max(dpToPx(240), (int) (contentW * 0.44f));
+                    shellH = Math.max(dpToPx(300), (int) (shellW * 4f / 3f));
+                    int maxH = Math.max(dpToPx(220), contentH - topMargin);
+                    shellH = Math.min(shellH, maxH);
+                }
+                shellLp.width = shellW;
+                shellLp.height = shellH;
+                shellLp.gravity = Gravity.NO_GRAVITY;
+                shellLp.leftMargin = 0;
+                shellLp.topMargin = 0;
+                shellLp.rightMargin = 0;
+                shellLp.bottomMargin = 0;
+                m_floatingAvShell.setLayoutParams(shellLp);
+                m_floatingAvShell.setX(getDefaultFloatingAvShellX(shellW, contentW));
+                m_floatingAvShell.setY(getDefaultFloatingAvShellY(shellH));
+                m_floatingAvShell.post(this::clampFloatingAvShellToSafeBounds);
+                m_floatingAvShell.postDelayed(this::clampFloatingAvShellToSafeBounds, 120);
+                break;
+            }
+        }
+        updateFloatingAvModeButtons();
+        updateSplitDividersVisibility();
+        notifyMapFloatingAvFragmentLayoutChanged();
+        notifyMapFloatingLayoutChanged();
+        if (m_floatingAvShell != null) {
+            m_floatingAvShell.post(this::refreshMapFragmentOverlayTextScale);
+            m_floatingAvShell.postDelayed(this::refreshMapFragmentOverlayTextScale, 200);
+        } else {
+            refreshMapFragmentOverlayTextScale();
+        }
+    }
+
+    /** 全屏时避开系统导航栏，避免底部 AV 工具栏被裁切。 */
+    private void applyFloatingAvShellSystemInsets() {
+        if (m_floatingAvShell == null) return;
+        ViewCompat.setOnApplyWindowInsetsListener(m_floatingAvShell, (v, insets) -> {
+            if (floatingAvDisplayMode != FLOATING_AV_MODE_FULL) {
+                v.setPadding(0, 0, 0, 0);
+                return insets;
+            }
+            int navBottom = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
+            v.setPadding(0, 0, 0, navBottom);
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(m_floatingAvShell);
+    }
+
+    private void clearFloatingAvShellSystemInsets() {
+        if (m_floatingAvShell == null) return;
+        ViewCompat.setOnApplyWindowInsetsListener(m_floatingAvShell, null);
+        m_floatingAvShell.setPadding(0, 0, 0, 0);
+    }
+
+    private int getMainTabInsetPx() {
+        int inset = 0;
+        if (findViewById(R.id.ly_tab_bar) != null) {
+            inset += findViewById(R.id.ly_tab_bar).getHeight();
+        }
+        if (findViewById(R.id.div_tab_bar) != null) {
+            inset += findViewById(R.id.div_tab_bar).getHeight();
+        }
+        if (inset <= 0) {
+            inset = dpToPx(56);
+        }
+        return inset;
+    }
+
+    private int getFloatingAvBottomInsetPx() {
+        return getMainTabInsetPx() + dpToPx(12);
+    }
+
+    private int getFloatingAvContentHeightPx() {
+        if (m_layout_total != null && m_layout_total.getHeight() > 0) {
+            return m_layout_total.getHeight() - getFloatingAvBottomInsetPx();
+        }
+        DisplayMetrics dm = getResources().getDisplayMetrics();
+        return dm.heightPixels - getFloatingAvBottomInsetPx();
+    }
+
+    private int getEmbeddedContentHeightPx() {
+        if (m_layout_total != null && m_layout_total.getHeight() > 0) {
+            return m_layout_total.getHeight() - getMainTabInsetPx();
+        }
+        DisplayMetrics dm = getResources().getDisplayMetrics();
+        return dm.heightPixels - getMainTabInsetPx();
+    }
+
+    private int getFloatingAvContentWidthPx() {
+        if (m_layout_total != null && m_layout_total.getWidth() > 0) {
+            return m_layout_total.getWidth();
+        }
+        DisplayMetrics dm = getResources().getDisplayMetrics();
+        return dm.widthPixels;
+    }
+
+    private int getFloatingAvRootHeightPx() {
+        if (m_layout_total != null && m_layout_total.getHeight() > 0) {
+            return m_layout_total.getHeight();
+        }
+        DisplayMetrics dm = getResources().getDisplayMetrics();
+        return dm.heightPixels;
+    }
+
+    private int getFloatingAvMapLeftToolbarReservePx() {
+        return dpToPx(FLOATING_AV_MAP_LEFT_TOOLBAR_DP);
+    }
+
+    /** 默认浮窗贴在左侧工具条右侧，避免挡住 zoom/标注 等按钮。 */
+    private float getDefaultFloatingAvShellX(int shellW, int contentW) {
+        float minX = getFloatingAvMapLeftToolbarReservePx();
+        float maxX = Math.max(minX, contentW - shellW - dpToPx(12));
+        return Math.min(minX, maxX);
+    }
+
+    /** 默认浮窗在可用区域内垂直居中（中间偏左）。 */
+    private float getDefaultFloatingAvShellY(int shellH) {
+        int rootH = getFloatingAvRootHeightPx();
+        int bottomInset = getFloatingAvBottomInsetPx();
+        boolean isLandscape = getResources().getConfiguration().orientation
+                == Configuration.ORIENTATION_LANDSCAPE;
+        float minY = isLandscape ? dpToPx(56) : dpToPx(88);
+        float maxY = Math.max(minY, rootH - shellH - bottomInset);
+        float centerY = (rootH - shellH) / 2f;
+        return Math.max(minY, Math.min(centerY, maxY));
+    }
+
+    private void clampFloatingAvShellToSafeBounds() {
+        if (m_floatingAvShell == null || floatingAvDisplayMode != FLOATING_AV_MODE_FLOAT) return;
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) m_floatingAvShell.getLayoutParams();
+        if (lp == null) return;
+        int contentW = getFloatingAvContentWidthPx();
+        int rootH = getFloatingAvRootHeightPx();
+        int topAnchor = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE
+                ? dpToPx(56) : dpToPx(88);
+        int maxH = Math.max(dpToPx(180), rootH - topAnchor - getFloatingAvBottomInsetPx());
+        if (lp.height > maxH) {
+            lp.height = maxH;
+            m_floatingAvShell.setLayoutParams(lp);
+        }
+        float minX = getFloatingAvMapLeftToolbarReservePx();
+        float maxX = Math.max(minX, contentW - m_floatingAvShell.getWidth() - dpToPx(12));
+        float minY = dpToPx(8);
+        float maxY = Math.max(minY, rootH - m_floatingAvShell.getHeight() - getFloatingAvBottomInsetPx());
+        m_floatingAvShell.setX(Math.max(minX, Math.min(m_floatingAvShell.getX(), maxX)));
+        m_floatingAvShell.setY(Math.max(minY, Math.min(m_floatingAvShell.getY(), maxY)));
+    }
+
+    private void enforceFloatingAvSafeState() {
+        if (m_floatingAvShell == null) return;
+        if (floatingAvDisplayMode == FLOATING_AV_MODE_FULL) {
+            ensureFloatingAvShellFillParent();
+            return;
+        }
+        if (floatingAvDisplayMode == FLOATING_AV_MODE_SPLIT) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) m_floatingAvShell.getLayoutParams();
+            if (lp == null) return;
+            int contentH = getEmbeddedContentHeightPx();
+            boolean isLandscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+            if (isLandscape) {
+                if (lp.height != contentH) {
+                    lp.height = contentH;
+                    lp.bottomMargin = 0;
+                    lp.gravity = Gravity.START | Gravity.TOP;
+                    m_floatingAvShell.setLayoutParams(lp);
+                }
+                positionLandscapeSplitDivider(lp.width, contentH);
+            } else {
+                if (lp.width > 0 && lp.height > 0) {
+                    positionPortraitSplitDivider(lp.height, getFloatingAvContentWidthPx());
+                }
+                lp.leftMargin = 0;
+                lp.bottomMargin = 0;
+                m_floatingAvShell.setLayoutParams(lp);
+            }
+            m_floatingAvShell.setX(0f);
+            m_floatingAvShell.setY(0f);
+            return;
+        }
+        if (floatingAvDisplayMode != FLOATING_AV_MODE_FLOAT) {
+            return;
+        }
+        clampFloatingAvShellToSafeBounds();
+    }
+
+    private void ensureFloatingAvShellFillParent() {
+        if (m_floatingAvShell == null || floatingAvDisplayMode != FLOATING_AV_MODE_FULL) return;
+        View parent = (View) m_floatingAvShell.getParent();
+        if (parent == null) return;
+        int w = parent.getWidth();
+        int h = parent.getHeight();
+        if (w <= 0 || h <= 0) return;
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) m_floatingAvShell.getLayoutParams();
+        if (lp == null) return;
+        if (lp.width != w || lp.height != h) {
+            lp.width = w;
+            lp.height = h;
+            lp.gravity = Gravity.FILL;
+            lp.setMargins(0, 0, 0, 0);
+            m_floatingAvShell.setLayoutParams(lp);
+        }
+        m_floatingAvShell.setX(0f);
+        m_floatingAvShell.setY(0f);
+    }
+
+    private int dpToPx(float dp) {
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
+    }
+
+    private void updateFloatingAvModeButtons() {
+        if (m_btnFloatingAvFloat == null || m_btnFloatingAvSplit == null || m_btnFloatingAvFull == null) {
+            return;
+        }
+        m_btnFloatingAvFloat.setVisibility(
+                floatingAvUserMode == FLOATING_AV_MODE_FLOAT ? View.GONE : View.VISIBLE);
+        m_btnFloatingAvSplit.setVisibility(
+                floatingAvUserMode == FLOATING_AV_MODE_SPLIT ? View.GONE : View.VISIBLE);
+        m_btnFloatingAvFull.setVisibility(
+                floatingAvUserMode == FLOATING_AV_MODE_FULL ? View.GONE : View.VISIBLE);
+    }
+
+    private void restoreMainContentAfterFloatingAv() {
+        floatingAvUserMode = FLOATING_AV_MODE_FLOAT;
+        floatingAvDisplayMode = FLOATING_AV_MODE_FLOAT;
+        clearFloatingAvShellSystemInsets();
+        setMainTabBarVisible(true);
+        if (m_floatingAvShell != null && vPager != null) {
+            applyFloatingAvLayoutImpl(FLOATING_AV_MODE_FLOAT);
+        }
+        if (vPager != null) {
+            vPager.setVisibility(View.VISIBLE);
+            RelativeLayout.LayoutParams vpLp = (RelativeLayout.LayoutParams) vPager.getLayoutParams();
+            if (vpLp != null) {
+                vpLp.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+                vpLp.width = RelativeLayout.LayoutParams.MATCH_PARENT;
+                vpLp.topMargin = 0;
+                vpLp.leftMargin = 0;
+                vpLp.rightMargin = 0;
+                vpLp.bottomMargin = 0;
+                vpLp.addRule(RelativeLayout.ABOVE, R.id.div_tab_bar);
+                vpLp.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
+                vpLp.addRule(RelativeLayout.ALIGN_PARENT_START, RelativeLayout.TRUE);
+                vpLp.addRule(RelativeLayout.ALIGN_PARENT_END, RelativeLayout.TRUE);
+                vPager.setLayoutParams(vpLp);
+                vPager.requestLayout();
+            }
+        }
+        if (m_floatingAvShell != null) {
+            m_floatingAvShell.setTranslationX(0f);
+            m_floatingAvShell.setTranslationY(0f);
+        }
+        updateSplitDividersVisibility();
+        notifyMapFloatingLayoutChanged();
+    }
+
+    private void notifyMapFloatingAvFragmentLayoutChanged() {
+        if (m_floatingView_fg instanceof Fragment_dlgTalk_av2) {
+            Fragment_dlgTalk_av2 avFg = (Fragment_dlgTalk_av2) m_floatingView_fg;
+            if (avFg.isAdded()) {
+                avFg.onMapFloatingAvDisplayModeChanged();
+                avFg.onMapFloatingAvShellResized();
+            } else if (m_floatingAvShell != null) {
+                m_floatingAvShell.post(() -> {
+                    if (m_floatingView_fg instanceof Fragment_dlgTalk_av2) {
+                        Fragment_dlgTalk_av2 fg = (Fragment_dlgTalk_av2) m_floatingView_fg;
+                        if (fg.isAdded()) {
+                            fg.onMapFloatingAvDisplayModeChanged();
+                            fg.onMapFloatingAvShellResized();
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    private void notifyMapFloatingAvShellResized() {
+        if (m_floatingView_fg instanceof Fragment_dlgTalk_av2) {
+            Fragment_dlgTalk_av2 avFg = (Fragment_dlgTalk_av2) m_floatingView_fg;
+            if (avFg.isAdded()) {
+                avFg.onMapFloatingAvShellResized();
+            } else if (m_floatingAvShell != null) {
+                m_floatingAvShell.post(() -> {
+                    if (m_floatingView_fg instanceof Fragment_dlgTalk_av2) {
+                        Fragment_dlgTalk_av2 fg = (Fragment_dlgTalk_av2) m_floatingView_fg;
+                        if (fg.isAdded()) {
+                            fg.onMapFloatingAvShellResized();
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    private void notifyMapFloatingLayoutChanged() {
+        if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {
+            return;
+        }
+        Fragment_map mapFg = (Fragment_map) mAdapter.mFragment_map;
+        if (mapFg.isAdded()) {
+            mapFg.onHostEmbeddedLayoutChanged();
+        } else {
+            vPager.postDelayed(() -> {
+                if (mAdapter.mFragment_map instanceof Fragment_map) {
+                    Fragment_map fg = (Fragment_map) mAdapter.mFragment_map;
+                    if (fg.isAdded()) {
+                        fg.onHostEmbeddedLayoutChanged();
+                    }
+                }
+            }, 120);
+        }
+    }
+
+    /** 仅在浮窗模式下拖动标题栏，避免与视频区点击放大冲突。 */
+    private void initFloatingAvDrag() {
+        if (m_floatingAvTitleBar == null || m_floatingAvShell == null) return;
+        final int touchSlop = dpToPx(4);
+        final boolean[] moved = {false};
+        View.OnTouchListener dragTouchListener = new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-
+                if (floatingAvDisplayMode != FLOATING_AV_MODE_FLOAT) {
+                    return false;
+                }
                 switch (event.getAction()) {
-
                     case MotionEvent.ACTION_DOWN:
                         fv_lastX = event.getRawX();
                         fv_lastY = event.getRawY();
                         fv_downX = fv_lastX;
                         fv_downY = fv_lastY;
+                        moved[0] = false;
                         return true;
-
-                    case MotionEvent.ACTION_MOVE:
-                        float nowX = event.getRawX();
-                        float nowY = event.getRawY();
-
-                        float dx = nowX - fv_lastX;
-                        float dy = nowY - fv_lastY;
-
-                        // 移动View
-                        v.setX(v.getX() + dx);
-                        v.setY(v.getY() + dy);
-
-                        fv_lastX = nowX;
-                        fv_lastY = nowY;
+                    case MotionEvent.ACTION_MOVE: {
+                        float dx = event.getRawX() - fv_lastX;
+                        float dy = event.getRawY() - fv_lastY;
+                        if (!moved[0]) {
+                            moved[0] = Math.abs(event.getRawX() - fv_downX) > touchSlop
+                                    || Math.abs(event.getRawY() - fv_downY) > touchSlop;
+                        }
+                        m_floatingAvShell.setX(m_floatingAvShell.getX() + dx);
+                        m_floatingAvShell.setY(m_floatingAvShell.getY() + dy);
+                        clampFloatingAvShellToSafeBounds();
+                        fv_lastX = event.getRawX();
+                        fv_lastY = event.getRawY();
                         return true;
-
+                    }
                     case MotionEvent.ACTION_UP:
-                        // 判断是否是点击（防止拖动影响点击）
-                        if (Math.abs(event.getRawX() - fv_downX) < 10 &&
-                                Math.abs(event.getRawY() - fv_downY) < 10) {
+                        if (!moved[0]) {
                             v.performClick();
                         }
                         return true;
+                    default:
+                        break;
                 }
-
                 return false;
             }
-        });
+        };
+        m_floatingAvTitleBar.setOnTouchListener(dragTouchListener);
+        if (m_btnFloatingAvFloat != null) m_btnFloatingAvFloat.setOnTouchListener(dragTouchListener);
+        if (m_btnFloatingAvSplit != null) m_btnFloatingAvSplit.setOnTouchListener(dragTouchListener);
+        if (m_btnFloatingAvFull != null) m_btnFloatingAvFull.setOnTouchListener(dragTouchListener);
+        View btnClose = findViewById(R.id.btn_floating_av_close);
+        if (btnClose != null) btnClose.setOnTouchListener(dragTouchListener);
     }
-
 
 
     //
@@ -1792,6 +2800,9 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             txt_me.setSelected(true);
             vPager.setCurrentItem(PAGE_THREE, false);
         }
+        if (m_floatingView_fg != null) {
+            vPager.post(this::syncFloatingAvLayoutForCurrentTab);
+        }
     }
 
 
@@ -1803,6 +2814,20 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     @Override
     public void onBackPressed() {
         this.gui_PostMessage_new.call(this, qyWndContentType.Consts.CONST_qyWndContentType_mainWnd, qyWmComm.Consts.CONST_qyWm_postComm, CONST_qyWmParam_closeWnd, 0);
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        refreshMapFragmentOverlayTextScale();
+        if (m_floatingView_fg == null || m_floatingAvShell == null) return;
+        // 旋转时保留用户已选模式（分屏/浮窗/全屏），仅按新方向重排布局
+        m_floatingAvShell.post(() -> {
+            syncFloatingAvLayoutForCurrentTab();
+            clampFloatingAvShellToSafeBounds();
+            ensureFloatingAvShellFillParent();
+            refreshMapFragmentOverlayTextScale();
+        });
     }
 
     @Override
@@ -2010,7 +3035,10 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
     @Override
     public void onPageSelected(int position) {
-
+        if (m_floatingView_fg != null) {
+            syncFloatingAvLayoutForCurrentTab();
+            refreshMapFragmentOverlayTextScale();
+        }
     }
 
     BottomSheetDialog m_bsd_askToQuit;

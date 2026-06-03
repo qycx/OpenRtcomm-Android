@@ -847,6 +847,9 @@ public class qmcSharedObj {
         //
         public qmcSharedObj.SHARED_OBJ_USR[] usrs;//[MAX_sharedObjUsrs];
 
+        public QY_SHARED_OBJ() {
+            this.var = new QY_SHARED_OBJ_var();
+        }
 
         //
         public void memset0() {
@@ -900,8 +903,20 @@ public class qmcSharedObj {
         public static qmcSharedObj.QY_SHARED_OBJ getSharedObjByIndex(ctxQmc.CCtxQmc pProcInfo, int index) {
             qmcSharedObj.QY_sharedObj_sync pSharedObjInfo = getSharedObjSyncByIndex(pProcInfo, index);
             if (null == pSharedObjInfo) return null;
-            //
-            return pSharedObjInfo.sharedObj;
+            qmcSharedObj.QY_SHARED_OBJ obj = pSharedObjInfo.sharedObj;
+            if (obj != null && obj.var == null) {
+                obj.var = new QY_SHARED_OBJ.QY_SHARED_OBJ_var();
+            }
+            return obj;
+        }
+
+        /** 仅返回已分配且 var 有效的 sharedObj，避免 NPE。 */
+        public static qmcSharedObj.QY_SHARED_OBJ getActiveSharedObjByIndex(ctxQmc.CCtxQmc pProcInfo, int index) {
+            qmcSharedObj.QY_SHARED_OBJ obj = getSharedObjByIndex(pProcInfo, index);
+            if (obj == null || !obj.bUsed || obj.var == null) {
+                return null;
+            }
+            return obj;
         }
 
 

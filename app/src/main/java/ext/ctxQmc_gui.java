@@ -3,10 +3,6 @@ package ext;
 import static com.qycx.base.isTalkerQProc.findIsTalker;
 import static com.qycx.base.setQmDbFuncs.qyFuncs.setQmDbFuncs_qm;
 
-import androidx.fragment.app.Fragment;
-
-import com.qycx.Activity_dlgTalk;
-import com.qycx.Fragment_null;
 import com.qycx.base.CIsTalker;
 import com.qycx.base.ctxCaller;
 import com.qycx.base.ctxQmc;
@@ -22,7 +18,6 @@ import com.qycx.base.qyMcMainObj;
 import com.qycx.base.qyMcMain_global;
 import com.qycx.base.qyMsgFunc;
 import com.qycx.base.qyTypes;
-import com.qycx.base.util.Log;
 
 import java.nio.IntBuffer;
 

@@ -43,6 +43,8 @@ public class Fragment_imObjList extends Fragment {
 
     public List<TableItem.TableItem_imObj> mTableItems_imObj = new ArrayList<>();
 
+    /** 供 {@link TaskActiveGrp} 读取 IM 群 id；与 {@link #mTableItems_imObj} 在 fillList 后同步。 */
+    private static final List<TableItem.TableItem_imObj> sTableItems_imObj = new ArrayList<>();
 
     int th_fillList_imObj(imObj_proc.QMem_imObj_intQ pMem) {
         int iErr = -1;
@@ -76,7 +78,18 @@ public class Fragment_imObjList extends Fragment {
             item.syr = regInfo.syr;
             item.ImageResourceId = R.drawable.contact;
         }
-        mTableItems_imObj.add(item);
+        int existIndex = -1;
+        for (int i = 0; i < mTableItems_imObj.size(); i++) {
+            if (mTableItems_imObj.get(i).ui64Id == item.ui64Id) {
+                existIndex = i;
+                break;
+            }
+        }
+        if (existIndex >= 0) {
+            mTableItems_imObj.set(existIndex, item);
+        } else {
+            mTableItems_imObj.add(item);
+        }
 
         iErr = 0;
         return iErr;
@@ -102,11 +115,27 @@ public class Fragment_imObjList extends Fragment {
             th_fillList_imObj(mem);
         }
 
-
-        //
+        sTableItems_imObj.clear();
+        sTableItems_imObj.addAll(mTableItems_imObj);
         return 0;
     }
 
+    /**
+     * 返回联系人列表中所有 IM 群（{@link qyDefs.Consts#CONST_objType_imGrp}）的 id。
+     */
+    public static long[] getGroupIds() {
+        ArrayList<Long> groupIds = new ArrayList<>();
+        for (TableItem.TableItem_imObj item : sTableItems_imObj) {
+            if (item != null && item.uiObjType == qyDefs.Consts.CONST_objType_imGrp && item.ui64Id > 0) {
+                groupIds.add(item.ui64Id);
+            }
+        }
+        long[] result = new long[groupIds.size()];
+        for (int i = 0; i < groupIds.size(); i++) {
+            result[i] = groupIds.get(i);
+        }
+        return result;
+    }
 
     //
     public int display_imObjList() {

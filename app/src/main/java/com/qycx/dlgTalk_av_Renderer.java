@@ -220,7 +220,30 @@ public class dlgTalk_av_Renderer extends Thread implements TextureView.SurfaceTe
             //  当textureview大小变化时，onscreenEglSurface要重新创建。但是视频任务是用offscreen处理的，所以不需要重新启动
             //  对offscreen, 如果需要修改OFFSCREEN_WIDTH,才需要重新创建offscreen
             //
-            WindowSurface onscreenEglSurface = new WindowSurface(mEglCore, surfaceTexture);
+            try (qySyncObj.CQySyncObj syncObj = new qySyncObj.CQySyncObj()) {
+                if (syncObj.sync("", this.hMutex, "render.beforeWindowSurface") != 0) {
+                    break;
+                }
+                if (mDone || mSurfaceTexture == null || mSurfaceTexture != surfaceTexture) {
+                    continue;
+                }
+            } catch (Exception e) {
+                Log.e(e.getMessage());
+                continue;
+            }
+            WindowSurface onscreenEglSurface;
+            try {
+                onscreenEglSurface = new WindowSurface(mEglCore, surfaceTexture);
+            } catch (RuntimeException e) {
+                Log.e("dlgTalk_av_Renderer", "createWindowSurface failed: " + e.getMessage());
+                try (qySyncObj.CQySyncObj syncObj = new qySyncObj.CQySyncObj()) {
+                    if (syncObj.sync("", this.hMutex, "render.windowSurfaceFail") == 0) {
+                        mSurfaceTexture = null;
+                    }
+                } catch (Exception ignored) {
+                }
+                continue;
+            }
 
             //
             doAnimation(offscreenEglSurface,onscreenEglSurface);

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 与 ic_locate_crosshair 统一：1.6dp 描边、#1A1A1A，白底圆上为线框图层符号 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M12,4.5 L19.35,8.85 L12,13.2 L4.65,8.85 Z"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#1A1A1A"
+        android:strokeWidth="1.6"
+        android:strokeLineJoin="round"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M5.35,11.35 L12,16.05 L18.65,11.35"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#1A1A1A"
+        android:strokeWidth="1.6"
+        android:strokeLineJoin="round"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M5.35,14.35 L12,19.05 L18.65,14.35"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#1A1A1A"
+        android:strokeWidth="1.6"
+        android:strokeLineJoin="round"
+        android:strokeLineCap="round" />
+</vector>

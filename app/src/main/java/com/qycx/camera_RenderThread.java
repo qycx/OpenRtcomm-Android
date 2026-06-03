@@ -148,6 +148,11 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
         return;
     }
 
+    /** 屏幕旋转时更新预览方向，避免 teardown 摄像头造成数秒卡顿。 */
+    public void updateSurfaceOrientation(int surfaceOrientation) {
+        m_surfaceOrientation = surfaceOrientation;
+    }
+
     /**
      * Thread entry point.
      */

@@ -12,13 +12,13 @@ import static com.qycx.base.qyWmComm.Consts.CONST_do_480P_AV_Call;
 
 import android.app.Activity;
 import android.os.Build;
-import android.view.View;
 
 import com.qycx.Activity_dlgTalk;
 import com.qycx.Activity_dlgTalk_av;
 import com.qycx.MainActivity;
 import com.qycx.R;
 import com.qycx.base.util.Log;
+import com.qycx.base.util.ToastUtils;
 
 import pub.devrel.easypermissions.EasyPermissions;
 
@@ -200,9 +200,52 @@ public class avCallProc {
     }
 
 
+    /** 地图悬浮窗或全屏 {@link Activity_dlgTalk_av} 已打开时视为在会议中。 */
+    public static boolean isVideoMeetingUiActive() {
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        if (pQyMc == null) {
+            return false;
+        }
+        ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
+        if (pProcInfo == null || pProcInfo.pMisCnt == null) {
+            return false;
+        }
+        if (pQyMc.gui.hMainWnd instanceof MainActivity) {
+            MainActivity main = (MainActivity) pQyMc.gui.hMainWnd;
+            if (main.isMapFloatingAvUiVisible()) {
+                return true;
+            }
+        }
+        for (qmCommFunc_mis.IsTalkerQMem mem : pProcInfo.pMisCnt.isTalkerQ) {
+            if (mem == null || mem.m_talker == null || mem.m_talker.m_var == null) {
+                continue;
+            }
+            dlgTalkProc.DLG_TALK_var v = mem.m_talker.m_var;
+            for (int i = 0; i < v.tmp_hTools_dlgTalk_av.length; i++) {
+                if (v.tmp_hTools_dlgTalk_av[i] instanceof Activity_dlgTalk_av) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** @return true 表示已拦截（请勿再打开视频会议 UI） */
+    public static boolean blockDuplicateVideoMeetingStart() {
+        if (!isVideoMeetingUiActive()) {
+            return false;
+        }
+        ToastUtils.showToast("已在会议中");
+        return true;
+    }
+
     //
     public static int doTask_startAvCall(Object actParam, dlgTalkProc.DLG_TALK_var m_var, int level) {
         int iErr = -1;
+
+        if (blockDuplicateVideoMeetingStart()) {
+            return -1;
+        }
 
         //
         if (actParam == null) return -1;
@@ -257,6 +300,10 @@ public class avCallProc {
     //
     public static int talk_doAvCall(Object act, long talker_ui64Id, int level,boolean bStartConf) {
         int  iErr  =  -1;
+
+        if (blockDuplicateVideoMeetingStart()) {
+            return -1;
+        }
 
         //
         ctxQyMc.CCtxQyMc pQyMc =g_pQyMc;

@@ -38,6 +38,12 @@ public class sharedObjUsr {
             if (null == pSharedObjInfo) return null;
 
             pSharedObj = pSharedObjInfo.sharedObj;
+            if (pSharedObj == null) {
+                return null;
+            }
+            if (pSharedObj.var == null) {
+                pSharedObj.var = new qmcSharedObj.QY_SHARED_OBJ.QY_SHARED_OBJ_var();
+            }
             //
             if (pSharedObj.bUsed) {
                 if (pSharedObj.var.bQuit) {

@@ -142,11 +142,30 @@ int tmp_getPreAecData(GENERIC_Q   *  pQ,  TmpCache   *  pCache,  char  *  buf_o,
     TmpCache   *  pMem  =  pCache;//&pMgr->m_tmpRec.cache;
 
     do {
+        if (!pQ || !pMem || !buf_o || size <= 0) {
+            LOGE("tmp_getPreAecData: invalid params, size %d", size);
+            break;
+        }
+        if (size > (int)sizeof(pMem->buf)) {
+            LOGE("tmp_getPreAecData: size too large, size %d", size);
+            break;
+        }
+
+        if (pMem->startIndex < 0 || pMem->nLeft < 0 ||
+            pMem->startIndex > (int)sizeof(pMem->buf) ||
+            pMem->nLeft > (int)sizeof(pMem->buf) ||
+            pMem->startIndex + pMem->nLeft > (int)sizeof(pMem->buf)) {
+            LOGE("tmp_getPreAecData: cache state invalid, reset. start %d left %d",
+                 pMem->startIndex, pMem->nLeft);
+            pMem->startIndex = 0;
+            pMem->nLeft = 0;
+        }
         //
 
         //
         if (pMem->startIndex) {
-            memcpy(pMem->buf, pMem->buf + pMem->startIndex, pMem->nLeft);
+            // source/destination overlap here, must use memmove.
+            memmove(pMem->buf, pMem->buf + pMem->startIndex, pMem->nLeft);
             pMem->startIndex = 0;
         }
 
@@ -169,6 +188,10 @@ int tmp_getPreAecData(GENERIC_Q   *  pQ,  TmpCache   *  pCache,  char  *  buf_o,
 
             //
             len = pkt.len;
+            if (len <= 0 || len > sizeof(pkt.buf)) {
+                LOGE("tmp_getPreAecData: invalid packet len %u", len);
+                break;
+            }
             if (sizeof(pMem->buf) - (pMem->startIndex + pMem->nLeft) < len) {
                 LOGE("tmp_getPreAecData: too big audio data, skipped");
                 break;

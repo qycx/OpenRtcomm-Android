@@ -47,7 +47,7 @@ public class qmc_toShareVideo_post {
 
                 //  2010/09/04
                 qmcSharedObj.SHARED_OBJ_USR pSharedObjUsr = null;
-                if (null == pSharedObj) return iErr;
+                if (null == pSharedObj || !pSharedObj.bUsed || pSharedObj.var == null) return iErr;
                 pSharedObjUsr = getSharedObjUsr(pSharedObj, pSharedObj.var.iIndex_curUsr);
                 if (null == pSharedObjUsr) return iErr;
 

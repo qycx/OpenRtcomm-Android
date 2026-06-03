@@ -203,7 +203,7 @@ public class dlgTalk_videoConference {
                     qmcSharedObj.QY_SHARED_OBJ pSharedObj = null;
                     qmcSharedObj.SHARED_OBJ_USR pSharedObjUsr = null;
 
-                    pSharedObj = getSharedObjByIndex(pProcInfo, m_var.av.iIndex_sharedObj_localAv);
+                    pSharedObj = qmcSharedObj.qyFuncs.getActiveSharedObjByIndex(pProcInfo, m_var.av.iIndex_sharedObj_localAv);
                     if (null == pSharedObj) return iErr;
                     pSharedObjUsr = qmcVideoFunc.qyFuncs.getSharedObjUsr(pSharedObj, m_var.av.iIndex_usr_localAv);
                     if (null == pSharedObjUsr) return iErr;
@@ -311,7 +311,7 @@ public class dlgTalk_videoConference {
                 if (bRequestToSpeak) {
                     qmcSharedObj.QY_SHARED_OBJ pSharedObj = null;
 
-                    if (null == (pSharedObj = getSharedObjByIndex(pProcInfo, m_var.av.iIndex_sharedObj_localAv)))
+                    if (null == (pSharedObj = qmcSharedObj.qyFuncs.getActiveSharedObjByIndex(pProcInfo, m_var.av.iIndex_sharedObj_localAv)))
                         return iErr;
 
                     if (pSharedObj.var.iIndex_curUsr == m_var.av.iIndex_usr_localAv) {

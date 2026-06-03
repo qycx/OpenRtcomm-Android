@@ -27,6 +27,14 @@ int my_inStream4_toMix(void* p0, void* p1, void* p2, void* p3)
     int wBits = 16;
 
     do  {
+    if (!pAecLayout || !buf_o || size <= 0) {
+        LOGE("my_inStream4_toMix: invalid params, size %d", size);
+        break;
+    }
+    if (size > (int)sizeof(pMgr->mems[0].buf)) {
+        LOGE("my_inStream4_toMix: size too large, size %d", size);
+        break;
+    }
     //
     if (index_source < 0 || index_source >= pAecLayout->usCntLimit_activeMems_from) {
         //showInfo_open(0, 0, _T("my_inStream4_toMix failed, index_source err"));
@@ -34,6 +42,21 @@ int my_inStream4_toMix(void* p0, void* p1, void* p2, void* p3)
     }
     int  index_qMem=  index_source  +  1;
     TmpQMem * pMem = &pMgr->mems[index_qMem];
+    if (!pMem->bQInited) {
+        memset(buf_o, 0, size);
+        nRead = size;
+        iErr = 0;
+        break;
+    }
+    if (pMem->startIndex < 0 || pMem->nLeft < 0 ||
+        pMem->startIndex > (int)sizeof(pMem->buf) ||
+        pMem->nLeft > (int)sizeof(pMem->buf) ||
+        pMem->startIndex + pMem->nLeft > (int)sizeof(pMem->buf)) {
+        LOGE("my_inStream4_toMix: cache state invalid, reset. idx %d start %d left %d",
+             index_qMem, pMem->startIndex, pMem->nLeft);
+        pMem->startIndex = 0;
+        pMem->nLeft = 0;
+    }
 #if  0
     if (!pMem->idInfo.ui64Id) goto  errLabel;
     if (!pMem->tn_a) {
@@ -48,7 +71,8 @@ int my_inStream4_toMix(void* p0, void* p1, void* p2, void* p3)
 
     //
     if  (  pMem->startIndex)  {
-        memcpy(  pMem->buf,  pMem->buf  +  pMem->startIndex,  pMem->nLeft);
+        // overlapping move
+        memmove(  pMem->buf,  pMem->buf  +  pMem->startIndex,  pMem->nLeft);
         pMem->startIndex  =  0;
     }
 
@@ -74,6 +98,10 @@ int my_inStream4_toMix(void* p0, void* p1, void* p2, void* p3)
 
         //
         len  =  pkt.len;
+        if (len <= 0 || len > sizeof(pkt.buf)) {
+            LOGE("my_inStream4_toMix: invalid packet len %u", len);
+            break;
+        }
         if  (  sizeof(pMem->buf)  -  (  pMem->startIndex  +  pMem->nLeft )  <  len  ) {
             LOGE("my_inStream4_toMix: too big audio data, skipped");
             break;
