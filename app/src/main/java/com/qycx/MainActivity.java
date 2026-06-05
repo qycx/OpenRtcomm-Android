@@ -2742,6 +2742,10 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
         vPager = findViewById(R.id.vpager);
         vPager.setAdapter(mAdapter);
+        // 保留全部 Tab 的 Fragment/View，避免切到消息/联系人时地图 onDestroyView 后再次进入全量重载。
+        if (pQyMc.appParams.bENABLE_MAP_TAB) {
+            vPager.setOffscreenPageLimit(PAGE_FOUR);
+        }
         vPager.addOnPageChangeListener(this);
         //
         if (pQyMc.appParams.bENABLE_MAP_TAB) {

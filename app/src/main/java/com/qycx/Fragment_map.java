@@ -1231,6 +1231,8 @@ public class Fragment_map extends Fragment {
     private Sensor rotationVectorSensor;
     private SensorEventListener headingListener;
     private boolean hasCenteredOnFirstFix;
+    /** 当前 mapView 生命周期内 onResume 次数；用于避免每次回到地图都自动「定位全员」拉镜头。 */
+    private int mapViewResumeCount;
     private final Map<Long, RemoteLoc> remoteLocs = new HashMap<>();
     private final Set<Long> syntheticRemoteIds = new HashSet<>();
     private final Map<Long, LatLng> syntheticRemoteCenters = new HashMap<>();
@@ -2052,6 +2054,7 @@ public class Fragment_map extends Fragment {
             }
             return false;
         });
+        mapViewResumeCount = 0;
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(map -> {
             mapLibreMap = map;
@@ -4644,10 +4647,13 @@ public class Fragment_map extends Fragment {
                 tryLocateAndMark();
             }
         }
-        // 默认关闭跟随后，进入地图优先定位全员（含自己）；若暂未收到他人坐标，后续定位消息会持续更新图标。
+        // 仅在本轮 mapView 首次 onResume 时自动定位全员；Tab 切回地图不再拉镜头。
         if (mapView != null) {
-            mapView.removeCallbacks(scheduledLocateAllMembersRunnable);
-            mapView.postDelayed(scheduledLocateAllMembersRunnable, 3000);
+            mapViewResumeCount++;
+            if (mapViewResumeCount == 1) {
+                mapView.removeCallbacks(scheduledLocateAllMembersRunnable);
+                mapView.postDelayed(scheduledLocateAllMembersRunnable, 3000);
+            }
         }
     }
 
