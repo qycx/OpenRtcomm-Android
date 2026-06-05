@@ -34,7 +34,7 @@ import com.qycx.base.ctxQyMc;
 import com.qycx.base.network.NetworkConnectChangedReceiver;
 import com.qycx.base.qyMcMain_global;
 import com.qycx.base.util.Log;
-import com.qysd.base.mapExtTmpl;
+import com.qysd.base.MapExtTmpl;
 import com.tencent.bugly.crashreport.CrashReport;
 
 import java.io.File;
@@ -57,7 +57,7 @@ public class MyApplication extends Application implements LifecycleObserver, onA
     private final NetworkConnectChangedReceiver networkConnectChangedReceiver = new NetworkConnectChangedReceiver();
 
     //
-    public mapExtTmpl m_mapExt;
+    public MapExtTmpl m_pMapExt;
 
     //
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
@@ -66,8 +66,8 @@ public class MyApplication extends Application implements LifecycleObserver, onA
         super.onCreate();
 
         //
-        m_mapExt =  new myMapExt();
-        m_mapExt.Application_onCreate_init();
+        m_pMapExt =  new myMapExt();
+        m_pMapExt.Application_onCreate_init();
 
         //
         GlobalCrashHandler.getInstance()

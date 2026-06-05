@@ -117,8 +117,10 @@ public static class Consts
     //
     public final static int CONST_imCommType_transferGpsInfo = (CONST_imCommType_base + 600);           //  2012/04/19
     public final static int CONST_imCommType_transferGpsReplyInfo = (CONST_imCommType_base + 601);      //  2012/04/19
-    public final static int CONST_imCommType_transferGpsData = (CONST_imCommType_base + 602);           //  2012/04/20
-    public final static int CONST_imCommType_transferGpsDataResp = (CONST_imCommType_base + 603);       //  2012/04/20
+
+    //
+    public final static int CONST_imCommType_locDataReq = (CONST_imCommType_base + 602);       //  2012/04/20
+    public final static int CONST_imCommType_transferLocData = (CONST_imCommType_base + 603);           //  2012/04/20
 
     //  2012/08/05
     public final static int CONST_imCommType_ptzControlReq = (CONST_imCommType_base + 710);
@@ -163,6 +165,7 @@ public static class Consts
                                                                                         //
     public final static int CONST_imCommType_procOfflineRes = (CONST_imCommType_base + 1011);      //  2015/08/01
 
+    public final static int CONST_imCommType_procLocReq  =	(  CONST_imCommType_base  +  1012  );		//  2026/05/28
 
     //  
     public final static int CONST_imCommType_qmdStatus = (CONST_imCommType_base + 1050);       //  2011/01/08

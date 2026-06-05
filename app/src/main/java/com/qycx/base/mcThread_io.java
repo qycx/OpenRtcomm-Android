@@ -1559,6 +1559,11 @@ public class mcThread_io {
                     }
 
                     //
+                    if  (  pChannel.uiType==CONST_channelType_talking)  {
+                        if  (  msgHead.uiTranNo  ==  1024)  {
+                            Log.d("at","1024");
+                        }
+                    }
                     if  (  pChannel.uiType==CONST_channelType_media) {
                         if  (  false  ) {
                             //Log.d("tn_msgInput", "video_R ...: msgHead.tn " + msgHead.uiTranNo);

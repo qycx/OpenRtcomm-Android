@@ -1306,7 +1306,8 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         //
-        pProcInfo.m_mapExt = ((MyApplication)getApplication()).m_mapExt;
+        pProcInfo.m_pMapExt = ((MyApplication)getApplication()).m_pMapExt;
+        pProcInfo.m_pMapExt.m_var.pProcInfo=pProcInfo;
 
         //
         if(sp.getBoolean(Str_use100k_ifP2p,false)){

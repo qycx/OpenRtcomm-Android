@@ -12,6 +12,7 @@ import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_getCfgsReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_htmlContent;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_lStream;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_messengerAccount;
+import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_procLocReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_retrieveContactListReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_retrieveContactListResp;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_retrieveImGrpListReq;
@@ -59,6 +60,7 @@ import static com.qycx.base.qyMcMainDaemon_isCli.qyFuncs.updateMeDisplayInfo;
 import static com.qycx.base.qyWmComm.Consts.CONST_qyWmParam_allContactsRetrieved;
 import static com.qycx.base.qyWmComm.Consts.CONST_qyWmParam_showHint;
 import static com.qycx.base.qyWmComm.Consts.CONST_qyWm_postComm;
+import static com.qycx.base.tmpFunc.qyFuncs._T;
 import static com.qycx.base.tmpFunc.qyFuncs.myGetTickCount;
 import static com.qycx.base.tmpFunc.qyFuncs.myWaitOne;
 
@@ -127,7 +129,65 @@ public class qyMcMainDaemon_isCli_scheduler {
 
         }
 
+        //
+        static int mcProcResp_procLocReq(qyMtSock.MT_SUBTHREADINFO pSubThreadInfoParam, qmCommFunc_mis.MIS_CNT pMisCnt, qnmCommProc_mis.MIS_MSG_INPUT pMsgInput, ctxMcThread.CTX_MC_thread pCtx) {
+            int iErr = -1;
+            ctxQmc.CCtxQmc pProcInfo = pMisCnt.pProcInfoParam;
+            ctxQyMc.CCtxQyMc pQyMc = pProcInfo.pQyMc;
+            qnmCommProc_mis.IM_CONTENTU pContent = null;
 
+            //TCHAR tBuf[255 + 1] = "";
+
+            if (isUcFlgRouteTalkData(pMsgInput.ucFlg)) return iErr;
+            //
+            //if (isUcFlgTalkData(pMsgInput.ucFlg)) return iErr;
+            //
+            pContent = pMsgInput.data.buf;
+
+            if (null == pContent) return iErr;
+
+            boolean tmp_bErr=false;
+
+            do {
+                switch (pContent.uiType) {
+                    //  case  CONST_imCommType_intervalParams:
+                    case CONST_imCommType_procLocReq:       //  2011/01/30
+                        qnmCommProc_mis.ProcLocReq_getCfgs getCfgsReq = (qnmCommProc_mis.ProcLocReq_getCfgs) pContent;
+
+                        if (getCfgsReq.resp.idInfo_locServ == 0) {
+                            Log.d("at", "Warning: mcProcResp_procLocReq, idInfo_serv is 0");
+                            tmp_bErr=true;
+                            break;
+                        }
+
+                        pProcInfo.m_pMapExt.m_var.locServIdInfo=getCfgsReq.resp.idInfo_locServ;
+                        pProcInfo.m_pMapExt.m_var.mapServCfgStr=getCfgsReq.resp.mapServCfgStr;
+
+                        //
+                        break;
+                    default: {
+                        String str = "mcProcResp_getCfgs err: unprocessed uiContentType ( " + pContent.uiType + " )";
+                        Log.e(str);
+                    }
+                    return iErr;
+                }
+                if  (  tmp_bErr)  {
+                    break;
+                }
+
+                iErr = 0;
+
+            } while(false);
+
+            return iErr;
+
+        }
+
+
+
+
+
+        //
         public static int mcProcResp_refreshImGrps(qyMtSock.MT_SUBTHREADINFO pSubThreadInfo, qmCommFunc_mis.MIS_CNT pMisCnt, qnmCommProc_mis.RETRIEVE_IMGRPLIST_RESP pResp, ctxMcThread.CTX_MC_thread pCtx) {
             int iErr = -1;
 
@@ -657,7 +717,11 @@ public class qyMcMainDaemon_isCli_scheduler {
                     if (0 != mcProcResp_getCfgs(pSubThreadInfo, pMisCnt, pMsgInput, pCtx))
                         return iErr;
                     break;
-                /**/
+
+                case  CONST_imCommType_procLocReq:
+
+                    mcProcResp_procLocReq(pSubThreadInfo,pMisCnt,pMsgInput,pCtx);
+                      break;
 
                 //
                 default: {

@@ -136,7 +136,7 @@ public class qyMcMainMediaReceiver {
 
                     }
                     break;
-                case CONST_imCommType_transferGpsData:       //  2012/04/24
+                case CONST_imCommType_transferLocData:       //  2012/04/24
 
                     break;
 
@@ -241,7 +241,8 @@ public class qyMcMainMediaReceiver {
 
                     }
                     break;
-                case CONST_imCommType_transferGpsData:       //  2012/04/24
+                case CONST_imCommType_transferLocData:       //  2012/04/24
+                    Log.d("at“，”l2445");
 
                     break;
 

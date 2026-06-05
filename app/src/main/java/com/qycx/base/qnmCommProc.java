@@ -241,7 +241,10 @@ public class qnmCommProc {
         public final static short CONST_qnmCfgId_idInfo_logicalPeer = (CONST_qnmCfgId_base_common + 2502);               //  file server  需要使用logicalPeer的概念。其他的应该使用grp_related.
         //
         public final static short CONST_qnmCfgId_idInfo_grp_related = (CONST_qnmCfgId_base_common + 2503);               //  2015/07/30.
-        public final static short CONST_qnmCfgId_idInfo_resServ = (CONST_qnmCfgId_base_common + 2504);               //  2015/08/01
+        //
+        public final static short CONST_qnmCfgId_idInfo_serv = (CONST_qnmCfgId_base_common + 2504);               //  2015/08/01
+
+        //
         public final static short CONST_qnmCfgId_idInfo_sender = (CONST_qnmCfgId_base_common + 2505);                //  2015/08/07
         public final static short CONST_qnmCfgId_idInfo_creator = (CONST_qnmCfgId_base_common + 2506);               //  2017/07/27
         public final static short CONST_qnmCfgId_idInfo_initiator = (CONST_qnmCfgId_base_common + 2507);
@@ -253,6 +256,9 @@ public class qnmCommProc {
 
 
         public final static short CONST_qnmCfgId_idInfo_nvr = (CONST_qnmCfgId_base_common + 2512);
+
+        //
+        public final static short CONST_qnmCfgId_mapServCfgStr  =						(  CONST_qnmCfgId_base_common  +  2513  );
 
 
         //
@@ -475,6 +481,9 @@ public class qnmCommProc {
         //  gps
         public final static short CONST_qnmCfgId_iLaInM10000f = (CONST_qnmCfgId_base_common + 6200);         //  4200. 2012/04/20
         public final static short CONST_qnmCfgId_iLoInM10000f = (CONST_qnmCfgId_base_common + 6201);         //
+        //
+        public final static short CONST_qnmCfgId_locStr  =		(  CONST_qnmCfgId_base_common  +  6202  );
+
 
         //  ptz
         public final static short CONST_qnmCfgId_nAddr = (CONST_qnmCfgId_base_common + 6300);            //  4300, 2012/08/07

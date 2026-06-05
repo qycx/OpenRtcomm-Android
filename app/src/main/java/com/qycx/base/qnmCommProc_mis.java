@@ -521,6 +521,14 @@ public class qnmCommProc_mis {
         public final static int bufSize_decObj_mediaCodec_tmpDataBuf  =   500000;//300000;
         public final  static int bufSize_encV_tmpDataBuf  =  300000;
 
+        //
+        //
+        public final static int CONST_procLocReqSubtype_null  =						0;
+        public final static int  CONST_procLocReqSubtype_getCfgs  =						1;
+
+        //
+        public final static int MAX_transferLocDataMems	  =									64;
+
 
 
     }
@@ -2298,7 +2306,51 @@ public class qnmCommProc_mis {
 
     ;
 
+    //////////////////////////////////////////////////
 
+    //
+    public static class ProcLocReq_common extends IM_CONTENTU {
+
+        //public int uiType;
+        public byte ucbResp;
+        public short usSubtype;
+
+
+    };
+
+    //
+    public static class ProcLocReq_getCfgs extends ProcLocReq_common
+    {
+        public static class ProcLocReq_getCfgs_resp {
+            public long							idInfo_locServ;
+            public  String						mapServCfgStr;
+        };
+
+        //
+        ProcLocReq_getCfgs_resp resp;
+
+
+        //
+        public ProcLocReq_getCfgs()
+        {
+            resp = new ProcLocReq_getCfgs_resp();
+            resp.mapServCfgStr="";
+            //
+            return;
+        }
+
+    }		 ;
+
+
+
+
+
+
+
+    //////////////////////////////////////////////
+
+
+    //
     public static class AEC_cfg {
         boolean bUseAec;                                   //  2013/05/25
 
@@ -2765,6 +2817,74 @@ public class qnmCommProc_mis {
         public qyDefs.QY_MESSENGER_ID idInfo = new qyDefs.QY_MESSENGER_ID();
         public AV_stream_simple obj = new AV_stream_simple();
     }
+
+
+    /////////////
+    //
+    public static class AncLocData{
+        //
+        public int												iLaInM10000f;
+        public int												iLoInM10000f;
+
+        //
+        public String                                            locStr  =  "";
+
+
+    };
+
+
+
+    //
+    public static class TransferLocDataMem								{
+
+        //
+        qyDefs.QY_MESSENGER_ID idInfo=new qyDefs.QY_MESSENGER_ID();
+        //
+        AncLocData											locData=new AncLocData();
+
+    }		 ;
+
+
+//
+    public static class TransferLocData extends IM_CONTENTU {
+        //unsigned  int										uiType;
+
+        //
+        public long 									idInfo_imGrp_related;
+
+        //
+    public short								tmpInternal_usCnt_mems;
+
+        //
+    public short									usCnt;
+        TransferLocDataMem		[]							mems;
+
+        public TransferLocData()
+        {
+            mems =new TransferLocDataMem[Consts.MAX_transferLocDataMems];
+            int  i;
+            for  ( i=0;i<mems.length;i++ )  {
+                mems[i]=new TransferLocDataMem();
+            }
+            //
+            return;
+        }
+
+    }		 ;
+
+
+    //
+    public static class LocDataReq extends IM_CONTENTU{
+        //unsigned  int									uiType;
+        //
+        public long 								idInfo_imGrp_related;
+        //
+        public AncLocData										locData=new AncLocData();
+
+    }		 ;
+
+
+
 
     /**
      * 申请发言的包
