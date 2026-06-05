@@ -2818,6 +2818,20 @@ public class isProtocolFunc {
                         return iErr;
                     break;
 
+                    //
+                case  CONST_imCommType_procLocReq:
+                    //
+                    if (0>(lenInBytes=procLocReqU2Stream(pContent.uiType, (qnmCommProc_mis.ProcLocReq_common) pContent, content_buffer) ) )  {
+                        return iErr;
+                    }
+                    break;
+                case  CONST_imCommType_locDataReq:
+                    //Log.d("at","locDataReq.l2827");
+                    if (0>(lenInBytes=locDataReq2Stream(pContent.uiType, (qnmCommProc_mis.LocDataReq) pContent, content_buffer)) ) {
+                        return  iErr;
+                    }
+                    break;
+                //
                 case  CONST_imCommType_qisCaReq:
                     if (0>(lenInBytes=qisCaReq2Stream(pContent.uiType, (qnmCommProc_mis.QIS_ca_req)  pContent, content_buffer))) {
                         return iErr;
@@ -2998,6 +3012,393 @@ public class isProtocolFunc {
             return total_len;
         }
 
+        /////////////////////////////////////////
+        ////////////////////////////////////////
+
+        public  static int  procLocReqU2Stream(int  uiStreamId, qnmCommProc_mis.ProcLocReq_common pReq, ByteBuffer ptr)
+        {
+            int				iErr = -1;
+            int				i = 0;
+            int		len = -1;//*uiBufSize;
+            int total_len = 0;
+            boolean tmp_bErr=false;
+
+
+            if (null==pReq)  return  -1;
+            if (null==ptr)  return  -1;
+
+            do {
+                len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_start, uiStreamId, 0, ptr);
+                if (len <= 0)  break;
+                total_len+=len;
+
+                if (pReq.ucbResp!=0) {
+                    len = data2Stream(CONST_qyDataType_char, CONST_qnmCfgId_ucbResp, pReq.ucbResp, 0, ptr );
+                    if  (  len<=0) break;
+                    total_len+=len;
+                }
+
+                //
+                if (pReq.usSubtype!=0) {
+                    len = data2Stream(CONST_qyDataType_short, CONST_qnmCfgId_subtype, pReq.usSubtype, 0, ptr);
+                    if(len<=0)break;
+                    total_len+=len;
+                }
+
+                //
+                switch (pReq.usSubtype) {
+                    case CONST_procOfflineResSubtype_getCfgs: {
+                        qnmCommProc_mis.ProcLocReq_getCfgs getCfgs = (qnmCommProc_mis.ProcLocReq_getCfgs) pReq;
+
+                        //
+                        if (getCfgs.resp.idInfo_locServ!=0) {
+                            len=data2Stream(CONST_qyDataType_l64, CONST_qnmCfgId_idInfo_serv, getCfgs.resp.idInfo_locServ, Long.BYTES, ptr);
+                            if  (  len<=0)  {
+                                tmp_bErr=true;
+                                break;
+                            }
+                            total_len+=len;
+                        }
+                        //
+                        if (getCfgs.resp.mapServCfgStr.length()!=0) {
+                            len = data2Stream(CONST_qyDataType_str, CONST_qnmCfgId_mapServCfgStr, getCfgs.resp.mapServCfgStr, getCfgs.resp.mapServCfgStr.length(), ptr);
+                            if  (  len <=0  ) {
+                                tmp_bErr=true;
+                                break;
+                            }
+                            total_len+=len;
+                        }
+
+                    }
+                        //
+                        break;
+
+                    default:
+                        break;
+                }
+                if  ( tmp_bErr) {
+                    break;
+                }
+
+
+                len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_null, 0, 0, ptr  );
+                if  (  len <=0)  {
+                    break;
+                }
+                total_len+=len;
+
+                //
+                iErr = 0;
+
+
+            } while (false);
+
+
+            return  (  iErr!=0 )  ?  iErr  :  total_len;
+
+        }
+
+
+
+        public static PF_handler_stream2Data tmpHandler_stream2ProcLocReqU = (isProtocolFunc.CTX_stream2Data pCtx, Object p0, Object p1, int uiStreamId, qnmCommProc.QY_CFGITEM pItem) ->
+        {
+
+            int						iErr = -1;
+            //  p0;
+            qnmCommProc_mis.ProcLocReq_common pContent = (qnmCommProc_mis.ProcLocReq_common) p1;
+            //  QY_CFGITEM				*	pItem		=	(  QY_CFGITEM  *  )p2;
+            //  long						lVal;
+
+            if (null==pContent)  return -1;//goto  errLabel;
+
+            short  tmp_cfgId;
+            //memcpy(&tmp_cfgId, &pItem->head.cfgId, sizeof(short));
+            tmp_cfgId=pItem.cfgId;
+
+            do {
+                //
+                switch (uiStreamId) {
+                    case CONST_imCommType_procLocReq:
+                        switch (tmp_cfgId) {
+                            case CONST_qnmCfgId_start:
+                                pContent.uiType = uiStreamId;
+                                break;
+                            case CONST_qnmCfgId_ucbResp:
+                                pContent.ucbResp = getFieldData_byte(pItem);
+                                break;
+                            case CONST_qnmCfgId_subtype:
+                                if (pContent.usSubtype != 0) return -1;
+                                pContent.usSubtype = getFieldData_short(pItem);
+                                break;
+                            default:
+                                break;
+                        }
+                    default:
+                        break;
+                }
+
+                //
+                if (pContent.usSubtype == CONST_procLocReqSubtype_getCfgs) {
+                    qnmCommProc_mis.ProcLocReq_getCfgs getCfgs = (qnmCommProc_mis.ProcLocReq_getCfgs) pContent;
+                    switch (uiStreamId) {
+                        case CONST_imCommType_procLocReq:
+                            //
+                            switch (tmp_cfgId) {
+                                case CONST_qnmCfgId_idInfo_serv:
+                                    getCfgs.resp.idInfo_locServ = getFieldData_l64(pItem);
+                                    break;
+                                case CONST_qnmCfgId_mapServCfgStr: {
+                                    getCfgs.resp.mapServCfgStr = getFieldData_str(pItem);
+
+                                }
+                                break;
+                                default:
+                                    break;
+                            }
+                            //
+                            break;
+                        default:
+                            break;
+
+                    }
+                    //
+                    iErr = 0;  break;
+                }
+
+
+                iErr = 0;
+
+            } while(false);
+
+            errLabel:
+            return  iErr;
+        };
+
+
+
+
+        //public  static int  procLocReqU2Stream(int  uiStreamId, qnmCommProc_mis.ProcLocReq_common pReq, ByteBuffer ptr)
+
+        /////
+        public static int  locDataReq2Stream(int  uiStreamId, qnmCommProc_mis.LocDataReq pReq, ByteBuffer ptr)
+        {
+            int				iErr = -1;
+            int				i = 0;
+            int		len = -1;//*uiBufSize;
+            int total_len = 0;
+            boolean tmp_bErr=false;
+
+
+
+            if (null==pReq)  return  -1;
+            if (null==ptr)  return  -1;
+
+            do {
+                len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_start, uiStreamId, 0,  ptr);
+                if  (  len<=0) {
+                    break;
+                }
+                total_len  +=  len;
+
+                /*
+                if (pReq.ucbResp) {
+                    if (data2Stream(CONST_qyDataType_char, CONST_qnmCfgId_ucbResp, ( void*)
+                    pReq -> common.ucbResp, 0, &ptr, &len))  goto errLabel;
+                }
+
+                 */
+
+                //
+                if (pReq.idInfo_imGrp_related !=0) {
+                    len = data2Stream(CONST_qyDataType_l64, CONST_qnmCfgId_idInfo_grp_related, pReq.idInfo_imGrp_related, Long.BYTES, ptr);
+                    if  (  len<=0)  {
+                        break;
+                    }
+                    total_len+=len;
+                }
+
+                //
+                if (pReq.locData.locStr.length()!=0) {
+                    len = data2Stream(CONST_qyDataType_str, CONST_qnmCfgId_locStr, pReq.locData.locStr, pReq.locData.locStr.length(), ptr);
+                    if  (  len  <=0)  {
+                        break;
+                    }
+                    total_len  +=  len;
+                }
+
+
+                //
+                len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_null, 0, 0, ptr);
+                if  ( len  <=0)  {
+                    break;
+                }
+                total_len+=len;
+
+                //
+                iErr = 0;
+
+
+            } while(false);
+
+            return  iErr!=0  ?  iErr  :  total_len  ;
+
+        }
+
+
+        /*
+
+
+        int  tmpHandler_stream2LocDataReq(CTX_stream2Data* pCtx, void* p0, void* p1, unsigned  int  uiStreamId, QY_CFGITEM_ntoh_U* pItem)
+        {
+            int						iErr = -1;
+            //  p0;
+            LocDataReq* pContent = (LocDataReq*)p1;
+            //  QY_CFGITEM				*	pItem		=	(  QY_CFGITEM  *  )p2;
+            //  long						lVal;
+
+            if (!pContent)  goto  errLabel;
+
+            unsigned  short  tmp_cfgId;
+            memcpy(&tmp_cfgId, &pItem->head.cfgId, sizeof(short));
+
+            switch (uiStreamId) {
+                case  CONST_imCommType_locDataReq:
+                    switch (tmp_cfgId) {
+                        case  CONST_qnmCfgId_start:
+                            pContent->uiType = uiStreamId;
+                            break;
+                        case  CONST_qnmCfgId_idInfo_grp_related:
+                            if (getFieldData_l64(pItem, (__int64*) & pContent->idInfo_imGrp_related.ui64Id))    goto  errLabel;
+                            break;
+                        case  CONST_qnmCfgId_locStr:
+                            if (getFieldData_str(pItem, pContent->locData.locStr,  mycountof(pContent->locData.locStr)))  goto  errLabel;
+                            break;
+                        default:
+                            break;
+                    }
+                default:
+                    break;
+            }
+
+            //
+
+
+
+            iErr = 0;
+            errLabel:
+            return  iErr;
+        }
+
+         */
+
+        public static isProtocolFunc.PF_handler_stream2Data tmpHandler_stream2TransferLocData = (isProtocolFunc.CTX_stream2Data pCtx, Object p0, Object p1, int uiStreamId, qnmCommProc.QY_CFGITEM pItem) ->
+        {
+            int iErr = -1;
+            //  p0;
+            qnmCommProc_mis.TransferLocData pContent = (qnmCommProc_mis.TransferLocData) p1;
+            //  QY_CFGITEM					*	pItem		=	(  QY_CFGITEM  *  )p2;
+            //  long						lVal;
+
+            if (null == pContent) return iErr;
+
+            int tmp_cfgId;
+            tmp_cfgId = pItem.cfgId;
+            //
+            int  uiStreamId_parent; uiStreamId_parent = 0;
+            if (pCtx.index_streamId > 0) {
+                uiStreamId_parent = pCtx.uiStreamIds[pCtx.index_streamId - 1];
+            }
+
+            boolean  tmp_bErr=false;
+
+            //
+            do {
+                //
+                switch (uiStreamId) {
+                    case CONST_imCommType_transferLocData:
+                        switch (tmp_cfgId) {
+                            case CONST_qnmCfgId_start:
+                                pContent.uiType = uiStreamId;
+                                break;
+                            case CONST_qnmCfgId_idInfo_grp_related: {
+
+                                //pContent.idInfo_imGrp_related.ui64Id =((qnmCommProc.QY_CFGITEM_L64)pItem).ulVal;
+                                pContent.idInfo_imGrp_related = getFieldData_l64(pItem);
+                            }
+                            break;
+                            case CONST_qnmCfgId_usCnt:
+                                pContent.usCnt = getFieldData_short(pItem);
+
+                                if (pContent.usCnt > pContent.mems.length) {
+                                    tmp_bErr=true;
+                                    break;
+
+                                }
+
+                                //  ÏÂÃæÒª½øÐÐ³õÊ¼»¯£¬·ÅÔÚÕâÀïÊÇÒòÎªµ£ÐÄÏÂÃæµÄÊý¾ÝÈç¹û³ö´í£¬usCnt½«°üº¬ÁËÒ»Ð©´íÎóÊý¾Ý
+                                int i;
+                                for (i = 0; i < pContent.usCnt; i++) {
+                                    //memset( & pContent -> mems[i], 0, sizeof(pContent -> mems[i])  )
+                                    ;
+                                }
+                                break;
+
+                            default:
+                                break;
+                        }
+                        break;
+                    case  CONST_imCommType_mem:  {
+                        qnmCommProc_mis.TransferLocDataMem pMem =null;
+
+                        if  (  pContent.tmpInternal_usCnt_mems  >=  pContent.mems.length  )  {
+                            Log.d("at","tmpHandler_stream2TransferAudioData failed: usCnt_mems is too big"  );
+                            tmp_bErr=true;
+                            break;
+                        }
+                        //
+                        pMem  =  pContent.mems[pContent.tmpInternal_usCnt_mems];
+                        switch  (  tmp_cfgId  )  {
+                            case  CONST_qnmCfgId_messengerId:
+                                pMem.idInfo.ui64Id=getFieldData_l64(pItem );
+                                break;
+                            case  CONST_qnmCfgId_iLaInM10000f:
+                                  pMem.locData.iLaInM10000f=getFieldData_long(  pItem );
+                                break;
+                            case  CONST_qnmCfgId_iLoInM10000f:
+                                pMem.locData.iLoInM10000f=getFieldData_long(  pItem);
+                                break;
+                            case  CONST_qnmCfgId_locStr:
+                                pMem.locData.locStr= getFieldData_str(pItem);
+                                break;
+                            //
+                            case  CONST_qnmCfgId_null:
+                                pContent.tmpInternal_usCnt_mems  ++  ;
+                                break;
+                            default:
+                                break;
+                        }
+
+
+                    }
+                          break;
+                    default:
+                        break;
+                }
+                //
+                if  (  tmp_bErr)  {
+                    break;
+                }
+
+                iErr = 0;
+
+            } while(false);
+
+            return iErr;
+        };
+
+
+
+
         /*
         public static int messengerAccount2Stream(int uiStreamId, qnmCommProc_mis.QY_MESSENGER_ACCOUNT pPcInfo, ByteBuffer ptr) {
             int iErr = -1;
@@ -3013,6 +3414,8 @@ public class isProtocolFunc {
             total_len += len;
 
          */
+
+
 
 
             //
@@ -3499,6 +3902,21 @@ public class isProtocolFunc {
                         if (0 > stream2Data(data, size, isProtocolFunc.qyFuncs.filterStream_is, tmpHandler_stream2ConfReq, null, pContent))
                             return null;
                         break;
+
+                    case  CONST_imCommType_transferLocData:
+                        pContent=new qnmCommProc_mis.TransferLocData();
+                        if  (  0>stream2Data(  data,  size,  filterStream_is,  tmpHandler_stream2TransferLocData,  null,  pContent  )  ) {
+                            return null;
+                        }
+                        break;
+
+                    case CONST_imCommType_procLocReq:
+                         pContent=new qnmCommProc_mis.ProcLocReq_getCfgs();
+                         if  (  0  >  stream2Data(data,size,filterStream_is,tmpHandler_stream2ProcLocReqU,null,pContent)) {
+                             return null;
+                         }
+                         break;
+
                     default: {
                         String str = "qyntohRouteTalkData failed: uiContentType " + uiContentType + " error";
                         Log.w(str);

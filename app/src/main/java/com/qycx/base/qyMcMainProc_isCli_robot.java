@@ -32,7 +32,8 @@ import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferFile
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferFileEndResp;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferFileReplyReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferFileReq;
-import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferGpsDataResp;
+
+import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferLocData;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferVideoData;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferVideoDataResp;
 import static com.qycx.base.isFunc.qyFuncs.CONST_channelTypeTable;
@@ -120,6 +121,7 @@ import static com.qycx.base.qyq2.qyFuncs.initQyQ2;
 import static com.qycx.base.smplFunc_a.qyFuncs.smplBitstreamReader_ReadNextFrame_func_a;
 import static com.qycx.base.taskAv.qyFuncs.M_getMutexName_syncActiveMem;
 import static com.qycx.base.taskAvProc.qyFuncs.adjustModuleType_decA;
+import static com.qycx.base.tmpFunc.qyFuncs._T;
 import static com.qycx.base.tmpFunc.qyFuncs.byte2bool;
 import static com.qycx.base.tmpFunc.qyFuncs.myGetTickCount;
 import static com.qycx.base.tmpProc.qyFuncs.clearShiftKeys;
@@ -1497,6 +1499,38 @@ public class qyMcMainProc_isCli_robot {
                     guiShare.GuiShare.pf_PostMessage.call(pQyMc.gui.hMainWnd, CONST_qyWm_postComm, CONST_qyWmParam_msgArrive, 0);
                     break;
                 }
+                //
+                case  CONST_imCommType_transferLocData:  {
+
+
+                    qnmCommProc_mis.TransferLocData pReq	=	null;
+
+                    //
+                    bRemoveIfErr  =  false;
+
+                    //  2009/02/25
+                    startChannel(  pProcInfo,  pMisCnt,  pChannel,  _T(  "proc transferGpsData"  )  );
+
+                    //
+                    pMsgInput.lenInBytes  =  sizeof_MIS_MSG_routeTalkData();//Math.min(  sizeof_MIS_MSG_routeTalkData,  offsetof(  MIS_MSG_routeTalkData,  buf  )  +  sizeof(  TransferLocData  )  );
+                    //
+                    pReq  =  (qnmCommProc_mis.TransferLocData) pContent;
+                    //
+                    len = 10;//offsetof(MIS_MSG_INPUT, data) + pMsgInput->lenInBytes;
+
+                    pMsgInput.addr_logicalPeer.idInfo.ui64Id = pReq.idInfo_imGrp_related;
+
+                    if (0!=qPostMsg(pMsgInput, pQyMc.gui.processQ)) {
+                        Log.d("at","mcThreadProc_mis_work(  ): qPostMsg(  ) failed");
+                        return  iErr;
+                    }
+                    guiShare.GuiShare.pf_PostMessage.call(pQyMc.gui.hMainWnd, CONST_qyWm_postComm, CONST_qyWmParam_msgArrive, 0);
+
+                    break;
+
+                }
+
+                //
                 default:
                     str = String.format("procMsgInput_other_req: unprocessed contentType " + pContent.uiType);
                     Log.e(str);
@@ -1893,6 +1927,7 @@ public class qyMcMainProc_isCli_robot {
 
                         break;
 
+                        /*
                     case CONST_imCommType_transferGpsDataResp:
                         bRemoveIfErr = false;
 
@@ -1903,6 +1938,8 @@ public class qyMcMainProc_isCli_robot {
                         }
 
                         break;
+
+                         */
 
                     default:
                         break;
@@ -2064,6 +2101,10 @@ public class qyMcMainProc_isCli_robot {
             //
             int uiChannelType = CONST_channelType_robot;
 
+            //
+            long lastTickCnt_chkChannel = 0;
+
+            //
             String str;
 
             ctx = new ctxMcThread.CTX_MC_thread();
@@ -2162,7 +2203,37 @@ public class qyMcMainProc_isCli_robot {
 
                 }
 
+                //
+                boolean  bNeedChkChannel;  bNeedChkChannel = false;
+                //
+                if (0==(loopCtrl % 2))
+                {
+                    long  tickCnt0 = myGetTickCount(null);
+                    int  lDiffInMs = (int)(tickCnt0 - lastTickCnt_chkChannel);
+                    if (Math.abs(lDiffInMs) > 1000) {
+                        bNeedChkChannel = true;
+                        //
+                        lastTickCnt_chkChannel = tickCnt0;
+                    }
+                }
 
+                //
+                if (bNeedChkChannel) {
+                    //
+                    if (pProcInfo.status.tasksStatus.bTaskExists_file  ||  pProcInfo.status.tasksStatus.bExists_locDataReq  ) {
+                        qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo.pMisCnt;//.getMisCntByName((""));
+                        if (null==pMisCnt)  break;
+
+                        //
+                        //traceLog((TCHAR*)_T("media: taskExists_av true, try to startChannel "));
+                        //
+                        startChannel(pProcInfo, pMisCnt, getChannelByType(pMisCnt, uiChannelType), ("robot: taskExists_file or bExists_locDataReq true, try to startChannels"));
+                    }
+                }
+
+
+
+                //
                 if (0 == (loopCtrl % 5)) {
 
                     //  ÏÂÃæ×¢Òâ°Ñ²»ÓÃµÄÍ¨µÀ¸ø»ØÊÕ»ØÀ´

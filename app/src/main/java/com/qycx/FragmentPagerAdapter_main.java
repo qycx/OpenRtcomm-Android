@@ -34,7 +34,7 @@ public class FragmentPagerAdapter_main extends FragmentPagerAdapter {
         //
         if (pQyMc.appParams.bENABLE_MAP_TAB) {
             //
-            mFragment_map = pProcInfo.m_mapExt.new_Fragment_map();
+            mFragment_map = pProcInfo.m_pMapExt.new_Fragment_map();
             pagerCount = 4;
         }
         else {

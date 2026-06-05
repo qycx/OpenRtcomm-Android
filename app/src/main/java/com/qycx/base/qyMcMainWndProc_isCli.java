@@ -21,6 +21,7 @@ import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_taskProcReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferAudioData;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferAvReplyInfo;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferFileReq;
+import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferLocData;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferVideoData;
 import static com.qycx.base.isTalkerQProc.findIsTalker;
 import static com.qycx.base.mainWnd_procMsg.qyFuncs_Droid.do_closeTask1;
@@ -87,6 +88,7 @@ import com.qycx.MainActivity;
 import com.qycx.base.util.Log;
 import com.qycx.base.util.ToastUtils;
 import com.qycx.tmpjavalibrary.TmpJniUtil;
+import com.qysd.base.MapExtTmpl;
 
 public class qyMcMainWndProc_isCli {
 
@@ -438,6 +440,23 @@ public class qyMcMainWndProc_isCli {
                                     }
                                     //
                                     break;
+
+                                    case  CONST_imCommType_transferLocData: {
+                                        bMsgProcessed = true;
+
+                                        //
+
+                                        MapExtTmpl.CParam_onRecv_locations param = new MapExtTmpl.CParam_onRecv_locations();
+                                        param.pTransferLocData = pContent;
+
+                                        //
+                                        pProcInfo.m_pMapExt.onRecv_locations(param);
+
+
+
+                                    }
+                                    break;
+
 
 
                                     default:
@@ -1346,6 +1365,13 @@ public class qyMcMainWndProc_isCli {
                         mainWnd_chk_tasks(hMainWnd, var);
                     }
                 }
+
+                //
+                //
+                //pProcInfo.do_mainWnd_OnTimer(hMainWnd, pVar, nIDEvent);
+                //
+                pProcInfo.m_pMapExt.gui_onTimer(hMainWnd, var, nIDEvent);
+
 
                 //
                 mainWnd_showStatus(var);

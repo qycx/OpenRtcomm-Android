@@ -60,7 +60,7 @@ import com.qycx.Activity_dlgTalk;
 import com.qycx.MainActivity;
 import com.qycx.MyApplication;
 import com.qycx.base.util.Log;
-import com.qysd.base.mapExtTmpl;
+import com.qysd.base.MapExtTmpl;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -573,18 +573,22 @@ public class ctxQmc {
         public boolean bTaskExists_av;
         public boolean bTaskExists_file;
 
+        //
+        public boolean bExists_locDataReq;
     };
 
 
     //
     public static abstract class CCtxQmc extends ctxQmcTmpl.CCtxQmcTmpl {
+
+        //
         public ctxQmc.QMC_cfg cfg = new QMC_cfg();
 
         public int  uiDevType = CONST_objType_android;                                                 //  2007/08/03
         public int  uiTerminalType  =  0;												//
 
         //
-        public mapExtTmpl m_mapExt;
+        public MapExtTmpl m_pMapExt;
 
         //
         public qnmCommProc_mis.QY_COMM_AUTHINFO_MIS authInfo = new qnmCommProc_mis.QY_COMM_AUTHINFO_MIS();
@@ -1418,7 +1422,9 @@ public class ctxQmc {
                 pProcInfo.cfg.usMaxMsgrRecentFriends = CONST_usMaxMsgrRecentFriends;
                 pProcInfo.cfg.uiSizePerSnd_file_noAv = DEFAULT_uiSizePerSnd_file_noAv;
                 pProcInfo.cfg.uiSizePerSnd_file_avExists = DEFAULT_uiSizePerSnd_file_avExists;
+                //
                 pProcInfo.cfg.uiSizePerSnd_media = DEFAULT_uiSizePerSnd_media_isCli_android;       //  2008/04/01
+                //
                 pProcInfo.cfg.usNeedShowFrameInfoIntervalInS = DEFAULT_usNeedShowFrameInfoIntervalInS;
                 pProcInfo.cfg.uiBufSize_myDrawVideoData = bufSize_myDrawVideoData_4k;    //  2014/06/01
                 pProcInfo.cfg.uiBufSize_myDrawVideoData = bufSize_myDrawVideoData_2k;    //  2014/06/01

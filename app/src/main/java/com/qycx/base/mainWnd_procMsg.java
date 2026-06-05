@@ -581,6 +581,10 @@ public class mainWnd_procMsg {
             boolean bTaskExists_av  =  false;
             boolean bTaskExists_file  =  false;
 
+            //
+            boolean bExists_locDataReq = false;
+
+
             ctxQyMc.CCtxQyMc  pQyMc  =  g_pQyMc;
             ctxQmc.CCtxQmc  pProcInfo = pQyMc.get_pProcInfo();
             if  (  pProcInfo==null)return  -1;
@@ -624,6 +628,11 @@ public class mainWnd_procMsg {
                 //
             }
 
+            //
+            if (pProcInfo.m_pMapExt.bExists_locDataReq()) {
+                bExists_locDataReq = true;
+            }
+
 
             //
             if  (  tasksStatus.bTaskExists_av!=bTaskExists_av) {
@@ -636,6 +645,11 @@ public class mainWnd_procMsg {
                 //
                 Log.d("anc","chkTasksStatus: changed: exists_file is "  +  tasksStatus.bTaskExists_file);
             }
+            //
+            if (tasksStatus.bExists_locDataReq != bExists_locDataReq) {
+                tasksStatus.bExists_locDataReq = bExists_locDataReq;
+            }
+
 
             //
             return  0;

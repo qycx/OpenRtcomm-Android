@@ -133,7 +133,13 @@ public class qyMcMainDaemon_isCli_mgr {
                             str="procMsgReq_mgr l129: ";
                             str  +=  pMsgReq.usCode;
                             str  +=  " content.type "  +  pContent.uiType;
-                            Log.d("art",str);
+                            Log.d("at",str);
+
+                            //
+                            if  (  pContent.uiType ==  CONST_imCommType_procLocReq)  {
+                                Log.d("at","l140: procLocReq");
+                            }
+
 
                             //
                             break;
@@ -333,6 +339,11 @@ public class qyMcMainDaemon_isCli_mgr {
             if (!isUcFlgResp(pMsgInput.ucFlg)) return iErr;
 
             //
+            if  (  pMsgInput.uiTranNo==1024)  {
+                Log.d("at","1024");
+            }
+
+            //
             do {
 
                 if (!pMsgInput.ucbConvrted) {
@@ -431,6 +442,32 @@ public class qyMcMainDaemon_isCli_mgr {
                     break;
 
                     //
+                    case  CONST_imCommType_procLocReq:  //  2015/08/02
+                        //if  (  !isRcOk(  pMsgInput->usCode  )  )  goto  errLabel;
+                        //
+
+                        //
+                        //
+                        /*
+                        if (
+                            //isUcFlgTalkData(  pMsgInput->ucFlg  )  ||
+                                isUcFlgRouteTalkData(pMsgInput->ucFlg)) {
+                            //
+                            qPostMsg(pMsg, msgLen, &pQyMc->gui.processQ, _T("procmsgInput_mgr_resp 12"));
+                            PostMessage(pQyMc->gui.hMainWnd, CONST_qyWm_postComm, CONST_qyWmParam_msgArrive, 0);
+                            break;
+                        }
+
+                         */
+                        //
+                        if (0!=qPostMsgAndTrigger(pMsgInput, pProcInfo.schedulerQ  ) )  {
+                            return  iErr;
+                        }
+                        //
+                        break;
+
+
+                    //
                     case CONST_imCommType_confReq:
 
                         if (0 != qPostMsg(pMsgInput, pQyMc.gui.processQ)) {
@@ -464,6 +501,8 @@ public class qyMcMainDaemon_isCli_mgr {
             return iErr;
         }
 
+
+        //
         static int procMsgInput_mgr_req(ctxQyMc.CCtxQyMc pQyMcParam, ctxQmc.CCtxQmc pProcInfo, qnmCommProc_mis.MIS_MSG_INPUT pMsgInput, int lenInBytes_msg, ctxMcThread.CTX_MC_thread pCtx, qmCommFunc_mis.MIS_CHANNEL pChannel) {
             int iErr = -1;
             if(pMsgInput.uiType!=CONST_misMsgType_input) return iErr;
