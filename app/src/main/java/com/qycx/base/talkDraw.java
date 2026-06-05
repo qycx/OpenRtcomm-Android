@@ -715,8 +715,6 @@ public class talkDraw {
             }
         }
 
-
-
         //
         private boolean needsUpdate(qyDefs_open.CAP_RECT oldRect, qyDefs_open.CAP_RECT newRect, float newAspectRatio, float oldAspectRatio) {
             return oldRect.iX != newRect.iX || oldRect.iY != newRect.iY || oldRect.iW != newRect.iW || oldRect.iH != newRect.iH || Math.abs(newAspectRatio - oldAspectRatio) > 0.001;

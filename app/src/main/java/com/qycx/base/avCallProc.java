@@ -235,7 +235,7 @@ public class avCallProc {
         if (!isVideoMeetingUiActive()) {
             return false;
         }
-        ToastUtils.showToast("已在会议中");
+        ToastUtils.showToast("正在会议中");
         return true;
     }
 

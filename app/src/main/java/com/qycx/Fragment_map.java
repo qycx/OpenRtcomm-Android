@@ -235,6 +235,8 @@ public class Fragment_map extends Fragment {
     /** 地图交互最大缩放级别限制。 */
     private static final double MAP_MAX_ZOOM = 18.0;
     private static final long LOCATION_SEND_INTERVAL_MS = 2000L;
+    /** 临时屏蔽向活动组广播自己的实时定位；本机定位显示和标注同步不受影响。 */
+    private static final boolean GROUP_LOCATION_PUSH_ENABLED = false;
     private static final long REMOTE_STALE_MS = 10_000L;
     /** 他人定位仅关心活动组成员；成员缓存过期时间。 */
     private static final long ACTIVE_GROUP_MEMBER_CACHE_TTL_MS = 5_000L;
@@ -4821,6 +4823,7 @@ public class Fragment_map extends Fragment {
     }
 
     private void sendSelfLocationMaybe() {
+        if (!GROUP_LOCATION_PUSH_ENABLED) return;
         if (!isAdded() || currentLatLng == null) return;
         long now = System.currentTimeMillis();
         if (now - lastLocSendMs < LOCATION_SEND_INTERVAL_MS) return;
@@ -5397,6 +5400,9 @@ public class Fragment_map extends Fragment {
      * M0：活动组会议在地图页通过 {@link MainActivity#makeFloatingView} 打开 av2 悬浮 Fragment。
      */
     private boolean enterMapGroupMeetingFloating(@NonNull ActiveGroupMeetingState state) {
+        if (avCallProc.blockDuplicateVideoMeetingStart()) {
+            return false;
+        }
         ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
         if (pQyMc == null || !(pQyMc.gui.hMainWnd instanceof MainActivity)) {
             return false;
@@ -5489,6 +5495,9 @@ public class Fragment_map extends Fragment {
     }
 
     private void enterActiveGroupMeetingIfAny() {
+        if (avCallProc.blockDuplicateVideoMeetingStart()) {
+            return;
+        }
         ActiveGroupMeetingState state = findActiveGroupMeetingStateForEnter();
         if (state != null) {
             enterResolvedActiveGroupMeeting(state);
@@ -5875,6 +5884,9 @@ public class Fragment_map extends Fragment {
 
     /** 对活动组发起组会议（与具体成员无关）。 */
     private void startGroupVideoCall() {
+        if (avCallProc.blockDuplicateVideoMeetingStart()) {
+            return;
+        }
         long gid = pickPrimaryGroupId();
         if (gid <= 0) {
             Toast.makeText(requireContext(), "未配置活动组，请检查 TaskActiveGrp", Toast.LENGTH_LONG).show();

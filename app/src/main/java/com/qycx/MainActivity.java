@@ -1534,6 +1534,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     /** 当前实际应用的布局模式（离开地图 Tab 时分屏/全屏会临时降为浮窗）。 */
     private int floatingAvDisplayMode = FLOATING_AV_MODE_FLOAT;
     private boolean floatingAvTabBarHidden;
+    private long lastMapFloatingCameraRestartMs;
 
     /** 地图页发起/加入组视频会议时抑制顶部 CookieBar 来电提示（>0 为组 id）。 */
     public long suppressAvNotifyUiForGroupId = 0;
@@ -2828,6 +2829,18 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             ensureFloatingAvShellFillParent();
             refreshMapFragmentOverlayTextScale();
         });
+        m_floatingAvShell.postDelayed(this::restartMapFloatingCameraAfterRotationSettled, 320L);
+    }
+
+    private void restartMapFloatingCameraAfterRotationSettled() {
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (now - lastMapFloatingCameraRestartMs < 800L) {
+            return;
+        }
+        lastMapFloatingCameraRestartMs = now;
+        if (m_floatingView_fg instanceof Fragment_dlgTalk_av2) {
+            ((Fragment_dlgTalk_av2) m_floatingView_fg).restartCameraAfterHostRotationSettled();
+        }
     }
 
     @Override
