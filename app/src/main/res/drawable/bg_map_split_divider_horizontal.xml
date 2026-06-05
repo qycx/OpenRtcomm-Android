@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 20dp 触控区内的 2dp 横线；宽度由分隔 View 的 layout_width 决定 -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:insetTop="9dp"
+    android:insetBottom="9dp">
+    <shape android:shape="rectangle">
+        <solid android:color="#B3FFFFFF" />
+    </shape>
+</inset>

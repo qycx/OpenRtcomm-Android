@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_mark_link_all" />
+
+    <item>
+        <vector
+            android:width="24dp"
+            android:height="24dp"
+            android:viewportWidth="24"
+            android:viewportHeight="24">
+            <path
+                android:fillColor="#F44336"
+                android:fillType="evenOdd"
+                android:pathData="M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2ZM5.6,12C5.6,8.47 8.47,5.6 12,5.6C13.18,5.6 14.29,5.92 15.24,6.48L6.48,15.24C5.92,14.29 5.6,13.18 5.6,12ZM12,18.4C10.82,18.4 9.71,18.08 8.76,17.52L17.52,8.76C18.08,9.71 18.4,10.82 18.4,12C18.4,15.53 15.53,18.4 12,18.4Z" />
+
+            <path
+                android:fillColor="#FFFFFF"
+                android:pathData="M7.35,16.05L16.05,7.35L17.48,8.78L8.78,17.48Z" />
+        </vector>
+    </item>
+</layer-list>

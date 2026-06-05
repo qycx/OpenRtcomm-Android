@@ -48,8 +48,10 @@ import org.greenrobot.eventbus.EventBus;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.pm.ActivityInfo;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
@@ -144,6 +146,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
+import androidx.annotation.Nullable;
 
 
 //
@@ -152,6 +157,12 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
     public static int REQUEST_VIDEO_PERMISSIONS = 1;
     public static String FRAGMENT_DIALOG = "dialog";
     public static String TAG = "Fragment_dlgTalk_av2";
+
+    /** 供地图页查询组内在线状态；无活动会议时返回 null。 */
+    @Nullable
+    public static Map<Long, Short> tryGetGrpMemberRunningStatusMap(long grpId) {
+        return null;
+    }
 
     private int statusBarHeight;
 
@@ -1618,6 +1629,10 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
             //
             m_runnableHideBottomBar = () -> {
+                if (!isAdded() || bottomMenu == null || topMenu == null || more_info_menu == null) return;
+                if (useMenuAlwaysDocked()) {
+                    return;
+                }
                 if (m_var.m_talkAvVar.menuInScreen) {
                     more_tv.setActivated(false);
 
@@ -1628,6 +1643,11 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
                 }
             };
             m_runnableShowBottomBar = () -> {
+                if (!isAdded() || bottomMenu == null || topMenu == null) return;
+                if (useMenuAlwaysDocked()) {
+                    applyDockedMenuBars();
+                    return;
+                }
                 if (!m_var.m_talkAvVar.menuInScreen) {
                     m_var.m_talkAvVar.menuInScreen = true;
                     if (m_var.m_talkAvVar.firstStartMenuInScreen) {
@@ -1645,8 +1665,13 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
             //
             m_var.m_talkAvVar.menuInScreen = false;
-            min_viewport.post(m_runnableShowBottomBar);
-            m_bottomBarHandler.postDelayed(m_runnableHideBottomBar, 8000);
+            updateAvTopMenuOverlayVisibility();
+            if (useMenuAlwaysDocked()) {
+                min_viewport.post(this::applyDockedMenuBars);
+            } else {
+                min_viewport.post(m_runnableShowBottomBar);
+                m_bottomBarHandler.postDelayed(m_runnableHideBottomBar, 8000);
+            }
             mTextureView.setSurfaceTextureListener(mRenderer);
             mTextureView.setOnTouchListener(Texture_View_OnTouchListener);
             nvr_channel_name.setOnClickListener(Channel_num_tv_ClickListener);
@@ -1786,16 +1811,20 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         //
         dlgTalkProc.DLG_TALK_var m_var = m_talker.m_var;
 
-        m_bottomBarHandler.removeCallbacks(m_runnableHideBottomBar);
+        if (!useMenuAlwaysDocked()) {
+            m_bottomBarHandler.removeCallbacks(m_runnableHideBottomBar);
+        }
         //
         if (e.getAction() == MotionEvent.ACTION_UP) {
             //
             Log.d("anc","DispatchTouchEvent.459");
             //
-            m_bottomBarHandler.removeCallbacks(m_runnableHideBottomBar);
-            m_bottomBarHandler.postDelayed(m_runnableHideBottomBar, 8000);
+            if (!useMenuAlwaysDocked()) {
+                m_bottomBarHandler.removeCallbacks(m_runnableHideBottomBar);
+                m_bottomBarHandler.postDelayed(m_runnableHideBottomBar, 8000);
+            }
             //
-            if ( !m_var.m_talkAvVar.menuInScreen) {
+            if (!useMenuAlwaysDocked() && !m_var.m_talkAvVar.menuInScreen) {
                 //
                 Log.d("anc","bottomMenu显示.462");
 
@@ -1809,8 +1838,204 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
     }
 
 
+    /** 非地图悬浮窗，或悬浮窗全屏模式：保留上下栏滑动动画。 */
+    private boolean useMenuSlideAnimation() {
+        Activity activity = getActivity();
+        if (activity instanceof MainActivity) {
+            return ((MainActivity) activity).useMapFloatingAvMenuSlideAnimation();
+        }
+        return true;
+    }
+
+    /** 地图浮窗/分屏：上下栏固定贴边，不滑出屏幕。 */
+    private boolean useMenuAlwaysDocked() {
+        Activity activity = getActivity();
+        if (activity instanceof MainActivity) {
+            return ((MainActivity) activity).isMapFloatingAvMenuDocked();
+        }
+        return false;
+    }
+
+    private boolean shouldHideAvTopMenuOverlay() {
+        Activity activity = getActivity();
+        return activity instanceof MainActivity && ((MainActivity) activity).shouldHideAvTopMenuOverlay();
+    }
+
+    private void updateAvTopMenuOverlayVisibility() {
+        if (topMenu == null) {
+            return;
+        }
+        if (shouldHideAvTopMenuOverlay()) {
+            topMenu.setVisibility(View.GONE);
+            topMenu.setTranslationY(0f);
+        } else {
+            topMenu.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void showMapFloatingEnlargeReturnButton() {
+        if (topMenu != null && shouldHideAvTopMenuOverlay()) {
+            topMenu.setVisibility(View.VISIBLE);
+            topMenu.setTranslationY(0f);
+        }
+        if (min_viewport != null) {
+            min_viewport.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /** 浮窗/分屏模式切换后由 MainActivity 调用。 */
+    public void onMapFloatingAvDisplayModeChanged() {
+        m_bottomBarHandler.removeCallbacks(m_runnableHideBottomBar);
+        if (!isAdded() || bottomMenu == null || topMenu == null) {
+            return;
+        }
+        updateAvTopMenuOverlayVisibility();
+        if (useMenuAlwaysDocked()) {
+            applyDockedMenuBars();
+            applyFloatingAvVideoLayoutForHost();
+            return;
+        }
+        if (!useMenuSlideAnimation()) {
+            return;
+        }
+        dlgTalkProc.DLG_TALK_var m_var = m_talker != null ? m_talker.m_var : null;
+        if (m_var == null) {
+            return;
+        }
+        if (m_var.m_talkAvVar.menuInScreen) {
+            applyMenuVisibleTranslation();
+        } else {
+            applyMenuHiddenTranslation();
+        }
+        m_bottomBarHandler.postDelayed(m_runnableHideBottomBar, 8000);
+    }
+
+    private void applyDockedMenuBars() {
+        if (!isAdded() || bottomMenu == null || topMenu == null) {
+            return;
+        }
+        updateAvTopMenuOverlayVisibility();
+        applyMenuVisibleTranslation();
+        if (m_talker != null) {
+            m_talker.m_var.m_talkAvVar.menuInScreen = false;
+        }
+        confMem_rightMenu_show(false);
+    }
+
+    /** 横屏分屏拖动改变视频区宽度后由 MainActivity 调用，避免 TextureView 仍按 wrap_content 被裁切。 */
+    public void onMapFloatingAvShellResized() {
+        applyFloatingAvVideoLayoutForHost();
+    }
+
+    /** 地图宿主旋转完成后：按最终窗体尺寸重排，再重启本地摄像头采集链路。 */
+    public void restartCameraAfterHostRotationSettled() {
+        applyFloatingAvVideoLayoutForHost();
+        updateCameraSurfaceOrientationFromHost();
+        restartLocalCameraForHostRotation();
+    }
+
+    private void applyFloatingAvVideoLayoutForHost() {
+        if (!isAdded() || mTextureView == null) {
+            return;
+        }
+        boolean mapEmbeddedHost = false;
+        Activity activity = getActivity();
+        if (activity instanceof MainActivity) {
+            mapEmbeddedHost = true;
+        }
+        ViewGroup.LayoutParams raw = mTextureView.getLayoutParams();
+        if (raw instanceof android.widget.LinearLayout.LayoutParams) {
+            android.widget.LinearLayout.LayoutParams lp = (android.widget.LinearLayout.LayoutParams) raw;
+            if (mapEmbeddedHost) {
+                lp.width = android.widget.LinearLayout.LayoutParams.MATCH_PARENT;
+                lp.height = 0;
+                lp.weight = 1f;
+            } else if (useMenuAlwaysDocked()) {
+                lp.width = android.widget.LinearLayout.LayoutParams.WRAP_CONTENT;
+                lp.height = 0;
+                lp.weight = 1f;
+            }
+            mTextureView.setLayoutParams(lp);
+        }
+        View root = getView();
+        if (root != null) {
+            root.requestLayout();
+        }
+        mTextureView.post(() -> {
+            if (!isAdded() || mTextureView == null) {
+                return;
+            }
+            mTextureView.requestLayout();
+            if (m_talker != null && m_talker.m_var != null) {
+                doChkTalkDraw(m_talker.m_var);
+            }
+        });
+    }
+
+    private void updateCameraSurfaceOrientationFromHost() {
+        Activity activity = getActivity();
+        if (activity == null || mCameraRenderThread == null) {
+            return;
+        }
+        int surfaceOrientation = activity.getWindowManager().getDefaultDisplay().getRotation();
+        mCameraRenderThread.updateSurfaceOrientation(surfaceOrientation);
+        if (mCameraRenderThread.mCameraPreviewWidth > 0 && mCameraRenderThread.mCameraPreviewHeight > 0) {
+            Triplet<Integer, Integer, Integer> oInfo = myrecycleFunc.qyFuncs_Droid.get_tex_o_info(
+                    mSensorOrientation,
+                    surfaceOrientation,
+                    mCameraRenderThread.mCameraPreviewWidth,
+                    mCameraRenderThread.mCameraPreviewHeight);
+            m_o_iW = oInfo.getValue1();
+            m_o_iH = oInfo.getValue2();
+        }
+    }
+
+    private void restartLocalCameraForHostRotation() {
+        dlgTalkProc.DLG_TALK_var v = m_talker != null ? m_talker.m_var : null;
+        if (v == null || v.av == null || !v.av.taskInfo.bTaskExists) {
+            return;
+        }
+        pauseTaskAv(this, CONST_fgType_talk_av2, false, "map host rotation settled");
+        resumeTaskAv(this, CONST_fgType_talk_av2, "map host rotation settled");
+        doChkTalkDraw(v);
+    }
+
+    private void applyMenuHiddenTranslation() {
+        bottomMenu.setTranslationY(bottomMenu.getHeight());
+        if (!shouldHideAvTopMenuOverlay()) {
+            topMenu.setTranslationY(-topMenu.getHeight());
+        }
+    }
+
+    private void applyMenuVisibleTranslation() {
+        bottomMenu.setTranslationY(0f);
+        updateAvTopMenuOverlayVisibility();
+        if (!shouldHideAvTopMenuOverlay()) {
+            topMenu.setTranslationY(0f);
+        }
+    }
+
+    private void animateMenuTranslation(float bottomFrom, float bottomTo,
+                                      float topFrom, float topTo, int durationMs) {
+        ObjectAnimator bottomAnim = ObjectAnimator.ofFloat(bottomMenu, "translationY", bottomFrom, bottomTo);
+        bottomAnim.setDuration(durationMs);
+        bottomAnim.start();
+        if (!shouldHideAvTopMenuOverlay()) {
+            ObjectAnimator topAnim = ObjectAnimator.ofFloat(topMenu, "translationY", topFrom, topTo);
+            topAnim.setDuration(durationMs);
+            topAnim.start();
+        }
+    }
+
     //
     public void animatorShowMenu(int animiatorDuration) {
+        if (!isAdded() || bottomMenu == null || topMenu == null || more_tv == null) {
+            return;
+        }
+        if (useMenuAlwaysDocked()) {
+            applyDockedMenuBars();
+            return;
+        }
         //
         Log.d("anc", "bottomMenu显示.479");
         //
@@ -1820,15 +2045,11 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         // 添加这两行代码，确保底部菜单出现时设置more_tv图标
         more_tv.setActivated(false);  // 设为非激活状态
         more_tv.setImageResource(R.drawable.more);  // 设置为默认的more图标
-        ObjectAnimator animatorbottomMenu = ObjectAnimator.ofFloat(bottomMenu, "translationY", 0, -bottomMenu.getHeight());
-        animatorbottomMenu.setDuration(animiatorDuration);    // 动画持续时间，单位是毫秒
-        //
-        animatorbottomMenu.start();
-
-        //
-        ObjectAnimator animatorTopMenu = ObjectAnimator.ofFloat(topMenu, "translationY", 0, topMenu.getHeight());
-        animatorTopMenu.setDuration(animiatorDuration);    // 动画持续时间，单位是毫秒
-        animatorTopMenu.start();
+        if (animiatorDuration <= 0) {
+            applyMenuVisibleTranslation();
+        } else {
+            animateMenuTranslation(bottomMenu.getHeight(), 0f, -topMenu.getHeight(), 0f, animiatorDuration);
+        }
 
         //
         confMem_rightMenu_show(true);
@@ -1843,6 +2064,15 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
             popupWindow.dismiss();
         }
 
+        if (!isAdded() || bottomMenu == null || topMenu == null) {
+            return;
+        }
+
+        if (useMenuAlwaysDocked()) {
+            applyDockedMenuBars();
+            return;
+        }
+
         //
         Log.d("anc","bottomMenu隐藏");
         //
@@ -1852,15 +2082,7 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         m_var.m_talkAvVar.menuInScreen = false;
 
         //
-        ObjectAnimator animatorTopMenu = ObjectAnimator.ofFloat(topMenu, "translationY", topMenu.getHeight(), 0);
-        animatorTopMenu.setDuration(500);    // 动画持续时间，单位是毫秒
-        //
-        animatorTopMenu.start();
-
-        //
-        ObjectAnimator animatorBottomMenu = ObjectAnimator.ofFloat(bottomMenu, "translationY", -bottomMenu.getHeight(), 0);
-        animatorBottomMenu.setDuration(500);    // 动画持续时间，单位是毫秒
-        animatorBottomMenu.start();
+        animateMenuTranslation(0f, bottomMenu.getHeight(), 0f, -topMenu.getHeight(), 500);
 
         //
         confMem_rightMenu_show(false);
@@ -2747,7 +2969,7 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         //
         if  ( event.getAction()==MotionEvent.ACTION_DOWN) {
             //Log.d("qy" ,"down");
-            if  (  m_var.m_talkAvVar.menuInScreen) {
+            if  (  useMenuAlwaysDocked() || m_var.m_talkAvVar.menuInScreen) {
                 m_var.m_talkAvVar.bCmdStart=true;
             }
         }
@@ -2812,6 +3034,8 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
                     idInfo_to.ui64Id = m_var.av.taskInfo.idInfo_starter.ui64Id;
 
                     dlgTalk_videoConference.qyFuncs_Droid.sendConfLayout(m_var.addr.idInfo.ui64Id, (byte) 0, (short) 0, (short) CONST_imOp_phone_enlargeImg, layoutParam, idInfo_imGrp_related, idInfo_requester, idInfo_to, "");
+                    currentVideoStatus = 1;
+                    showMapFloatingEnlargeReturnButton();
 
                     //
                     if  (  m_b3ddw)  {
@@ -2878,6 +3102,9 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         idInfo_to.ui64Id = m_var.av.taskInfo.idInfo_starter.ui64Id;
         Log.d("缩小画面");
         dlgTalk_videoConference.qyFuncs_Droid.sendConfLayout(m_var.addr.idInfo.ui64Id, (byte) 0, (short) 0, (short) CONST_imOp_phone_enlargeChannel, layoutParam, idInfo_imGrp_related, idInfo_requester, idInfo_to, "");
+        currentVideoStatus = 0;
+        min_viewport.setVisibility(android.view.View.INVISIBLE);
+        updateAvTopMenuOverlayVisibility();
 
         return;
     }
@@ -3090,10 +3317,16 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         //throw new NotImplementedException();
         Log.d("anc","Rotate screen clicked");
 
-        //
-        if  (  mOwner_wnd instanceof  Activity_dlgTalk_av) {
-            Activity_dlgTalk_av owner = (Activity_dlgTalk_av) mOwner_wnd;
-            owner.upsetPortraitOrLandscapeLayout();
+        Activity host = getActivity();
+        if (host instanceof Activity_dlgTalk_av) {
+            ((Activity_dlgTalk_av) host).upsetPortraitOrLandscapeLayout();
+        } else if (host instanceof MainActivity) {
+            int current = getResources().getConfiguration().orientation;
+            if (current == Configuration.ORIENTATION_LANDSCAPE) {
+                host.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            } else {
+                host.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            }
         }
 
         //
@@ -3740,6 +3973,9 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
         //
         canCloseCameraThread = true;
+        if (min_viewport != null) {
+            min_viewport.removeCallbacks(m_runnableShowBottomBar);
+        }
         doClean("fg.OnDestroyView");
         super.onDestroyView();
 

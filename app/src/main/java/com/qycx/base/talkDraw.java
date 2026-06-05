@@ -620,7 +620,8 @@ public class talkDraw {
         //
         private void handleSharedObjRender(Object pCtx, ctxQmc.CCtxQmc pProcInfo, dlgTalkProc.DLG_TALK_var m_var, int width, int height) {
             if (m_var.av.ucbGot_iIndex_sharedObj_localAv) {
-                qmcSharedObj.QY_SHARED_OBJ pSharedObj = qmcSharedObj.qyFuncs.getSharedObjByIndex(pProcInfo, m_var.av.iIndex_sharedObj_localAv);
+                qmcSharedObj.QY_SHARED_OBJ pSharedObj = qmcSharedObj.qyFuncs.getActiveSharedObjByIndex(
+                        pProcInfo, m_var.av.iIndex_sharedObj_localAv);
                 if (pSharedObj == null) return;
 
                 int img_w = pSharedObj.var.m_o_iW;
@@ -713,8 +714,6 @@ public class talkDraw {
                 }
             }
         }
-
-
 
         //
         private boolean needsUpdate(qyDefs_open.CAP_RECT oldRect, qyDefs_open.CAP_RECT newRect, float newAspectRatio, float oldAspectRatio) {

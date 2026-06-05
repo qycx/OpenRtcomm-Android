@@ -39,4 +39,11 @@
 	<color name="av_button_active_text_color">#ffffff</color>
 
     <color name="gray1">#e2e2e2</color>
+
+    <!-- 地图弹窗 / 图层面板（来自 tsgzjfapp） -->
+    <color name="map_dialog_header_camo">#3A4538</color>
+    <color name="map_dialog_divider">#EEEEEE</color>
+    <color name="map_dialog_footer_cancel">#8A8F99</color>
+    <color name="map_dialog_footer_confirm">#D48806</color>
+    <color name="map_dialog_action_green">#00B578</color>
 </resources>

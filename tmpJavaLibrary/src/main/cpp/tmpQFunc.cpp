@@ -32,6 +32,7 @@ int newTmpQMemIndex(int playerIndex)
     if  (  pMem->bQInited)  return  -1;
 
     do {
+        memset(pMem, 0, sizeof(TmpQMem));
 
         unsigned  int uiMaxQNodes  =  25  *  2;     //  2 seconds, 25 pkts per second
         uiMaxQNodes  =  M_maxQNodes_playAudioQ;//                 //  1 second
@@ -106,6 +107,13 @@ int freeTmpQMemIndex(int index)
             //
             pMem->bQInited=false;
         }
+        // reset cache fields even when queue was already released
+        pMem->startIndex = 0;
+        pMem->nLeft = 0;
+        pMem->iSampleTimeInMs_last = 0;
+        pMem->iSampleTimeInMs_start = 0;
+        pMem->nTimes_getAudioData = 0;
+        memset(pMem->buf, 0, sizeof(pMem->buf));
 
 
         //

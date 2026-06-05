@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/landscape_split_divider"
+    android:layout_width="30dp"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_map_split_divider"
+    android:clickable="true"
+    android:contentDescription="调整视频与地图宽度"
+    android:focusable="true" />

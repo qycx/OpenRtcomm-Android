@@ -100,6 +100,9 @@ public class findOrgMsgAndProcess_is {
     public static class qyFuncs {
 
         public static boolean canSend(qmcSharedObj.QY_SHARED_OBJ pSharedObj) {
+            if (pSharedObj == null || !pSharedObj.bUsed || pSharedObj.var == null) {
+                return false;
+            }
             boolean bRet = true;
 
             switch (pSharedObj.var.uiType) {
