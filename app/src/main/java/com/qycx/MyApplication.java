@@ -35,6 +35,7 @@ import com.qycx.base.network.NetworkConnectChangedReceiver;
 import com.qycx.base.qyMcMain_global;
 import com.qycx.base.util.Log;
 import com.qysd.base.MapExtTmpl;
+import com.qysd.base.MapLocSettings;
 import com.tencent.bugly.crashreport.CrashReport;
 
 import java.io.File;
@@ -66,6 +67,8 @@ public class MyApplication extends Application implements LifecycleObserver, onA
         super.onCreate();
 
         //
+        mContext = getApplicationContext();
+        MapLocSettings.loadFrom(mContext);
         m_pMapExt =  new myMapExt();
         m_pMapExt.Application_onCreate_init();
 

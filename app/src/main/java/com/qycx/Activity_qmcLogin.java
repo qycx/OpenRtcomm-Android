@@ -78,10 +78,7 @@ public class Activity_qmcLogin extends qmcBaseActivity implements View.OnClickLi
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 if (!Environment.isExternalStorageManager()) {
-                    Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
-                    Uri uri = Uri.fromParts("package", getPackageName(), null);
-                    intent.setData(uri);
-                    startActivity(intent);
+                    requestAllFilesAccessOnLaunchIfNeeded();
                 } else {
                     startLogin();
                 }
@@ -147,6 +144,7 @@ public class Activity_qmcLogin extends qmcBaseActivity implements View.OnClickLi
 
         //  create your application here
         setContentView(R.layout.layout_qmclogin);
+        requestAllFilesAccessOnLaunchIfNeeded();
         sp = getSharedPreferences("SP", MODE_PRIVATE);
 
         Log.d("qmcLogin: onCreate called");
@@ -250,6 +248,25 @@ public class Activity_qmcLogin extends qmcBaseActivity implements View.OnClickLi
 
         //
         return;
+    }
+
+    /** Android 11+：首次打开登录页即引导「所有文件访问」权限。 */
+    private void requestAllFilesAccessOnLaunchIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            return;
+        }
+        if (Environment.isExternalStorageManager()) {
+            return;
+        }
+        try {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+            Uri uri = Uri.fromParts("package", getPackageName(), null);
+            intent.setData(uri);
+            startActivity(intent);
+        } catch (Exception e) {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+            startActivity(intent);
+        }
     }
 
 

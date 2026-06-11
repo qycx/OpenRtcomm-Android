@@ -55,6 +55,7 @@ import com.qycx.base.tmpFunc;
 import com.qycx.base.util.Log;
 import com.qycx.base.util.ToastUtils;
 import com.qycx.base.util.VersionUtils;
+import com.qysd.base.MapLocSettings;
 
 import java.lang.ref.WeakReference;
 
@@ -85,6 +86,7 @@ public class Fragment_me extends Fragment {
     CheckBox use100k_bDj;
     //
     CheckBox cb_autoLogin;
+    CheckBox cb_mapLocEncryption;
     //
     EditText pw_edit;
     AlertDialog m_alert;
@@ -262,6 +264,25 @@ public class Fragment_me extends Fragment {
                 editor.putBoolean("autoLogin", pProcInfo.cfg.bAutoLogin);
                 editor.commit();
 
+            }
+        });
+
+
+        cb_mapLocEncryption = view.findViewById(R.id.mapLocEncryption);
+        MapLocSettings.loadFrom(inflater.getContext());
+        cb_mapLocEncryption.setChecked(MapLocSettings.isEncryptionEnabled());
+        cb_mapLocEncryption.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
+                MapLocSettings.setEncryptionEnabled(getContext(), isChecked);
+                if (getActivity() instanceof MainActivity) {
+                    MainActivity main = (MainActivity) getActivity();
+                    main.clearMapRemoteLocations();
+                    if (isChecked) {
+                        main.requestMapLocKeywordIfNeeded();
+                    }
+                }
+                ToastUtils.showToast(isChecked ? "口令已开启" : "口令已关闭");
             }
         });
 

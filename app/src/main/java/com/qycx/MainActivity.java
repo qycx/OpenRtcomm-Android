@@ -33,18 +33,22 @@ import static org.aviran.cookiebar2.CookieBarDismissListener.DismissType.DURATIO
 import static org.aviran.cookiebar2.CookieBarDismissListener.DismissType.USER_ACTION_CLICK;
 import static org.aviran.cookiebar2.CookieBarDismissListener.DismissType.USER_DISMISS;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.util.DisplayMetrics;
@@ -55,6 +59,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.Gravity;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
@@ -107,11 +113,19 @@ import com.qycx.base.test;
 import com.qycx.base.tmpFunc;
 import com.qycx.base.util.Log;
 import com.qycx.base.util.javatuples.Pair;
+import com.qysd.base.MapLocKeyword;
+import com.qysd.base.MapLocSettings;
+import com.qysd.base.MapLocStrCrypto;
+
+import android.app.AlertDialog;
+import android.widget.EditText;
+import android.widget.Toast;
 
 import org.aviran.cookiebar2.*;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.Semaphore;
 
@@ -134,6 +148,9 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     private TextView txt_contact;
     private TextView txt_me;
     private ViewPager vPager;
+    private BroadcastReceiver screenOffReceiver;
+    private boolean locKeywordDialogShowing;
+    private int lastPagerPosition = -1;
 
     //Fragment Object
 //private MyFragment fg1, fg2, fg3, fg4;
@@ -1306,6 +1323,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         //
+        MapLocSettings.loadFrom(this);
         pProcInfo.m_pMapExt = ((MyApplication)getApplication()).m_pMapExt;
         pProcInfo.m_pMapExt.m_var.pProcInfo=pProcInfo;
 
@@ -1419,7 +1437,90 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
         //
         this.m_str_title = getString(R.string.CONST_resId_appName);
+        registerMapLocScreenOffReceiver();
         startActivity_login();
+    }
+
+    private void registerMapLocScreenOffReceiver() {
+        if (screenOffReceiver != null) {
+            return;
+        }
+        screenOffReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent != null && Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
+                    clearMapLocKeywordAndRemoteLocations();
+                }
+            }
+        };
+        registerReceiver(screenOffReceiver, new IntentFilter(Intent.ACTION_SCREEN_OFF));
+    }
+
+    private void unregisterMapLocScreenOffReceiver() {
+        if (screenOffReceiver == null) {
+            return;
+        }
+        try {
+            unregisterReceiver(screenOffReceiver);
+        } catch (Exception ignored) {
+        }
+        screenOffReceiver = null;
+    }
+
+    /** 锁屏、退后台、登出时清除定位口令；加密开启时同时清除地图他人位置。 */
+    public void clearMapLocKeywordAndRemoteLocations() {
+        MapLocKeyword.clearOnLogoff();
+        if (MapLocSettings.isEncryptionEnabled()) {
+            clearMapRemoteLocations();
+        }
+        locKeywordDialogShowing = false;
+    }
+
+    /** 进入地图且尚未输入口令时弹窗；加密关闭时不提示。 */
+    public void requestMapLocKeywordIfNeeded() {
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        if (pQyMc == null || !pQyMc.bLogon || isFinishing()) {
+            return;
+        }
+        if (!MapLocSettings.isEncryptionEnabled()) {
+            return;
+        }
+        if (MapLocKeyword.canDecryptOthers() || locKeywordDialogShowing) {
+            return;
+        }
+        showLocKeywordDialog();
+    }
+
+    /** 离开地图 Tab：不清口令（锁屏/退后台/登出时仍会清除）。 */
+    public void onMapTabHidden() {
+    }
+
+    /** 进入地图 Tab：加密开启且未输入口令时弹窗。 */
+    public void onMapTabSelected() {
+        requestMapLocKeywordIfNeeded();
+    }
+
+    /** 口令输入成功后：立即上报本机位置，便于组员解密显示。 */
+    public void notifyMapLocKeywordReady() {
+        if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {
+            return;
+        }
+        ((Fragment_map) mAdapter.mFragment_map).flushSelfLocationToGroupNow();
+    }
+
+    private void handleMapTabPagerChange(int position) {
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        if (pQyMc == null || !pQyMc.appParams.bENABLE_MAP_TAB) {
+            lastPagerPosition = position;
+            return;
+        }
+        if (lastPagerPosition == PAGE_FOUR && position != PAGE_FOUR) {
+            onMapTabHidden();
+        }
+        if (position == PAGE_FOUR) {
+            onMapTabSelected();
+        }
+        lastPagerPosition = position;
     }
 
     private void showTipNotification() {
@@ -1469,6 +1570,43 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     //   private PendingIntent reorderToFrontIntent;
     private NotificationCompat.Action builderAccept;
     private NotificationCompat.Action builderCancel;
+    private static final int REQUEST_CODE_POST_LOGIN_PERMISSIONS = 7921;
+    private boolean requestedPostLoginPermissions;
+
+    /** 登录成功后一次性申请相机、麦克风、定位等运行时权限。 */
+    private void requestPostLoginPermissionsIfNeeded() {
+        if (requestedPostLoginPermissions) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return;
+        }
+        ArrayList<String> missing = new ArrayList<>(5);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            missing.add(Manifest.permission.CAMERA);
+        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            missing.add(Manifest.permission.RECORD_AUDIO);
+        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            missing.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            missing.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            missing.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
+        if (missing.isEmpty()) {
+            return;
+        }
+        requestedPostLoginPermissions = true;
+        ActivityCompat.requestPermissions(
+                this,
+                missing.toArray(new String[0]),
+                REQUEST_CODE_POST_LOGIN_PERMISSIONS);
+    }
 
     private void bindNotificationIntent() {
         var acceptIntent = new Intent(this, AcceptIntentService.class);
@@ -1625,11 +1763,11 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                 //
                 if (!pQyMc.bLogon) {
                     Log.d("OnActivityResult: not login, so will quit. resultCode " + resultCode);
+                    clearMapLocKeywordAndRemoteLocations();
                     guiShare.GuiShare.pf_PostMessage.call(pQyMc.gui.hMainWnd, qyWmComm.Consts.CONST_qyWm_postComm, qyWmComm.Consts.CONST_qyWmParam_login_canceled, 0);
                     break;
                 }
-
-                //  logon
+                requestPostLoginPermissionsIfNeeded();
 
             }
         } while ( false  );
@@ -2717,6 +2855,74 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
     }
 
+    /** 进入地图时输入口令；未输入则不发送、不显示他人位置。 */
+    private void showLocKeywordDialog() {
+        if (isFinishing()) {
+            return;
+        }
+        locKeywordDialogShowing = true;
+
+        View content = LayoutInflater.from(this).inflate(R.layout.dialog_map_loc_keyword, null, false);
+        EditText input = content.findViewById(R.id.edtMapLocKeyword);
+        TextView btnCancel = content.findViewById(R.id.btnMapLocKeywordCancel);
+        TextView btnConfirm = content.findViewById(R.id.btnMapLocKeywordConfirm);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(content)
+                .setCancelable(true)
+                .create();
+        dialog.setOnDismissListener(d -> locKeywordDialogShowing = false);
+        dialog.setOnShowListener(d -> {
+            Window w = dialog.getWindow();
+            if (w != null) {
+                w.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+                WindowManager.LayoutParams lp = w.getAttributes();
+                lp.width = (int) (getResources().getDisplayMetrics().widthPixels * 0.84f);
+                lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+                w.setAttributes(lp);
+            }
+        });
+        btnCancel.setOnClickListener(v -> {
+            clearMapLocKeywordAndRemoteLocations();
+            dialog.dismiss();
+        });
+        btnConfirm.setOnClickListener(v -> {
+            String kw = input.getText() != null ? input.getText().toString().trim() : "";
+            if (kw.isEmpty()) {
+                Toast.makeText(this, "未输入口令", Toast.LENGTH_SHORT).show();
+                clearMapLocKeywordAndRemoteLocations();
+                dialog.dismiss();
+                return;
+            }
+            MapLocKeyword.setUserKeyword(kw);
+            if (!MapLocStrCrypto.verifyRoundTrip(kw)) {
+                Toast.makeText(this, "口令校验失败，请重新输入", Toast.LENGTH_SHORT).show();
+                clearMapLocKeywordAndRemoteLocations();
+                dialog.dismiss();
+                return;
+            }
+            notifyMapLocKeywordReady();
+            dialog.dismiss();
+        });
+        dialog.show();
+    }
+
+    /** 供 myMapExt 回调：在地图上显示他人定位。 */
+    public void applyMapRemoteLocation(long userId, @NonNull String plainLocStr) {
+        if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {
+            return;
+        }
+        ((Fragment_map) mAdapter.mFragment_map).applyRemoteLocation(userId, plainLocStr);
+    }
+
+    /** 加密开关切换等场景：清除地图上他人定位点。 */
+    public void clearMapRemoteLocations() {
+        if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {
+            return;
+        }
+        ((Fragment_map) mAdapter.mFragment_map).clearRemoteLocations();
+    }
+
     private void bindViews() {
         ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
 
@@ -2855,6 +3061,11 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         //
         isActive = true;
 
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        if (pQyMc != null && pQyMc.bLogon) {
+            requestPostLoginPermissionsIfNeeded();
+        }
+
         //
         gui_notify_chk.call();
     }
@@ -2988,7 +3199,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
     @Override
     protected void onStop() {
-        int i = 1;
+        clearMapLocKeywordAndRemoteLocations();
         super.onStop();
         //
         //Log.d( "qy","MainActivity  OnStop kk   k");
@@ -2997,6 +3208,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     @Override
     protected void onDestroy() {
 
+        unregisterMapLocScreenOffReceiver();
         if  (  false  ) {
             Log.d("qy", "MainActivity  OnDestroy");
             showInfo_open.qyFuncs.showInfo_open("MainActivity  OnDestroy");
@@ -3053,6 +3265,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
     @Override
     public void onPageSelected(int position) {
+        handleMapTabPagerChange(position);
         if (m_floatingView_fg != null) {
             syncFloatingAvLayoutForCurrentTab();
             refreshMapFragmentOverlayTextScale();

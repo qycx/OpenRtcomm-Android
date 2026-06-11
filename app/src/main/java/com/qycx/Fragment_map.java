@@ -121,6 +121,8 @@ import com.qycx.mapnav.AmapOfflineMapHelper;
 import com.qycx.mapnav.SystemOverlayTestWindow;
 
 import com.qycx.MainActivity;
+import com.qysd.base.MapLocKeyword;
+import com.qysd.base.MapLocSettings;
 import com.qycx.anc.Consts;
 import com.qycx.base.avCallProc;
 import com.qycx.base.audioRecorder_android;
@@ -1266,7 +1268,7 @@ public class Fragment_map extends Fragment {
                 RemoteLoc r = ensureRemoteLocEntry(id, String.format(Locale.getDefault(), "压测%02d", (int) (id - SYNTHETIC_REMOTE_ID_BASE + 1)));
                 r.latLng = next;
                 updateRemoteDisplayTarget(r, next);
-                r.heading = angle;
+                updateRemoteHeadingTarget(r, angle);
                 r.ts = now;
             }
             updateRemoteOverlays(false);
@@ -1333,17 +1335,36 @@ public class Fragment_map extends Fragment {
             boolean needNextFrame = false;
             long now = System.currentTimeMillis();
             for (RemoteLoc r : remoteLocs.values()) {
-                if (r == null || r.smoothFrom == null || r.smoothTarget == null) continue;
-                long elapsed = Math.max(0L, now - r.smoothStartMs);
-                float t = Math.min(1f, elapsed / (float) LOCATION_SMOOTH_DURATION_MS);
-                float eased = t * t * (3f - 2f * t);
-                r.displayLatLng = interpolateLatLng(r.smoothFrom, r.smoothTarget, eased);
-                if (t < 1f) {
+                if (r == null) continue;
+                boolean animating = false;
+                if (r.smoothFrom != null && r.smoothTarget != null) {
+                    long elapsed = Math.max(0L, now - r.smoothStartMs);
+                    float t = Math.min(1f, elapsed / (float) LOCATION_SMOOTH_DURATION_MS);
+                    float eased = t * t * (3f - 2f * t);
+                    r.displayLatLng = interpolateLatLng(r.smoothFrom, r.smoothTarget, eased);
+                    if (t < 1f) {
+                        animating = true;
+                    } else {
+                        r.displayLatLng = r.smoothTarget;
+                        r.smoothFrom = null;
+                        r.smoothTarget = null;
+                    }
+                }
+                if (r.smoothHeadingFrom != null && r.smoothHeadingTarget != null) {
+                    long elapsed = Math.max(0L, now - r.smoothHeadingStartMs);
+                    float t = Math.min(1f, elapsed / (float) LOCATION_SMOOTH_DURATION_MS);
+                    float eased = t * t * (3f - 2f * t);
+                    r.displayHeading = lerpAngleDeg(r.smoothHeadingFrom, r.smoothHeadingTarget, eased);
+                    if (t < 1f) {
+                        animating = true;
+                    } else {
+                        r.displayHeading = r.smoothHeadingTarget;
+                        r.smoothHeadingFrom = null;
+                        r.smoothHeadingTarget = null;
+                    }
+                }
+                if (animating) {
                     needNextFrame = true;
-                } else {
-                    r.displayLatLng = r.smoothTarget;
-                    r.smoothFrom = null;
-                    r.smoothTarget = null;
                 }
             }
             updateRemoteOverlays(false);
@@ -1555,6 +1576,12 @@ public class Fragment_map extends Fragment {
         LatLng smoothTarget;
         long smoothStartMs;
         float heading;
+        /** 当前显示在箭头上的朝向（平滑插值结果）。 */
+        float displayHeading;
+        boolean headingInitialized;
+        Float smoothHeadingFrom;
+        Float smoothHeadingTarget;
+        long smoothHeadingStartMs;
         long ts;
         ImageView arrow;
         TextView name;
@@ -2117,6 +2144,7 @@ public class Fragment_map extends Fragment {
                 return true;
             });
             chooseStyleAfterProbe();
+            mapView.post(this::refreshPendingRemoteOverlays);
         });
         updateGroupStatsView(0, 0);
         updateActiveGroupMeetingEntry(false, 0);
@@ -3728,6 +3756,7 @@ public class Fragment_map extends Fragment {
                 flushMarkConnectionLinesNow();
                 updateMapLibreBattleMarks();
             }
+            refreshPendingRemoteOverlays();
             trySyncBattleMarksAndCompassFromHub();
             updateMapLibreBattleMarks();
         });
@@ -4011,7 +4040,7 @@ public class Fragment_map extends Fragment {
         LatLng latLng = toMapLibreLatLng(location);
         currentLatLng = latLng;
         updateDisplayedLocationTarget(latLng);
-        sendSelfLocationMaybe();
+        sendSelfLocationToGroupMaybe();
         maybeAutoRerouteOnDeviation(latLng);
     }
 
@@ -4279,7 +4308,7 @@ public class Fragment_map extends Fragment {
                     // 指针固定指北，罗盘盘面随方向转动
                     compassTopRotatingLayer.setRotation(-azimuth);
                 }
-                sendSelfLocationMaybe();
+                sendSelfLocationToGroupMaybe();
             }
 
             @Override
@@ -4655,6 +4684,14 @@ public class Fragment_map extends Fragment {
                 mapView.postDelayed(scheduledLocateAllMembersRunnable, 3000);
             }
         }
+        if (getActivity() instanceof MainActivity) {
+            MainActivity main = (MainActivity) getActivity();
+            if (mapView != null) {
+                mapView.post(main::requestMapLocKeywordIfNeeded);
+            } else {
+                main.requestMapLocKeywordIfNeeded();
+            }
+        }
     }
 
     @Override
@@ -4837,11 +4874,111 @@ public class Fragment_map extends Fragment {
         ensureSelfUserId();
         Set<Long> peers = loadPeersForMapPush();
         if (peers.isEmpty()) return;
-        String payload = String.format("%s,%f,%f,%f,%d",
+        String payload = String.format(Locale.US, "%s,%f,%f,%f,%d",
                 LOC_PREFIX, currentLatLng.getLatitude(), currentLatLng.getLongitude(), selfHeadingDeg, now);
         for (Long peer : peers) {
             if (peer == null || peer == 0 || peer == selfUserId) continue;
             sendHtmlToPeer(peer, payload);
+        }
+    }
+
+    /** 经定位服务器向活动组广播本机坐标（含朝向），locStr 在 myMapExt 内按开关加密。 */
+    private void sendSelfLocationToGroupMaybe() {
+        if (!MapLocSettings.canShareLocation()) return;
+        if (!isAdded() || currentLatLng == null) return;
+        long now = System.currentTimeMillis();
+        if (now - lastLocSendMs < LOCATION_SEND_INTERVAL_MS) return;
+        lastLocSendMs = now;
+        sendSelfLocationToGroupPayload(now);
+    }
+
+    /** 口令就绪后立即上报，不受 2 秒节流限制。 */
+    public void flushSelfLocationToGroupNow() {
+        if (!MapLocSettings.canShareLocation()) return;
+        if (!isAdded() || currentLatLng == null) return;
+        long now = System.currentTimeMillis();
+        lastLocSendMs = now;
+        sendSelfLocationToGroupPayload(now);
+    }
+
+    private void sendSelfLocationToGroupPayload(long now) {
+        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        if (pQyMc == null) return;
+        ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
+        if (pProcInfo == null || pProcInfo.m_pMapExt == null) return;
+        String payload = String.format(Locale.US, "%s,%f,%f,%f,%d",
+                LOC_PREFIX, currentLatLng.getLatitude(), currentLatLng.getLongitude(), selfHeadingDeg, now);
+        long[] grpIds = getTaskGrp();
+        if (grpIds == null) return;
+        for (long grpId : grpIds) {
+            if (grpId <= 0 || !isSelfMemberOfGroup(grpId)) continue;
+            pProcInfo.m_pMapExt.sendLocation(null, payload, grpId);
+        }
+    }
+
+    /** 接收活动组他人定位（已由 myMapExt 解密），更新地图标记。 */
+    public void applyRemoteLocation(long userId, @NonNull String plainLocStr) {
+        if (!isAdded() || userId <= 0) return;
+        ensureSelfUserId();
+        if (selfUserId > 0 && userId == selfUserId) return;
+        applyRemoteLocationPlain(userId, plainLocStr);
+    }
+
+    /** 口令清空后，移除他人定位标记。 */
+    public void clearRemoteLocations() {
+        if (!isAdded()) return;
+        stopSyntheticRemoteMovingPointsTest();
+        for (Long id : new ArrayList<>(remoteLocs.keySet())) {
+            if (id == null) continue;
+            RemoteLoc r = remoteLocs.remove(id);
+            if (r == null) continue;
+            if (r.arrow != null) {
+                ViewGroup p = (ViewGroup) r.arrow.getParent();
+                if (p != null) p.removeView(r.arrow);
+            }
+            if (r.name != null) {
+                ViewGroup p = (ViewGroup) r.name.getParent();
+                if (p != null) p.removeView(r.name);
+            }
+        }
+        updateRemoteOverlays(false);
+        flushMarkConnectionLinesNow();
+    }
+
+    private void applyRemoteLocationPlain(long userId, @NonNull String text) {
+        try {
+            String[] arr = text.split(",");
+            if (arr.length < 5) return;
+            if (!LOC_PREFIX.equals(arr[0])) return;
+            double lat = Double.parseDouble(arr[1]);
+            double lng = Double.parseDouble(arr[2]);
+            float heading = Float.parseFloat(arr[3]);
+            long ts = Long.parseLong(arr[4]);
+
+            RemoteLoc r = ensureRemoteLocEntry(userId, null);
+            r.latLng = new LatLng(lat, lng);
+            updateRemoteDisplayTarget(r, r.latLng);
+            updateRemoteHeadingTarget(r, heading);
+            r.ts = ts;
+            markUserActiveOnline(userId);
+            attachRemoteLocViewsIfNeeded(r);
+            updateRemoteOverlays(true);
+            maybeRefreshGroupStatsByActiveGroups();
+            if (mapLibreMap == null && mapView != null) {
+                mapView.post(this::refreshPendingRemoteOverlays);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void refreshPendingRemoteOverlays() {
+        if (!isAdded()) return;
+        for (RemoteLoc r : remoteLocs.values()) {
+            if (r == null) continue;
+            attachRemoteLocViewsIfNeeded(r);
+        }
+        if (mapLibreMap != null) {
+            updateRemoteOverlays(true);
         }
     }
 
@@ -6276,27 +6413,7 @@ public class Fragment_map extends Fragment {
 
 
     private void handleRemoteLocMsg(long fromId, String text) {
-        try {
-            if (!isUserInActiveGroupsFast(fromId)) {
-                return;
-            }
-            String[] arr = text.split(",");
-            if (arr.length < 5) return;
-            double lat = Double.parseDouble(arr[1]);
-            double lng = Double.parseDouble(arr[2]);
-            float heading = Float.parseFloat(arr[3]);
-            long ts = Long.parseLong(arr[4]);
-
-            RemoteLoc r = ensureRemoteLocEntry(fromId, null);
-            r.latLng = new LatLng(lat, lng);
-            updateRemoteDisplayTarget(r, r.latLng);
-            r.heading = heading;
-            r.ts = ts;
-            markUserActiveOnline(fromId);
-            updateRemoteOverlays(true);
-            maybeRefreshGroupStatsByActiveGroups();
-        } catch (Exception ignored) {
-        }
+        applyRemoteLocationPlain(fromId, text);
     }
 
     @NonNull
@@ -6326,20 +6443,29 @@ public class Fragment_map extends Fragment {
             r.cachedNameLabel = fixedLabel;
             r.name.setText(fixedLabel);
         }
+        attachRemoteLocViewsIfNeeded(r);
+        remoteLocs.put(userId, r);
+        return r;
+    }
+
+    private void attachRemoteLocViewsIfNeeded(@NonNull RemoteLoc r) {
+        if (r.arrow == null || r.name == null || mapView == null) return;
+        if (r.arrow.getParent() != null && r.name.getParent() != null) return;
+        ViewGroup parent = (ViewGroup) mapView.getParent();
+        if (parent == null) return;
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
                 (int) (24 * getResources().getDisplayMetrics().density),
                 (int) (24 * getResources().getDisplayMetrics().density));
         FrameLayout.LayoutParams nameLp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        ViewGroup parent = mapView != null ? (ViewGroup) mapView.getParent() : null;
-        if (parent != null) {
-            int insert = indexToInsertMapOverlayBelowRightTools(parent);
+        int insert = indexToInsertMapOverlayBelowRightTools(parent);
+        if (r.arrow.getParent() == null) {
             parent.addView(r.arrow, insert, lp);
-            parent.addView(r.name, insert + 1, nameLp);
-            bringSelfLocationMarkerAboveMapOverlays();
         }
-        remoteLocs.put(userId, r);
-        return r;
+        if (r.name.getParent() == null) {
+            parent.addView(r.name, insert + 1, nameLp);
+        }
+        bringSelfLocationMarkerAboveMapOverlays();
     }
 
     private void showRemoteLocationVideoConfirmDialog(long userId) {
@@ -6406,6 +6532,10 @@ public class Fragment_map extends Fragment {
             r.latLng = c;
             r.displayLatLng = c;
             r.heading = angle;
+            r.displayHeading = normalizeHeadingDeg(angle);
+            r.headingInitialized = true;
+            r.smoothHeadingFrom = null;
+            r.smoothHeadingTarget = null;
             r.ts = now;
         }
         syntheticRemoteTestRunning = true;
@@ -6478,8 +6608,54 @@ public class Fragment_map extends Fragment {
         r.smoothFrom = r.displayLatLng;
         r.smoothTarget = target;
         r.smoothStartMs = System.currentTimeMillis();
+        scheduleRemoteLocationSmoothFrame();
+    }
+
+    private void updateRemoteHeadingTarget(@NonNull RemoteLoc r, float targetHeading) {
+        float target = normalizeHeadingDeg(targetHeading);
+        r.heading = target;
+        if (!r.headingInitialized) {
+            r.displayHeading = target;
+            r.headingInitialized = true;
+            r.smoothHeadingFrom = null;
+            r.smoothHeadingTarget = null;
+            return;
+        }
+        float delta = shortestAngleDeltaDeg(r.displayHeading, target);
+        if (Math.abs(delta) < 0.5f) {
+            r.displayHeading = target;
+            r.smoothHeadingFrom = null;
+            r.smoothHeadingTarget = null;
+            return;
+        }
+        r.smoothHeadingFrom = r.displayHeading;
+        r.smoothHeadingTarget = target;
+        r.smoothHeadingStartMs = System.currentTimeMillis();
+        scheduleRemoteLocationSmoothFrame();
+    }
+
+    private void scheduleRemoteLocationSmoothFrame() {
         locationHandler.removeCallbacks(remoteLocationSmoothRunnable);
         locationHandler.post(remoteLocationSmoothRunnable);
+    }
+
+    private static float normalizeHeadingDeg(float deg) {
+        float v = deg % 360f;
+        if (v < 0f) {
+            v += 360f;
+        }
+        return v;
+    }
+
+    /** 沿最短弧插值朝向（0~360）。 */
+    private static float lerpAngleDeg(float fromDeg, float toDeg, float t) {
+        float delta = shortestAngleDeltaDeg(fromDeg, toDeg);
+        return normalizeHeadingDeg(fromDeg + delta * t);
+    }
+
+    private static float shortestAngleDeltaDeg(float fromDeg, float toDeg) {
+        float delta = (toDeg - fromDeg + 540f) % 360f - 180f;
+        return delta;
     }
 
     private void updateRemoteOverlays() {
@@ -6494,6 +6670,7 @@ public class Fragment_map extends Fragment {
         long now = System.currentTimeMillis();
         boolean anyNeedLayout = false;
         for (RemoteLoc r : remoteLocs.values()) {
+            attachRemoteLocViewsIfNeeded(r);
             LatLng markerLatLng = r.displayLatLng != null ? r.displayLatLng : r.latLng;
             if (r.arrow == null || markerLatLng == null) continue;
             PointF p = mapLibreMap.getProjection().toScreenLocation(markerLatLng);
@@ -6506,7 +6683,8 @@ public class Fragment_map extends Fragment {
             }
             r.arrow.setX(p.x - w / 2f);
             r.arrow.setY(p.y - h / 2f);
-            r.arrow.setRotation(r.heading);
+            float rotation = r.headingInitialized ? r.displayHeading : r.heading;
+            r.arrow.setRotation(rotation);
             r.arrow.setVisibility(View.VISIBLE);
             boolean stale = now - r.ts > REMOTE_STALE_MS;
             r.arrow.setAlpha(stale ? 0.35f : 1f);

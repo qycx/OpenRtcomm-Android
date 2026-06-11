@@ -261,6 +261,16 @@
                     android:text="自动登录"
                     android:textSize="18sp" />
 
+                <CheckBox
+                    android:id="@+id/mapLocEncryption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/autoLogin"
+                    android:layout_marginTop="@dimen/me_base_info_margin"
+                    android:text="口令"
+                    android:textColor="#777777"
+                    android:textSize="18sp" />
+
 
             </RelativeLayout>
 

@@ -2838,9 +2838,9 @@ public class qnmCommProc_mis {
     public static class TransferLocDataMem								{
 
         //
-        qyDefs.QY_MESSENGER_ID idInfo=new qyDefs.QY_MESSENGER_ID();
+        public qyDefs.QY_MESSENGER_ID idInfo=new qyDefs.QY_MESSENGER_ID();
         //
-        AncLocData											locData=new AncLocData();
+        public AncLocData											locData=new AncLocData();
 
     }		 ;
 
@@ -2857,7 +2857,7 @@ public class qnmCommProc_mis {
 
         //
     public short									usCnt;
-        TransferLocDataMem		[]							mems;
+        public TransferLocDataMem		[]							mems;
 
         public TransferLocData()
         {

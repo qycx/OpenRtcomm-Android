@@ -79,6 +79,11 @@ public class mapFunc {
     //
     public static int ancSndLocation(Object p0, String locStr, long imGrp_related_ui64Id)
     {
+        return ancSndLocation(p0, locStr, imGrp_related_ui64Id, 0, 0);
+    }
+
+    public static int ancSndLocation(Object p0, String locStr, long imGrp_related_ui64Id, int laM10000, int loM10000)
+    {
         //
         int  iErr = -1;
         ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
@@ -109,6 +114,10 @@ public class mapFunc {
             content.idInfo_imGrp_related = imGrp_related_ui64Id;
             //safeStrnCpy(locStr, content.locData.locStr, mycountof(content.locData.locStr));
             content.locData.locStr=locStr;
+            if (laM10000 != 0 || loM10000 != 0) {
+                content.locData.iLaInM10000f = laM10000;
+                content.locData.iLoInM10000f = loM10000;
+            }
             lenInBytes = 10;//sizeof(content);
 
 

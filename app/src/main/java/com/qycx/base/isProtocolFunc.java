@@ -3226,6 +3226,19 @@ public class isProtocolFunc {
                     total_len  +=  len;
                 }
 
+                if (pReq.locData.iLaInM10000f != 0 || pReq.locData.iLoInM10000f != 0) {
+                    len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_iLaInM10000f, pReq.locData.iLaInM10000f, 0, ptr);
+                    if (len <= 0) {
+                        break;
+                    }
+                    total_len += len;
+                    len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_iLoInM10000f, pReq.locData.iLoInM10000f, 0, ptr);
+                    if (len <= 0) {
+                        break;
+                    }
+                    total_len += len;
+                }
+
 
                 //
                 len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_null, 0, 0, ptr);
