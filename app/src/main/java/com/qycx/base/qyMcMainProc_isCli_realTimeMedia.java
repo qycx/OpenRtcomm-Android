@@ -14,6 +14,7 @@ import static com.qycx.base.qmcCommFunc_mis.Consts.CONST_iAllocType_longTimeMsg;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_applyForChkChannels_qmc;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_input;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_outputTask;
+import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_req;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_talk;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_task;
 import static com.qycx.base.qnmMainFunc_isCli.qyFuncs.getChannelByType;
@@ -133,6 +134,11 @@ public class qyMcMainProc_isCli_realTimeMedia {
                             }
 
                             //
+                        }
+                        break;
+                        case  CONST_misMsgType_req:
+                        {
+
                         }
                         break;
                         case CONST_misMsgType_talk:

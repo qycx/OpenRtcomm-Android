@@ -52,6 +52,8 @@ public static class Consts
 
     public final static int CONST_imCommType_qisCaReq	=							(  CONST_imCommType_base  +  120  );
 
+    public final static int  CONST_imCommType_anHgData  =	(  CONST_imCommType_base  +  122  );		//  qisCaReq的buf太小，不利于传输大一点的数据. hgData专门用来传输图片等大一点的数据.
+
 
 
     //  

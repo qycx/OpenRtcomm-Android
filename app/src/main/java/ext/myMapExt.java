@@ -1,6 +1,7 @@
 package ext;
 
 import static com.qysd.base.mapFunc.ancSndLocation;
+import static com.qysd.base.mapFunc.test_ancSndMarkToHg;
 
 import androidx.fragment.app.Fragment;
 
@@ -45,7 +46,9 @@ public class myMapExt extends MapExtTmpl {
                     str = String.format("x=%d,y=%d,z=%d", var.loopCtrl, var.loopCtrl, var.loopCtrl);
                     long grp_idInfo = 107;
                     //
-                    this.sendLocation(p0, str, grp_idInfo);
+                    //this.sendLocation(p0, str, grp_idInfo);
+
+                    test_ancSndMarkToHg(0,"mark",107);
                 }
 
             }

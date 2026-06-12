@@ -2837,6 +2837,13 @@ public class isProtocolFunc {
                         return iErr;
                     }
                     break;
+                case  CONST_imCommType_anHgData:
+                    if (0>(lenInBytes=anHgData2Stream(pContent.uiType, (qnmCommProc_mis.AnHg_req) pContent, content_buffer))) {
+                        return iErr;
+                    }
+                    //
+                    break;
+
 
                 default: {
                     //
@@ -3495,6 +3502,127 @@ public class isProtocolFunc {
             return  total_len;
         }
 
+
+
+        //
+        public static int  anHgData2Stream(int  uiStreamId, qnmCommProc_mis.AnHg_req pReq, ByteBuffer ptr)
+        {
+            int				iErr = -1;
+            int				i = 0;
+            //char* ptr = buf;
+            int		len = -1;//*uiBufSize;
+            int total_len=0;
+
+            //if (!pReq)  return  -1;
+            //if (!buf)  return  -1;
+
+            if (0>(len=data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_start, uiStreamId, 0, ptr))) {
+                return -1;
+            }
+            total_len += len;
+
+
+            //
+            /*
+            if (0!=pReq.ucbResp) {
+                if (0>(len=data2Stream(CONST_qyDataType_char, CONST_qnmCfgId_ucbResp, pReq.ucbResp, 0, ptr)) )  {
+                    return -1;
+                }
+            }
+
+             */
+
+
+            //
+            if (0!=pReq.hg_cliDataLen) {
+                if (0>(len=data2Stream(CONST_qyDataType_lData, CONST_qnmCfgId_hg_cliData, pReq.hg_cliData, pReq.hg_cliDataLen, ptr)) )  {
+                    return  -1;
+                }
+                total_len += len;
+            }
+
+            //
+            if (0!=pReq.sHgCmd) {
+                if (0>(len=data2Stream(CONST_qyDataType_short, CONST_qnmCfgId_sHgCmd, pReq.sHgCmd, 0, ptr)) )  {
+                    return -1;
+                }
+                total_len += len;
+            }
+
+            //
+            if (0>(len=data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_null, 0, 0, ptr)) ) {
+                return -1;
+            }
+            total_len += len;
+
+            iErr = 0;
+            /*
+            errLabel:
+            if (!iErr) {
+		 *uiBufSize = *uiBufSize - len;
+            }
+
+             */
+            return  total_len;
+        }
+
+
+        /*
+        int  tmpHandler_stream2AnHgData(CTX_stream2Data* pCtx, void* p0, void* p1, unsigned  int  uiStreamId, QY_CFGITEM_ntoh_U* pItem)
+        {
+            int						iErr = -1;
+            //  p0;
+            AnHgData* pReq = (AnHgData*)p1;
+            //  QY_CFGITEM				*	pItem		=	(  QY_CFGITEM  *  )p2;
+            //  long						lVal;
+
+            if (!pReq)  goto  errLabel;
+
+            //
+
+            //
+            unsigned  short  tmp_cfgId;
+            memcpy(&tmp_cfgId, &pItem->head.cfgId, sizeof(short));
+
+            switch (uiStreamId) {
+                case  CONST_imCommType_anHgData:
+
+                    switch (tmp_cfgId) {
+                        case  CONST_qnmCfgId_start:  //  2017/07/26
+                            pReq->uiType = uiStreamId;
+                            break;
+
+                        //
+                        case  CONST_qnmCfgId_ucbResp:
+                            if (getFieldData_char(pItem, (char*)&pReq->ucbResp)) goto  errLabel;
+                            break;
+
+                        case  CONST_qnmCfgId_hg_cliData:
+                            pReq->hg_cliDataLen = sizeof(pReq->hg_cliData);
+                            if (getFieldData_lData(pItem, pReq->hg_cliData, &pReq->hg_cliDataLen))goto  errLabel;
+                            break;
+
+                        //
+                        case  CONST_qnmCfgId_sHgCmd:
+                            if (getFieldData_short(pItem, &pReq->sHgCmd))  goto  errLabel;
+                            break;
+
+                        //
+                        default:
+                            break;
+
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            iErr = 0;
+            errLabel:
+            return  iErr;
+        }
+
+         */
 
 
 
