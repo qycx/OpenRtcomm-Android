@@ -3,6 +3,7 @@ package ext;
 
 
 import static com.qysd.base.mapFunc.ancSndLocation;
+import static com.qysd.base.mapFunc.ancSndMarkToHg;
 
 
 
@@ -17,9 +18,12 @@ import com.qycx.MainActivity;
 import com.qycx.TaskActiveGrp;
 
 import com.qycx.base.ctxQmc;
-
+import com.qycx.base.ctxQyMc;
+import com.qycx.base.genericQueue;
 import com.qycx.base.qnmCommProc_mis;
-
+import com.qycx.base.qyDefs;
+import com.qycx.base.myDb;
+import com.qycx.base.qyMcMain_global;
 import com.qycx.base.util.Log;
 
 import com.qysd.base.MapExtTmpl;
@@ -30,7 +34,9 @@ import com.qysd.base.MapLocSettings;
 
 import com.qysd.base.MapLocStrCrypto;
 
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
 
 
@@ -224,6 +230,70 @@ public class myMapExt extends MapExtTmpl {
 
     }
 
+    private static long getSelfUserId() {
+        ctxQmc.CCtxQmc pProcInfo = qyMcMain_global.g.g_pQyMc != null
+                ? qyMcMain_global.g.g_pQyMc.get_pProcInfo() : null;
+        if (pProcInfo == null || pProcInfo.pMisCnt == null) {
+            return 0;
+        }
+        return pProcInfo.pMisCnt.idInfo.ui64Id;
+    }
+
+    private static boolean isMemberOfGroup(long grpId) {
+        if (grpId <= 0) {
+            return false;
+        }
+        long selfId = getSelfUserId();
+        if (selfId <= 0) {
+            return false;
+        }
+        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        if (pQyMc == null || pQyMc.gui == null || !(pQyMc.gui.pDb instanceof myDb.CMyDb)) {
+            return false;
+        }
+        myDb.CMyDb db = (myDb.CMyDb) pQyMc.gui.pDb;
+        if (db.m_var_pQ_qyImGrpMemTab == null) {
+            return false;
+        }
+        Set<Long> members = new HashSet<>();
+        genericQueue.qyFuncs.qTraverse(db.m_var_pQ_qyImGrpMemTab, tmpHandler_collectGrpMemberIds, grpId, members);
+        return members.contains(selfId);
+    }
+
+    private static final qyDefs.PF_commonHandler tmpHandler_collectGrpMemberIds = (Object p0, Object p1, Object p2) -> {
+        long grpIdInfo = (long) p0;
+        @SuppressWarnings("unchecked")
+        Set<Long> out = (Set<Long>) p1;
+        qnmCommProc_mis.IM_GRP_MEM pQMem = (qnmCommProc_mis.IM_GRP_MEM) p2;
+        if (pQMem != null && pQMem.idInfo_grp.ui64Id == grpIdInfo) {
+            out.add(pQMem.idInfo_mem.ui64Id);
+        }
+        return 0;
+    };
+
+    /**
+     * 融合中心投递规则：
+     * - 外层 [msgr=用户id]：点对点投递，仅该用户接收；
+     * - 外层 [msgr=组id]：组播投递，组内成员都应接收；
+     * - 内层 [obj=80] 为业务组 id，需与当前活动组/成员关系匹配。
+     */
+    private static boolean shouldAcceptHgGroupMessage(long grpId, long outerMsgrId) {
+        if (grpId <= 0) {
+            return false;
+        }
+        long selfId = getSelfUserId();
+        if (outerMsgrId > 0 && selfId > 0 && outerMsgrId == selfId) {
+            return true;
+        }
+        if (outerMsgrId > 0 && outerMsgrId == grpId && isMemberOfGroup(grpId)) {
+            return true;
+        }
+        if (isActiveGroup(grpId)) {
+            return true;
+        }
+        return isMemberOfGroup(grpId);
+    }
+
 
 
     private void dispatchRemoteLocation(long userId, String plainLocStr) {
@@ -324,21 +394,49 @@ public class myMapExt extends MapExtTmpl {
 
 
     @Override
-
     public int sendMark(String markStr, long imGrp_related_ui64Id) {
-
-        return 0;
-
+        if (markStr == null || markStr.isEmpty()) {
+            return -1;
+        }
+        if (imGrp_related_ui64Id <= 0) {
+            return -1;
+        }
+        if (!isActiveGroup(imGrp_related_ui64Id)) {
+            return -1;
+        }
+        return ancSndMarkToHg(null, markStr, imGrp_related_ui64Id);
     }
 
 
 
     @Override
-
     public int onRecv_marks(Param_onRecv_marks param) {
-
+        if (param == null || param.m_marks == null || param.m_marks.isEmpty()) {
+            return -1;
+        }
+        if (!shouldAcceptHgGroupMessage(param.imGrp_ui64Id, param.outerMsgrId)) {
+            Log.d("at", "onRecv_marks skipped grp=" + param.imGrp_ui64Id
+                    + " outerMsgr=" + param.outerMsgrId + " self=" + getSelfUserId());
+            return 0;
+        }
+        ctxQmc.CCtxQmc pProcInfo = m_var.pProcInfo;
+        if (pProcInfo == null || pProcInfo.pQyMc == null) {
+            return -1;
+        }
+        Object hMain = pProcInfo.pQyMc.gui.hMainWnd;
+        if (!(hMain instanceof MainActivity)) {
+            return -1;
+        }
+        MainActivity main = (MainActivity) hMain;
+        for (MapExtTmpl.AncMark mark : param.m_marks) {
+            if (mark == null || mark.markStr == null || mark.markStr.isEmpty()) {
+                continue;
+            }
+            long fromId = mark.ui64Id;
+            String markStr = mark.markStr;
+            main.runOnUiThread(() -> main.applyMapRemoteMark(fromId, markStr));
+        }
         return 0;
-
     }
 
 

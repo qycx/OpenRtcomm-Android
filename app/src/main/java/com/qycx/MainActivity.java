@@ -2915,6 +2915,14 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         ((Fragment_map) mAdapter.mFragment_map).applyRemoteLocation(userId, plainLocStr);
     }
 
+    /** 供 myMapExt 回调：在地图上显示他人同步注记。 */
+    public void applyMapRemoteMark(long userId, @NonNull String markStr) {
+        if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {
+            return;
+        }
+        ((Fragment_map) mAdapter.mFragment_map).applyRemoteMark(userId, markStr);
+    }
+
     /** 加密开关切换等场景：清除地图上他人定位点。 */
     public void clearMapRemoteLocations() {
         if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {

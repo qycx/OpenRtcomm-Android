@@ -4912,7 +4912,22 @@ public class Fragment_map extends Fragment {
         if (grpIds == null) return;
         for (long grpId : grpIds) {
             if (grpId <= 0 || !isSelfMemberOfGroup(grpId)) continue;
-            pProcInfo.m_pMapExt.sendLocation(null, payload, grpId);
+               pProcInfo.m_pMapExt.sendLocation(null, payload, grpId);
+        }
+    }
+
+    /** 经融合中心向活动组同步作战标注/连线（add/del 载荷格式不变）。 */
+    private void sendMarkPayloadToActiveGroups(@NonNull String payload) {
+        if (TextUtils.isEmpty(payload)) return;
+        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        if (pQyMc == null) return;
+        ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
+        if (pProcInfo == null || pProcInfo.m_pMapExt == null) return;
+        long[] grpIds = getTaskGrp();
+        if (grpIds == null) return;
+        for (long grpId : grpIds) {
+            if (grpId <= 0 || !isSelfMemberOfGroup(grpId)) continue;
+            pProcInfo.m_pMapExt.sendMark(payload, grpId);
         }
     }
 
@@ -4922,6 +4937,23 @@ public class Fragment_map extends Fragment {
         ensureSelfUserId();
         if (selfUserId > 0 && userId == selfUserId) return;
         applyRemoteLocationPlain(userId, plainLocStr);
+    }
+
+    /** 接收活动组他人同步注记/连线/晚登录快照（融合中心 hg 下发），更新地图。 */
+    public void applyRemoteMark(long userId, @NonNull String markStr) {
+        if (!isAdded() || userId <= 0 || markStr.isEmpty()) return;
+        ensureSelfUserId();
+        String trimmed = markStr.trim();
+        if (trimmed.startsWith(MARK_SYNC_PREFIX)) {
+            handleRemoteMarkSyncMsg(userId, trimmed);
+            return;
+        }
+        if (selfUserId > 0 && userId == selfUserId) return;
+        if (trimmed.startsWith(MARK_LINK_PREFIX)) {
+            handleRemoteMarkLinkMsg(userId, trimmed);
+            return;
+        }
+        handleRemoteMarkMsg(userId, trimmed);
     }
 
     /** 口令清空后，移除他人定位标记。 */
@@ -8098,28 +8130,17 @@ public class Fragment_map extends Fragment {
             mark.ownerId = selfUserId;
         }
         cacheSyncedMark(mark);
-        Set<Long> peers = loadPeersForMapPush();
-        if (peers.isEmpty()) return;
         String payload = String.format(Locale.US, "%s,%s,%s,%d,%.6f,%.6f,%d,%d,%.1f",
                 MARK_PREFIX, MARK_OP_ADD, mark.id, mark.typeIndex,
                 mark.latLng.getLatitude(), mark.latLng.getLongitude(), mark.ts, mark.ownerId,
                 mark.rotationDeg);
-        for (Long peer : peers) {
-            if (peer == null || peer == 0 || peer == selfUserId) continue;
-            sendHtmlToPeer(peer, payload);
-        }
+        sendMarkPayloadToActiveGroups(payload);
     }
 
     private void sendDeleteMarkToPeers(@NonNull String markId) {
         cacheDeletedMark(markId, System.currentTimeMillis());
-        ensureSelfUserId();
-        Set<Long> peers = loadPeersForMapPush();
-        if (peers.isEmpty()) return;
         String payload = String.format("%s,%s,%s", MARK_PREFIX, MARK_OP_DEL, markId);
-        for (Long peer : peers) {
-            if (peer == null || peer == 0 || peer == selfUserId) continue;
-            sendHtmlToPeer(peer, payload);
-        }
+        sendMarkPayloadToActiveGroups(payload);
     }
 
     private void sendMarkLinkToPeers(@NonNull String markId, boolean add) {
@@ -8133,14 +8154,9 @@ public class Fragment_map extends Fragment {
         } else {
             cacheDeletedLink(markId, selfUserId, ts);
         }
-        Set<Long> peers = loadPeersForMapPush();
-        if (peers.isEmpty()) return;
-        String payload = String.format("%s,%s,%s,%d,%d",
+        String payload = String.format(Locale.US, "%s,%s,%s,%d,%d",
                 MARK_LINK_PREFIX, add ? MARK_OP_ADD : MARK_OP_DEL, markId, selfUserId, ts);
-        for (Long peer : peers) {
-            if (peer == null || peer == 0 || peer == selfUserId) continue;
-            sendHtmlToPeer(peer, payload);
-        }
+        sendMarkPayloadToActiveGroups(payload);
     }
 
     public void setMarkSyncCacheEnabled(boolean enabled) {
@@ -8195,21 +8211,16 @@ public class Fragment_map extends Fragment {
         if (!markSyncCacheEnabled || groupId <= 0) return false;
         ensureSelfUserId();
         if (selfUserId <= 0) return false;
-        List<Long> peers = selectMarkSyncRequestPeers(groupId);
-        if (peers.isEmpty()) {
-            Log.d(TAG_MAP_SYNC_FLOW, "req skip no peer group=" + groupId);
-            return false;
-        }
+        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        if (pQyMc == null) return false;
+        ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
+        if (pProcInfo == null || pProcInfo.m_pMapExt == null) return false;
         lastMarkSyncReqTsByGroup.put(groupId, ts);
-        for (int i = 0; i < peers.size(); i++) {
-            long peerId = peers.get(i);
-            String payload = String.format(Locale.US, "%s,%s,%d,%d,%d,%d",
-                    MARK_SYNC_PREFIX, MARK_SYNC_OP_REQ, selfUserId, groupId, ts, i);
-            int ret = sendHtmlToPeer(peerId, payload);
-            Log.d(TAG_MAP_SYNC_FLOW, "req send group=" + groupId
-                    + " peer=" + peerId + " slot=" + i + " ret=" + ret);
-        }
-        return true;
+        String payload = String.format(Locale.US, "%s,%s,%d,%d,%d,%d",
+                MARK_SYNC_PREFIX, MARK_SYNC_OP_REQ, selfUserId, groupId, ts, 0);
+        int ret = pProcInfo.m_pMapExt.sendMark(payload, groupId);
+        Log.d(TAG_MAP_SYNC_FLOW, "req send hg group=" + groupId + " ret=" + ret);
+        return ret == 0;
     }
 
     @NonNull
@@ -8503,15 +8514,19 @@ public class Fragment_map extends Fragment {
             long senderUserId = Long.parseLong(arr[2]);
             long requestUserId = Long.parseLong(arr[3]);
             long groupId = Long.parseLong(arr[4]);
-            if (senderUserId != fromId || requestUserId != selfUserId || groupId <= 0) return;
-            if (!isSelfMemberOfGroup(groupId) || !loadGroupMemberIds(groupId).contains(senderUserId)) return;
+            if (requestUserId != selfUserId || groupId <= 0) return;
+            if (senderUserId != 0 && senderUserId != fromId) return;
+            if (!isSelfMemberOfGroup(groupId)) return;
+            if (senderUserId != 0 && !loadGroupMemberIds(groupId).contains(senderUserId)) return;
             mergeMarkSyncSnapshotPayload(arr[7]);
             markSyncGroupsWithSnapshot.add(groupId);
-            Log.d(TAG_MAP_SYNC_SIZE, "snapshot recv from=" + senderUserId
+            Log.d(TAG_MAP_SYNC_SIZE, "snapshot recv from=" + (senderUserId != 0 ? senderUserId : fromId)
                     + " group=" + groupId
                     + " chars=" + arr[7].length()
                     + " syncedGroups=" + markSyncGroupsWithSnapshot.size());
-            markUserActiveOnline(senderUserId);
+            if (senderUserId > 0) {
+                markUserActiveOnline(senderUserId);
+            }
             flushMarkConnectionLinesNow();
             refreshGroupStatsByActiveGroups();
         } catch (Exception ignored) {
@@ -8528,17 +8543,21 @@ public class Fragment_map extends Fragment {
             String batchId = arr[5];
             int partIndex = Integer.parseInt(arr[6]);
             int totalParts = Integer.parseInt(arr[7]);
-            if (senderUserId != fromId || requestUserId != selfUserId || groupId <= 0) return;
-            if (!isSelfMemberOfGroup(groupId) || !loadGroupMemberIds(groupId).contains(senderUserId)) return;
+            if (requestUserId != selfUserId || groupId <= 0) return;
+            if (senderUserId != 0 && senderUserId != fromId) return;
+            if (!isSelfMemberOfGroup(groupId)) return;
+            if (senderUserId != 0 && !loadGroupMemberIds(groupId).contains(senderUserId)) return;
             mergeMarkSyncSnapshotPayload(arr[8]);
             markSyncGroupsWithSnapshot.add(groupId);
-            Log.d(TAG_MAP_SYNC_SIZE, "snapshot part recv from=" + senderUserId
+            Log.d(TAG_MAP_SYNC_SIZE, "snapshot part recv from=" + (senderUserId != 0 ? senderUserId : fromId)
                     + " group=" + groupId
                     + " batch=" + batchId
                     + " part=" + (partIndex + 1) + "/" + totalParts
                     + " chars=" + arr[8].length()
                     + " syncedGroups=" + markSyncGroupsWithSnapshot.size());
-            markUserActiveOnline(senderUserId);
+            if (senderUserId > 0) {
+                markUserActiveOnline(senderUserId);
+            }
             flushMarkConnectionLinesNow();
             refreshGroupStatsByActiveGroups();
         } catch (Exception ignored) {
