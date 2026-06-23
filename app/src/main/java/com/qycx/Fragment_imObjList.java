@@ -140,6 +140,7 @@ public class Fragment_imObjList extends Fragment {
 
         sTableItems_imObj.clear();
         sTableItems_imObj.addAll(mTableItems_imObj);
+        TaskActiveGrp.resolveSelectionAfterLogin();
         rebuildTreeRows();
         return 0;
     }
@@ -159,6 +160,18 @@ public class Fragment_imObjList extends Fragment {
             result[i] = groupIds.get(i);
         }
         return result;
+    }
+
+    public static String getGroupName(long groupId) {
+        if (groupId <= 0) return "";
+        for (TableItem.TableItem_imObj item : sTableItems_imObj) {
+            if (item != null
+                    && item.uiObjType == qyDefs.Consts.CONST_objType_imGrp
+                    && item.ui64Id == groupId) {
+                return item.grpName != null ? item.grpName : "";
+            }
+        }
+        return "";
     }
 
     //

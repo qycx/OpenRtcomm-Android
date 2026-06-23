@@ -311,6 +311,7 @@ public class Fragment_map extends Fragment {
     /** 仅本地作战连线（synced=false）持久化 */
     private static final String PREF_MAP_MARK_LOCAL = "map_mark_local_links_v1";
     private static final String PREF_KEY_LOCAL_LINKS_PREFIX = "links_u";
+    private static final String PREF_KEY_LOCAL_LINKS_GROUP_PART = "_g";
 
     private static final String MSG_TDT_KEY_INVALID = "天地图 key 无效/权限不足";
     private static final String MSG_LOCATION_ENABLE = "请打开手机定位（GPS/网络定位）";
@@ -1308,6 +1309,7 @@ public class Fragment_map extends Fragment {
     private long activeGroupMemberCacheTs;
     private long lastGroupStatsRefreshTs;
     private long selfUserId;
+    private boolean activeGroupPickPromptShown;
     private float selfHeadingDeg;
     private boolean compassTrackingEnabled = true;
     private long lastLocSendMs;
@@ -2029,6 +2031,10 @@ public class Fragment_map extends Fragment {
         if (tvGroupStats != null) {
             tvGroupStats.setClickable(true);
             tvGroupStats.setOnClickListener(v -> showActiveGroupMembersDialog());
+            tvGroupStats.setOnLongClickListener(v -> {
+                showActiveGroupPickDialog(false);
+                return true;
+            });
         }
         if (isMapEmbeddedInAvPage()) {
             hideActiveGroupMeetingEntryInAvPage();
@@ -4451,6 +4457,11 @@ public class Fragment_map extends Fragment {
 
     private void showBattleMarkPicker() {
         if (!isAdded()) return;
+        if (!hasSelectedActiveGroup()) {
+            Toast.makeText(requireContext(), "请先选择活动组", Toast.LENGTH_SHORT).show();
+            showActiveGroupPickDialog(false);
+            return;
+        }
         Context ctx = requireContext();
         final int[] tempSelected = {selectedBattleMarkIndex};
         View content = LayoutInflater.from(ctx).inflate(R.layout.dialog_battle_mark_pick, null, false);
@@ -4781,6 +4792,7 @@ public class Fragment_map extends Fragment {
         startHeadingUpdates();
         locationHandler.removeCallbacks(onlineCleanupRunnable);
         locationHandler.postDelayed(onlineCleanupRunnable, 2000L);
+        resolveActiveGroupSelectionMaybe(true);
         startActiveGroupMeetingStatusMonitor();
         tryRequestMarkSyncSnapshot();
         locationHandler.postDelayed(this::tryRequestMarkSyncSnapshot, 2000L);
@@ -5229,6 +5241,31 @@ public class Fragment_map extends Fragment {
         return TaskActiveGrp.getTaskGrp();
     }
 
+    public void onActiveGroupCandidatesChanged() {
+        if (!isAdded()) return;
+        if (mapView != null) {
+            mapView.post(() -> {
+                if (isAdded()) {
+                    resolveActiveGroupSelectionMaybe(true);
+                }
+            });
+        } else {
+            resolveActiveGroupSelectionMaybe(true);
+        }
+    }
+
+    private boolean hasSelectedActiveGroup() {
+        return TaskActiveGrp.hasSelectedGroup();
+    }
+
+    private long getSelectedActiveGroupId() {
+        return TaskActiveGrp.getSelectedGroupId();
+    }
+
+    private String getSelectedActiveGroupDisplayName() {
+        return TaskActiveGrp.getSelectedGroupDisplayName();
+    }
+
     private Set<Long> loadActiveGroupIdsFromTaskGrp() {
         Set<Long> out = new HashSet<>();
         long[] grpIds = getTaskGrp();
@@ -5240,19 +5277,56 @@ public class Fragment_map extends Fragment {
     }
 
     private boolean isSelfMemberOfGroup(long grpId) {
-        if (grpId <= 0) return false;
-        ensureSelfUserId();
-        if (selfUserId == 0) return false;
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
-        if (pQyMc == null) return false;
-        try {
-            myDb.CMyDb db = (myDb.CMyDb) pQyMc.gui.pDb;
-            if (db == null || db.m_var_pQ_qyImGrpMemTab == null) return false;
-            Set<Long> members = new HashSet<>();
-            genericQueue.qyFuncs.qTraverse(db.m_var_pQ_qyImGrpMemTab, tmpHandler_collectGrpMemberIds, grpId, members);
-            return members.contains(selfUserId);
-        } catch (Exception ignored) {
-            return false;
+        return TaskActiveGrp.isSelfMemberOfGroup(grpId);
+    }
+
+    private void resolveActiveGroupSelectionMaybe(boolean showPrompt) {
+        long oldGroupId = getSelectedActiveGroupId();
+        boolean changed = TaskActiveGrp.resolveSelectionAfterLogin();
+        long newGroupId = getSelectedActiveGroupId();
+        if (changed || oldGroupId != newGroupId) {
+            onActiveGroupChanged(false);
+        } else {
+            refreshGroupStatsByActiveGroups();
+            refreshActiveGroupMeetingStatus();
+        }
+        if (showPrompt
+                && !activeGroupPickPromptShown
+                && !hasSelectedActiveGroup()
+                && TaskActiveGrp.getMyGroups().size() > 1) {
+            activeGroupPickPromptShown = true;
+            showActiveGroupPickDialog(true);
+        }
+    }
+
+    private void onActiveGroupChanged(boolean manualSwitch) {
+        clearRemoteLocations();
+        activeGroupMemberIdsCache.clear();
+        cachedPeers.clear();
+        recentActiveOnlineTs.clear();
+        clearBattleMarks();
+        clearMarkSyncCache();
+        lastLocSendMs = 0L;
+        refreshGroupStatsByActiveGroups();
+        refreshActiveGroupMeetingStatus();
+        if (hasSelectedActiveGroup()) {
+            if (getActivity() instanceof MainActivity && MapLocSettings.isEncryptionEnabled()) {
+                MainActivity main = (MainActivity) getActivity();
+                main.clearMapLocKeywordAndRemoteLocations();
+                if (mapView != null) {
+                    mapView.post(main::requestMapLocKeywordIfNeeded);
+                } else {
+                    main.requestMapLocKeywordIfNeeded();
+                }
+            }
+            tryRequestMarkSyncSnapshot(true);
+            if (locationHandler != null) {
+                locationHandler.postDelayed(() -> tryRequestMarkSyncSnapshot(true), 2000L);
+            }
+            flushSelfLocationToGroupNow();
+            if (manualSwitch && isAdded()) {
+                Toast.makeText(requireContext(), "已切换活动组：" + getSelectedActiveGroupDisplayName(), Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
@@ -5362,7 +5436,12 @@ public class Fragment_map extends Fragment {
 
     private void updateGroupStatsView(int memberCount, int onlineCount) {
         if (!isAdded() || tvGroupStats == null) return;
-        tvGroupStats.setText(String.format("活动组成员: %d 在线: %d", memberCount, onlineCount));
+        if (!hasSelectedActiveGroup()) {
+            tvGroupStats.setText("未选择活动组");
+        } else {
+            tvGroupStats.setText(String.format(Locale.CHINA, "活动组[%s]：成员 %d 在线 %d",
+                    getSelectedActiveGroupDisplayName(), memberCount, onlineCount));
+        }
         applyMapOverlayTextSizes();
     }
 
@@ -5380,8 +5459,25 @@ public class Fragment_map extends Fragment {
     }
 
     private void refreshActiveGroupMeetingStatus() {
+        if (!hasSelectedActiveGroup()) {
+            hideActiveGroupMeetingEntryForNoSelection();
+            return;
+        }
         ActiveGroupMeetingState state = findActiveGroupMeetingStateForDisplay();
         updateActiveGroupMeetingEntry(state != null, state != null ? state.groupId : 0);
+    }
+
+    private void hideActiveGroupMeetingEntryForNoSelection() {
+        activeGroupMeetingRunning = false;
+        activeGroupMeetingId = 0;
+        if (viewActiveGrpMeetingLamp != null) {
+            viewActiveGrpMeetingLamp.clearAnimation();
+            viewActiveGrpMeetingLamp.setVisibility(View.GONE);
+        }
+        if (tvActiveGrpMeetingEntry != null) {
+            tvActiveGrpMeetingEntry.setVisibility(View.GONE);
+            tvActiveGrpMeetingEntry.setEnabled(false);
+        }
     }
 
     private void updateActiveGroupMeetingEntry(boolean running, long groupId) {
@@ -5392,6 +5488,7 @@ public class Fragment_map extends Fragment {
         activeGroupMeetingRunning = running;
         activeGroupMeetingId = running ? groupId : 0;
         if (viewActiveGrpMeetingLamp != null) {
+            viewActiveGrpMeetingLamp.setVisibility(View.VISIBLE);
             viewActiveGrpMeetingLamp.setBackgroundResource(running
                     ? R.drawable.bg_meeting_lamp_green
                     : R.drawable.bg_meeting_lamp_red);
@@ -5405,6 +5502,7 @@ public class Fragment_map extends Fragment {
             }
         }
         if (tvActiveGrpMeetingEntry != null) {
+            tvActiveGrpMeetingEntry.setVisibility(View.VISIBLE);
             tvActiveGrpMeetingEntry.setText(running ? "点击进入会议" : "暂无会议");
             tvActiveGrpMeetingEntry.setTextColor(Color.parseColor(running ? "#00D26A" : "#FFFFFF"));
             tvActiveGrpMeetingEntry.setEnabled(running);
@@ -5787,6 +5885,11 @@ public class Fragment_map extends Fragment {
     }
 
     private void enterActiveGroupMeetingIfAny() {
+        if (!hasSelectedActiveGroup()) {
+            Toast.makeText(requireContext(), "请先选择活动组", Toast.LENGTH_SHORT).show();
+            showActiveGroupPickDialog(false);
+            return;
+        }
         if (avCallProc.blockDuplicateVideoMeetingStart()) {
             return;
         }
@@ -6032,6 +6135,61 @@ public class Fragment_map extends Fragment {
         }
     }
 
+    private static final class ActiveGroupPickViewHolder extends RecyclerView.ViewHolder {
+        final TextView tvName;
+        final TextView tvId;
+
+        ActiveGroupPickViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvName = itemView.findViewById(R.id.tvActiveGroupPickName);
+            tvId = itemView.findViewById(R.id.tvActiveGroupPickId);
+        }
+    }
+
+    private final class ActiveGroupPickAdapter extends RecyclerView.Adapter<ActiveGroupPickViewHolder> {
+        private final List<TaskActiveGrp.GroupItem> items;
+        private long selectedGroupId;
+        private final Consumer<Long> onSelectionChanged;
+
+        ActiveGroupPickAdapter(List<TaskActiveGrp.GroupItem> items, long selectedGroupId,
+                               Consumer<Long> onSelectionChanged) {
+            this.items = items;
+            this.selectedGroupId = selectedGroupId;
+            this.onSelectionChanged = onSelectionChanged;
+        }
+
+        @NonNull
+        @Override
+        public ActiveGroupPickViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View v = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_active_group_pick, parent, false);
+            return new ActiveGroupPickViewHolder(v);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull ActiveGroupPickViewHolder h, int position) {
+            TaskActiveGrp.GroupItem item = items.get(position);
+            boolean selected = item != null && item.groupId == selectedGroupId;
+            h.tvName.setText(item != null ? item.groupName : "");
+            h.tvId.setText(item != null ? "ID: " + item.groupId : "");
+            h.itemView.setBackgroundColor(Color.parseColor(selected ? "#E8F2EC" : "#FFFFFF"));
+            h.itemView.setOnClickListener(v -> {
+                int pos = h.getAdapterPosition();
+                if (pos == RecyclerView.NO_POSITION) return;
+                TaskActiveGrp.GroupItem picked = items.get(pos);
+                if (picked == null) return;
+                selectedGroupId = picked.groupId;
+                notifyDataSetChanged();
+                onSelectionChanged.accept(selectedGroupId);
+            });
+        }
+
+        @Override
+        public int getItemCount() {
+            return items.size();
+        }
+    }
+
     /** 列表行内「定位」等文字链与主色一致（非 Button）。 */
     private void styleMapDialogRowActionText(TextView tv) {
         tv.setAllCaps(false);
@@ -6042,6 +6200,11 @@ public class Fragment_map extends Fragment {
 
     private void showActiveGroupMembersDialog() {
         if (!isAdded()) return;
+        if (!hasSelectedActiveGroup()) {
+            Toast.makeText(requireContext(), "请先选择活动组", Toast.LENGTH_SHORT).show();
+            showActiveGroupPickDialog(false);
+            return;
+        }
         ensureSelfUserId();
         List<Long> members = loadActiveGroupMembersSorted();
         if (members.isEmpty()) {
@@ -6052,6 +6215,10 @@ public class Fragment_map extends Fragment {
         final Set<Long> activeGrpIds = loadActiveGroupIdsFromTaskGrp();
 
         View content = LayoutInflater.from(ctx).inflate(R.layout.dialog_active_group_members, null, false);
+        TextView title = content.findViewById(R.id.tvActiveGrpDialogTitle);
+        if (title != null) {
+            title.setText("活动组成员 - " + getSelectedActiveGroupDisplayName());
+        }
         RecyclerView rv = content.findViewById(R.id.rvActiveGroupMembers);
         ViewGroup.LayoutParams rvLp = rv.getLayoutParams();
         rvLp.height = computeActiveMembersScrollMaxHeightPx();
@@ -6105,6 +6272,72 @@ public class Fragment_map extends Fragment {
 
         dlgRef[0] = createMapStyledDialog(content);
         dlgRef[0].show();
+    }
+
+    private void showActiveGroupPickDialog(boolean fromAutoPrompt) {
+        if (!isAdded()) return;
+        List<TaskActiveGrp.GroupItem> groups = TaskActiveGrp.getMyGroups();
+        if (groups.isEmpty()) {
+            Toast.makeText(requireContext(), "暂无可选择活动组", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Context ctx = requireContext();
+        View content = LayoutInflater.from(ctx).inflate(R.layout.dialog_active_group_pick, null, false);
+        RecyclerView rv = content.findViewById(R.id.rvActiveGroupPick);
+        ViewGroup.LayoutParams rvLp = rv.getLayoutParams();
+        rvLp.height = Math.min(computeActiveMembersScrollMaxHeightPx(), dp(280));
+        rv.setLayoutParams(rvLp);
+        rv.setLayoutManager(new LinearLayoutManager(ctx));
+        final long[] tempSelected = new long[]{getSelectedActiveGroupId()};
+        TextView btnCancel = content.findViewById(R.id.btnActiveGroupPickCancel);
+        TextView btnConfirm = content.findViewById(R.id.btnActiveGroupPickConfirm);
+        final AlertDialog[] dlgRef = new AlertDialog[1];
+        ActiveGroupPickAdapter adapter = new ActiveGroupPickAdapter(groups, tempSelected[0], groupId -> {
+            tempSelected[0] = groupId;
+            updateActiveGroupPickConfirmEnabled(btnConfirm, tempSelected[0]);
+        });
+        rv.setAdapter(adapter);
+        DividerItemDecoration div = new DividerItemDecoration(ctx, DividerItemDecoration.VERTICAL);
+        Drawable divDrawable = ContextCompat.getDrawable(ctx, R.drawable.bg_map_dialog_list_divider);
+        if (divDrawable != null) {
+            div.setDrawable(divDrawable);
+        }
+        rv.addItemDecoration(div);
+        updateActiveGroupPickConfirmEnabled(btnConfirm, tempSelected[0]);
+        btnCancel.setOnClickListener(v -> {
+            if (fromAutoPrompt) {
+                TaskActiveGrp.clearSelectedGroup();
+                refreshGroupStatsByActiveGroups();
+                refreshActiveGroupMeetingStatus();
+            }
+            if (dlgRef[0] != null) dlgRef[0].dismiss();
+        });
+        btnConfirm.setOnClickListener(v -> {
+            if (tempSelected[0] <= 0) {
+                Toast.makeText(requireContext(), "请先选择活动组", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            long oldGroupId = getSelectedActiveGroupId();
+            TaskActiveGrp.setSelectedGroupId(tempSelected[0]);
+            activeGroupPickPromptShown = true;
+            if (dlgRef[0] != null) dlgRef[0].dismiss();
+            if (oldGroupId != tempSelected[0]) {
+                onActiveGroupChanged(true);
+            } else {
+                refreshGroupStatsByActiveGroups();
+                refreshActiveGroupMeetingStatus();
+            }
+        });
+
+        dlgRef[0] = createMapStyledDialog(content);
+        dlgRef[0].show();
+    }
+
+    private void updateActiveGroupPickConfirmEnabled(@Nullable TextView btnConfirm, long selectedGroupId) {
+        if (btnConfirm == null) return;
+        boolean ok = selectedGroupId > 0;
+        btnConfirm.setEnabled(ok);
+        btnConfirm.setAlpha(ok ? 1f : 0.45f);
     }
 
     /** 成员行内单聊视频：静默注册 talker 后走地图悬浮窗（不打开联系人会话页）。 */
@@ -6165,12 +6398,17 @@ public class Fragment_map extends Fragment {
 
     /** 对活动组发起组会议（与具体成员无关）。 */
     private void startGroupVideoCall() {
+        if (!hasSelectedActiveGroup()) {
+            Toast.makeText(requireContext(), "请先选择活动组", Toast.LENGTH_SHORT).show();
+            showActiveGroupPickDialog(false);
+            return;
+        }
         if (avCallProc.blockDuplicateVideoMeetingStart()) {
             return;
         }
-        long gid = pickPrimaryGroupId();
+        long gid = getSelectedActiveGroupId();
         if (gid <= 0) {
-            Toast.makeText(requireContext(), "未配置活动组，请检查 TaskActiveGrp", Toast.LENGTH_LONG).show();
+            Toast.makeText(requireContext(), "请先选择活动组", Toast.LENGTH_SHORT).show();
             return;
         }
         floatingVideoTargetId = gid;
@@ -6257,12 +6495,7 @@ public class Fragment_map extends Fragment {
     }
 
     private long pickPrimaryGroupId() {
-        Set<Long> ids = loadActiveGroupIdsFromTaskGrp();
-        if (ids == null || ids.isEmpty()) return 0;
-        for (Long id : ids) {
-            if (id != null && id > 0) return id;
-        }
-        return 0;
+        return hasSelectedActiveGroup() ? getSelectedActiveGroupId() : 0;
     }
 
     /**
@@ -6286,7 +6519,8 @@ public class Fragment_map extends Fragment {
         }
         long gid = pickPrimaryGroupId();
         if (gid <= 0) {
-            Toast.makeText(requireContext(), "未配置活动组，无法发起组视频会议", Toast.LENGTH_LONG).show();
+            Toast.makeText(requireContext(), "请先选择活动组", Toast.LENGTH_SHORT).show();
+            showActiveGroupPickDialog(false);
             return;
         }
         floatingVideoTargetId = gid;
@@ -7441,6 +7675,11 @@ public class Fragment_map extends Fragment {
 
     private void showSyncedMarkNotesDialog() {
         if (!isAdded() || getContext() == null) return;
+        if (!hasSelectedActiveGroup()) {
+            Toast.makeText(requireContext(), "请先选择活动组", Toast.LENGTH_SHORT).show();
+            showActiveGroupPickDialog(false);
+            return;
+        }
         ensureSelfUserId();
         List<BattleMark> syncedMarks = new ArrayList<>();
         for (BattleMark mark : battleMarksOnMap.values()) {
@@ -7606,13 +7845,14 @@ public class Fragment_map extends Fragment {
 
     @NonNull
     private String localMarkLinksPrefKey() {
-        return PREF_KEY_LOCAL_LINKS_PREFIX + selfUserId;
+        return PREF_KEY_LOCAL_LINKS_PREFIX + selfUserId
+                + PREF_KEY_LOCAL_LINKS_GROUP_PART + getSelectedActiveGroupId();
     }
 
     private void persistLocalMarkLinksToSp() {
         if (suppressLocalMarkLinkPersistence) return;
         ensureSelfUserId();
-        if (selfUserId <= 0 || getContext() == null) return;
+        if (selfUserId <= 0 || !hasSelectedActiveGroup() || getContext() == null) return;
         try {
             JSONArray arr = new JSONArray();
             for (MarkLink link : markLinks.values()) {
@@ -7635,7 +7875,7 @@ public class Fragment_map extends Fragment {
 
     private void restoreLocalMarkLinksFromSp() {
         ensureSelfUserId();
-        if (selfUserId <= 0 || !isAdded() || getContext() == null) return;
+        if (selfUserId <= 0 || !hasSelectedActiveGroup() || !isAdded() || getContext() == null) return;
         try {
             String json = requireContext().getSharedPreferences(PREF_MAP_MARK_LOCAL, Context.MODE_PRIVATE)
                     .getString(localMarkLinksPrefKey(), "[]");
@@ -8343,6 +8583,11 @@ public class Fragment_map extends Fragment {
 
     private void showManualMarkSyncConfirmDialog() {
         if (!isAdded()) return;
+        if (!hasSelectedActiveGroup()) {
+            Toast.makeText(requireContext(), "请先选择活动组", Toast.LENGTH_SHORT).show();
+            showActiveGroupPickDialog(false);
+            return;
+        }
         showMapConfirmDialog("同步标注", "是否重新同步标注信息？", "确认", "取消",
                 this::performManualMarkSync, null);
     }
@@ -8353,6 +8598,11 @@ public class Fragment_map extends Fragment {
         ensureSelfUserId();
         if (selfUserId <= 0) {
             Toast.makeText(requireContext(), "请先登录", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!hasSelectedActiveGroup()) {
+            Toast.makeText(requireContext(), "请先选择活动组", Toast.LENGTH_SHORT).show();
+            showActiveGroupPickDialog(false);
             return;
         }
         Toast.makeText(requireContext(), "正在重新同步标注信息…", Toast.LENGTH_SHORT).show();

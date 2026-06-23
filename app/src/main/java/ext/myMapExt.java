@@ -281,14 +281,14 @@ public class myMapExt extends MapExtTmpl {
         if (grpId <= 0) {
             return false;
         }
+        if (!isActiveGroup(grpId)) {
+            return false;
+        }
         long selfId = getSelfUserId();
         if (outerMsgrId > 0 && selfId > 0 && outerMsgrId == selfId) {
             return true;
         }
         if (outerMsgrId > 0 && outerMsgrId == grpId && isMemberOfGroup(grpId)) {
-            return true;
-        }
-        if (isActiveGroup(grpId)) {
             return true;
         }
         return isMemberOfGroup(grpId);

@@ -315,6 +315,9 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                                 mainWnd.mAdapter.mFragment_imObj1.fillList_imObj();
                                 mainWnd.mAdapter.mFragment_imObj1.display_imObjList();
                             }
+                            if (mainWnd.mAdapter.mFragment_map instanceof Fragment_map) {
+                                ((Fragment_map) mainWnd.mAdapter.mFragment_map).onActiveGroupCandidatesChanged();
+                            }
                             break;
                         case qyWmComm.Consts.CONST_qyWmParam_allContactsRetrieved:
                             //
@@ -325,6 +328,9 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                             //
                             if (null != mainWnd.mAdapter && mainWnd.mAdapter.mFragment_msg1 != null) {
                                 mainWnd.mAdapter.mFragment_msg1.loadRecentContacts();
+                            }
+                            if (mainWnd.mAdapter != null && mainWnd.mAdapter.mFragment_map instanceof Fragment_map) {
+                                ((Fragment_map) mainWnd.mAdapter.mFragment_map).onActiveGroupCandidatesChanged();
                             }
 
                             //
