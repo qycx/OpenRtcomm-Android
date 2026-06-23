@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="16dp"
+    android:paddingTop="10dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="10dp">
+
+    <ImageView
+        android:id="@+id/ivSyncedMarkIcon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:importantForAccessibility="no"
+        android:scaleType="fitCenter" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="标注人"
+            android:textColor="#8A9099"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/tvSyncedMarkOwner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxWidth="72dp"
+            android:singleLine="true"
+            android:textColor="#111111"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvSyncedMarkTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="#111111"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/tvSyncedMarkDistance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#5F6673"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tvSyncedMarkLink"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#5F6673"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/btnSyncedMarkLocate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:minHeight="44dp"
+        android:minWidth="54dp"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:text="定位"
+        android:textColor="@color/map_dialog_action_green"
+        android:textSize="15sp" />
+
+    <TextView
+        android:id="@+id/btnSyncedMarkDelete"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:minHeight="44dp"
+        android:minWidth="54dp"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:text="删除"
+        android:textColor="#D32F2F"
+        android:textSize="15sp"
+        android:visibility="gone" />
+</LinearLayout>

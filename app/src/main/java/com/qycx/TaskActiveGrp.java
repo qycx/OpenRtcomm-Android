@@ -20,6 +20,7 @@ public final class TaskActiveGrp {
      */
     public static long[] getTaskGrp() {
         long[] groupIds = Fragment_imObjList.getGroupIds();
+      //  long[] groupIds = null;
         if (groupIds == null || groupIds.length == 0) {
             return new long[]{ACTIVE_GRP_ID};
         }

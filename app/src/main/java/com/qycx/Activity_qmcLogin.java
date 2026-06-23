@@ -3,6 +3,9 @@ package com.qycx;
 
 import static com.qycx.base.qyMcMain_global.g.g_pQyMc;
 
+import android.animation.ValueAnimator;
+import android.graphics.Matrix;
+import android.graphics.drawable.Drawable;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -19,9 +22,11 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -56,6 +61,7 @@ public class Activity_qmcLogin extends qmcBaseActivity implements View.OnClickLi
     LinearLayout linear_layout;
     Context mContext;
     AppSettingsDialog appSettingsDialog;
+    ValueAnimator loginBgBreathAnim;
     //
     AlertDialog m_alert = null;
     //
@@ -144,6 +150,10 @@ public class Activity_qmcLogin extends qmcBaseActivity implements View.OnClickLi
 
         //  create your application here
         setContentView(R.layout.layout_qmclogin);
+        applyLoginTechSystemBars();
+        ImageView ivLoginBg = findViewById(R.id.iv_login_bg);
+        bindLoginBackground(ivLoginBg);
+        startLoginBgBreathAnim(ivLoginBg);
         requestAllFilesAccessOnLaunchIfNeeded();
         sp = getSharedPreferences("SP", MODE_PRIVATE);
 
@@ -250,6 +260,88 @@ public class Activity_qmcLogin extends qmcBaseActivity implements View.OnClickLi
         return;
     }
 
+    /** 沉浸式：内容延伸到状态栏/导航栏，导航栏透明以显示底图。 */
+    private void applyLoginTechSystemBars() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
+        Window window = getWindow();
+        View decor = window.getDecorView();
+        int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        }
+        decor.setSystemUiVisibility(flags);
+        window.setStatusBarColor(android.graphics.Color.TRANSPARENT);
+        window.setNavigationBarColor(android.graphics.Color.TRANSPARENT);
+    }
+
+    /** 按屏幕比例选择 1080x1920 或 1080x2340 底图。 */
+    private void bindLoginBackground(ImageView bg) {
+        if (bg == null) return;
+        DisplayMetrics dm = getResources().getDisplayMetrics();
+        float screenRatio = dm.heightPixels / (float) Math.max(1, dm.widthPixels);
+        float ratio1920 = 1920f / 1080f;
+        float ratio2340 = 2340f / 1080f;
+        int resId = Math.abs(screenRatio - ratio2340) < Math.abs(screenRatio - ratio1920)
+                ? R.drawable.bg_login_tech_main_2340
+                : R.drawable.bg_login_tech_main;
+        bg.setImageResource(resId);
+        bg.setScaleType(ImageView.ScaleType.MATRIX);
+        bg.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) ->
+                applyLoginBgMatrix(bg, getLoginBgBreathScale()));
+        bg.post(() -> applyLoginBgMatrix(bg, 1f));
+    }
+
+    private float getLoginBgBreathScale() {
+        if (loginBgBreathAnim != null && loginBgBreathAnim.isRunning()) {
+            return (float) loginBgBreathAnim.getAnimatedValue();
+        }
+        return 1f;
+    }
+
+    private void applyLoginBgMatrix(ImageView bg, float breathScale) {
+        Drawable d = bg.getDrawable();
+        if (d == null) return;
+        int viewW = bg.getWidth();
+        int viewH = bg.getHeight();
+        int imgW = d.getIntrinsicWidth();
+        int imgH = d.getIntrinsicHeight();
+        if (viewW <= 0 || viewH <= 0 || imgW <= 0 || imgH <= 0) return;
+
+        float scale = Math.max(viewW / (float) imgW, viewH / (float) imgH) * breathScale;
+        float scaledW = imgW * scale;
+        float dx = (viewW - scaledW) * 0.5f;
+        Matrix matrix = new Matrix();
+        matrix.setScale(scale, scale);
+        matrix.postTranslate(dx, 0f);
+        bg.setImageMatrix(matrix);
+    }
+
+    /** 以地球区域为中心轻微呼吸缩放。 */
+    private void startLoginBgBreathAnim(ImageView bg) {
+        if (bg == null) return;
+        stopLoginBgBreathAnim();
+        bg.post(() -> {
+            applyLoginBgMatrix(bg, 1f);
+            loginBgBreathAnim = ValueAnimator.ofFloat(1f, 1.03f);
+            loginBgBreathAnim.setDuration(14000);
+            loginBgBreathAnim.setInterpolator(new AccelerateDecelerateInterpolator());
+            loginBgBreathAnim.setRepeatMode(ValueAnimator.REVERSE);
+            loginBgBreathAnim.setRepeatCount(ValueAnimator.INFINITE);
+            loginBgBreathAnim.addUpdateListener(a ->
+                    applyLoginBgMatrix(bg, (float) a.getAnimatedValue()));
+            loginBgBreathAnim.start();
+        });
+    }
+
+    private void stopLoginBgBreathAnim() {
+        if (loginBgBreathAnim != null) {
+            loginBgBreathAnim.cancel();
+            loginBgBreathAnim = null;
+        }
+    }
+
     /** Android 11+：首次打开登录页即引导「所有文件访问」权限。 */
     private void requestAllFilesAccessOnLaunchIfNeeded() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
@@ -273,6 +365,7 @@ public class Activity_qmcLogin extends qmcBaseActivity implements View.OnClickLi
     @Override
     protected void onDestroy() {
         //
+        stopLoginBgBreathAnim();
         killTimer("login:onDestroy");
         //
         if (m_alert != null) {

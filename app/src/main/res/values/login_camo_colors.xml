@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="login_camo_bg_start">#2F3D2B</color>
+    <color name="login_camo_bg_end">#1A2418</color>
+    <color name="login_camo_title">#F5F7F2</color>
+    <color name="login_camo_subtitle">#B8C4AE</color>
+    <color name="login_camo_label">#DDE6D6</color>
+    <color name="login_camo_input_bg">#663A4538</color>
+    <color name="login_camo_input_stroke">#55A8B89A</color>
+    <color name="login_camo_input_text">#FFFFFF</color>
+    <color name="login_camo_hint">#88A89A8A</color>
+    <color name="login_camo_accent">#4CD964</color>
+    <color name="login_camo_accent_dark">#36B84A</color>
+    <color name="login_camo_link">#7DDF92</color>
+</resources>

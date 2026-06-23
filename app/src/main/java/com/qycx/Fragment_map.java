@@ -43,6 +43,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.view.ViewParent;
 import android.view.Window;
 import android.view.WindowManager;
@@ -249,6 +250,10 @@ public class Fragment_map extends Fragment {
     private static final String LOC_PREFIX = "__QY_LOC_V1__";
     private static final String MARK_PREFIX = "__QY_MARK_V1__";
     private static final String MARK_LINK_PREFIX = "__QY_MARK_LINK_V1__";
+    /** 作战连线颜色：仅本地 / 本人已同步 / 他人已同步 */
+    private static final String MARK_LINK_COLOR_LOCAL = "#FF9800";
+    private static final String MARK_LINK_COLOR_SELF_SYNCED = "#00B35A";
+    private static final String MARK_LINK_COLOR_OTHER_SYNCED = "#42A5F5";
     private static final String MARK_SYNC_PREFIX = "__QY_MARK_SYNC_V1__";
     private static final String MARK_OP_ADD = "add";
     private static final String MARK_OP_DEL = "del";
@@ -302,6 +307,10 @@ public class Fragment_map extends Fragment {
     private static final String PREF_KEY_CB_OFFLINE = "cb_offline";
     private static final String PREF_KEY_CB_OFFLINE_IMAGERY = "cb_offline_imagery";
     private static final String PREF_KEY_CB_OFFLINE_ANNOTATION = "cb_offline_annotation";
+
+    /** 仅本地作战连线（synced=false）持久化 */
+    private static final String PREF_MAP_MARK_LOCAL = "map_mark_local_links_v1";
+    private static final String PREF_KEY_LOCAL_LINKS_PREFIX = "links_u";
 
     private static final String MSG_TDT_KEY_INVALID = "天地图 key 无效/权限不足";
     private static final String MSG_LOCATION_ENABLE = "请打开手机定位（GPS/网络定位）";
@@ -1282,6 +1291,7 @@ public class Fragment_map extends Fragment {
     private final Set<Long> activeGroupMemberIdsCache = new HashSet<>();
     /** 需要显示连线的作战标注 id（默认空：同步后不显示连线，需用户点标注确认后加入）。 */
     private final Map<String, MarkLink> markLinks = new HashMap<>();
+    private boolean suppressLocalMarkLinkPersistence;
     private boolean useMapLibreMarkConnectionLines = true;
     private boolean useMapLibreSelfMarkLinkLabels = true;
     private long lastMapLibreMarkLinkLabelsUpdateMs;
@@ -2050,6 +2060,10 @@ public class Fragment_map extends Fragment {
         }
         if (ivMarkNoteListBtn != null) {
             ivMarkNoteListBtn.setOnClickListener(v -> showSyncedMarkNotesDialog());
+            ivMarkNoteListBtn.setOnLongClickListener(v -> {
+                showManualMarkSyncConfirmDialog();
+                return true;
+            });
         }
         if (ivCompassBtn != null) {
             // 红框针状按钮改为横竖屏切换。
@@ -2423,20 +2437,7 @@ public class Fragment_map extends Fragment {
         if (!isAdded() || getContext() == null) {
             return;
         }
-        TextView body = new TextView(requireContext());
-        body.setText(message);
-        body.setTextColor(Color.parseColor("#111111"));
-        body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-        body.setGravity(Gravity.CENTER);
-        body.setPadding(dp(24), dp(8), dp(24), dp(8));
-        AlertDialog dialog = new AlertDialog.Builder(requireContext())
-                .setCustomTitle(buildMapDialogTitle("离线数据"))
-                .setView(body)
-                .setPositiveButton("否", null)
-                .setNegativeButton("是", (d, which) -> onConfirm.run())
-                .create();
-        dialog.setOnShowListener(d -> styleMapDialogWindowAndButtons((AlertDialog) d, MAP_DLG_BTN_BATTLE));
-        dialog.show();
+        showMapConfirmDialog("离线数据", message, "是", "否", onConfirm, null);
     }
 
     private void startOfflineTileDataImport(boolean deleteExistingFirst) {
@@ -2496,9 +2497,12 @@ public class Fragment_map extends Fragment {
             return;
         }
         dismissOfflineDataProgressDialog();
+        View content = inflateMapDialogShell();
+        bindMapDialogTitle(content, "离线数据");
+        hideMapDialogFooter(content);
         LinearLayout box = new LinearLayout(requireContext());
         box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(dp(16), dp(12), dp(16), dp(8));
+        box.setPadding(dp(16), dp(4), dp(16), dp(12));
         int contentWidth = Math.min(
                 getResources().getDisplayMetrics().widthPixels - dp(72),
                 dp(360));
@@ -2520,13 +2524,9 @@ public class Fragment_map extends Fragment {
         box.addView(offlineDataProgressText, new LinearLayout.LayoutParams(
                 contentWidth, ViewGroup.LayoutParams.WRAP_CONTENT));
         box.addView(offlineDataProgressBar, pbLp);
-        offlineDataProgressDialog = new AlertDialog.Builder(requireContext())
-                .setCustomTitle(buildMapDialogTitle("离线数据"))
-                .setView(box)
-                .setCancelable(false)
-                .create();
-        offlineDataProgressDialog.setOnShowListener(d ->
-                styleMapDialogWindowAndButtons((AlertDialog) d, MAP_DLG_BTN_DISMISS_GRAY));
+        setMapDialogCustomContent(content, box);
+        offlineDataProgressDialog = createMapStyledDialog(content);
+        offlineDataProgressDialog.setCancelable(false);
         offlineDataProgressDialog.show();
     }
 
@@ -4459,6 +4459,7 @@ public class Fragment_map extends Fragment {
         rvLp.height = computeActiveMembersScrollMaxHeightPx();
         rv.setLayoutParams(rvLp);
         rv.setLayoutManager(new LinearLayoutManager(ctx));
+        rv.setHasFixedSize(true);
         final AlertDialog[] dlgRef = new AlertDialog[1];
         BattleMarkTypePickAdapter adapter = new BattleMarkTypePickAdapter(tempSelected[0], which -> {
             tempSelected[0] = which;
@@ -4486,18 +4487,15 @@ public class Fragment_map extends Fragment {
             if (dlgRef[0] != null) dlgRef[0].dismiss();
         });
 
-        dlgRef[0] = new AlertDialog.Builder(ctx).setView(content).create();
-        dlgRef[0].setOnShowListener(d -> {
-            AlertDialog ad = (AlertDialog) d;
-            Window w = ad.getWindow();
-            if (w != null) {
-                w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-                WindowManager.LayoutParams lp = w.getAttributes();
-                lp.width = (int) (ctx.getResources().getDisplayMetrics().widthPixels * 0.84f);
-                lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
-                w.setAttributes(lp);
-            }
+        dlgRef[0] = createMapStyledDialog(content, () -> {
             updateBattleMarkConfirmEnabled(content, tempSelected[0]);
+            rv.post(() -> {
+                rv.requestLayout();
+                RecyclerView.Adapter<?> a = rv.getAdapter();
+                if (a != null) {
+                    a.notifyDataSetChanged();
+                }
+            });
         });
         dlgRef[0].show();
     }
@@ -4524,6 +4522,10 @@ public class Fragment_map extends Fragment {
         public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View v = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_battle_mark_type, parent, false);
+            ViewGroup.LayoutParams lp = v.getLayoutParams();
+            if (lp != null) {
+                lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            }
             return new VH(v);
         }
 
@@ -4571,64 +4573,178 @@ public class Fragment_map extends Fragment {
         return Math.max(dp(180), Math.min(byRatio, dp(360)));
     }
 
-    /** 与「作战标注」弹窗统一的标题（居中、18sp、#111111）。 */
-    private TextView buildMapDialogTitle(CharSequence title) {
-        TextView titleView = new TextView(requireContext());
-        titleView.setText(title);
-        titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-        titleView.setTextColor(Color.parseColor("#111111"));
-        titleView.setPadding(dp(20), dp(16), dp(20), dp(8));
-        titleView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        return titleView;
+    private AlertDialog createMapStyledDialog(@NonNull View content) {
+        return createMapStyledDialog(content, null);
     }
 
-    /** 底部按钮：左确定/主操作为绿 #00B578，右取消为灰 #8A8F99（与作战标注选择器一致）。 */
-    private static final int MAP_DLG_BTN_BATTLE = 0;
-    /** 仅有关闭类按钮时使用灰色。 */
-    private static final int MAP_DLG_BTN_DISMISS_GRAY = 1;
+    private AlertDialog createMapStyledDialog(@NonNull View content, @Nullable Runnable onShowExtra) {
+        prepareMapDialogContentRoot(content);
+        AlertDialog dialog = new AlertDialog.Builder(requireContext(), R.style.MapStyledDialogTheme)
+                .setView(content)
+                .create();
+        dialog.setOnShowListener(d -> {
+            applyMapStyledDialogWindow((AlertDialog) d, content);
+            if (onShowExtra != null) {
+                onShowExtra.run();
+            }
+        });
+        return dialog;
+    }
 
-    /** 白底圆角、宽度 84%，并按模式着色 AlertDialog 底部按钮。 */
-    private void styleMapDialogWindowAndButtons(AlertDialog ad, int buttonMode) {
-        if (ad == null) return;
+    private void prepareMapDialogContentRoot(@NonNull View content) {
+        content.setClipToOutline(true);
+        content.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
+    }
+
+    /** 与作战标注弹窗一致：透明窗口 + 圆角内容 + 宽度 84%。 */
+    private void applyMapStyledDialogWindow(@Nullable AlertDialog ad, @NonNull View content) {
+        if (ad == null || !isAdded()) return;
         Window w = ad.getWindow();
         if (w != null) {
-            GradientDrawable bg = new GradientDrawable();
-            bg.setColor(Color.WHITE);
-            bg.setCornerRadius(dp(16));
-            w.setBackgroundDrawable(bg);
+            w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            View decor = w.getDecorView();
+            if (decor != null) {
+                decor.setBackgroundResource(android.R.color.transparent);
+            }
+            View panel = w.findViewById(android.R.id.content);
+            if (panel != null) {
+                panel.setBackgroundResource(android.R.color.transparent);
+            }
+            clearDialogWrapperBackgrounds(content);
             WindowManager.LayoutParams lp = w.getAttributes();
             lp.width = (int) (requireContext().getResources().getDisplayMetrics().widthPixels * 0.84f);
+            lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
             w.setAttributes(lp);
-        }
-        TextView btnPos = ad.getButton(AlertDialog.BUTTON_POSITIVE);
-        TextView btnNeg = ad.getButton(AlertDialog.BUTTON_NEGATIVE);
-        TextView btnNeu = ad.getButton(AlertDialog.BUTTON_NEUTRAL);
-        if (buttonMode == MAP_DLG_BTN_BATTLE) {
-            if (btnPos != null) {
-                btnPos.setTextColor(Color.parseColor("#8A8F99"));
-                btnPos.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-            }
-            if (btnNeg != null) {
-                btnNeg.setTextColor(Color.parseColor("#00B578"));
-                btnNeg.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-            }
-            if (btnNeu != null) {
-                btnNeu.setTextColor(Color.parseColor("#8A8F99"));
-                btnNeu.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-            }
-        } else if (buttonMode == MAP_DLG_BTN_DISMISS_GRAY) {
-            if (btnPos != null) {
-                btnPos.setTextColor(Color.parseColor("#8A8F99"));
-                btnPos.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-            }
-            if (btnNeg != null) {
-                btnNeg.setTextColor(Color.parseColor("#8A8F99"));
-                btnNeg.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-            }
         }
     }
 
-    /** 弹窗内容区主操作按钮文字样式（绿字、16sp），与底部栏主按钮一致。 */
+    /** 去掉 AlertDialog 内层默认白底方角容器，避免圆角外漏白。 */
+    private void clearDialogWrapperBackgrounds(@NonNull View content) {
+        ViewParent parent = content.getParent();
+        while (parent instanceof View) {
+            View wrapper = (View) parent;
+            wrapper.setBackgroundResource(android.R.color.transparent);
+            wrapper.setPadding(0, 0, 0, 0);
+            if (wrapper.getId() == android.R.id.content) {
+                break;
+            }
+            parent = wrapper.getParent();
+        }
+    }
+
+    @NonNull
+    private View inflateMapDialogShell() {
+        return LayoutInflater.from(requireContext()).inflate(R.layout.dialog_map_shell, null, false);
+    }
+
+    private void bindMapDialogTitle(@NonNull View content, @NonNull CharSequence title) {
+        TextView tv = content.findViewById(R.id.tvMapDialogTitle);
+        if (tv != null) tv.setText(title);
+    }
+
+    private void bindMapDialogMessage(@NonNull View content, @Nullable CharSequence message) {
+        TextView tv = content.findViewById(R.id.tvMapDialogMessage);
+        if (tv == null) return;
+        if (TextUtils.isEmpty(message)) {
+            tv.setVisibility(View.GONE);
+        } else {
+            tv.setVisibility(View.VISIBLE);
+            tv.setText(message);
+        }
+    }
+
+    private void setMapDialogCustomContent(@NonNull View shell, @NonNull View custom) {
+        FrameLayout slot = shell.findViewById(R.id.layoutMapDialogCustom);
+        if (slot == null) return;
+        slot.setVisibility(View.VISIBLE);
+        slot.removeAllViews();
+        slot.addView(custom);
+    }
+
+    private void hideMapDialogFooter(@NonNull View shell) {
+        View footer = shell.findViewById(R.id.layoutMapDialogFooter);
+        View divider = shell.findViewById(R.id.viewMapDialogFooterDivider);
+        if (footer != null) footer.setVisibility(View.GONE);
+        if (divider != null) divider.setVisibility(View.GONE);
+    }
+
+    private void showMapDialogSingleFooter(@NonNull View shell, @NonNull CharSequence label) {
+        View footer = shell.findViewById(R.id.layoutMapDialogFooter);
+        View divider = shell.findViewById(R.id.viewMapDialogFooterDivider);
+        TextView btnSingle = shell.findViewById(R.id.btnMapDialogSingle);
+        if (footer != null) footer.setVisibility(View.GONE);
+        if (divider != null) divider.setVisibility(View.VISIBLE);
+        if (btnSingle != null) {
+            btnSingle.setVisibility(View.VISIBLE);
+            btnSingle.setText(label);
+        }
+    }
+
+    private AlertDialog showMapConfirmDialog(
+            @NonNull CharSequence title,
+            @Nullable CharSequence message,
+            @NonNull CharSequence confirmText,
+            @NonNull CharSequence cancelText,
+            @Nullable Runnable onConfirm,
+            @Nullable Runnable onCancel) {
+        View content = inflateMapDialogShell();
+        bindMapDialogTitle(content, title);
+        bindMapDialogMessage(content, message);
+        TextView btnCancel = content.findViewById(R.id.btnMapDialogCancel);
+        TextView btnConfirm = content.findViewById(R.id.btnMapDialogConfirm);
+        btnCancel.setText(cancelText);
+        btnConfirm.setText(confirmText);
+        AlertDialog dialog = createMapStyledDialog(content);
+        btnCancel.setOnClickListener(v -> {
+            dialog.dismiss();
+            if (onCancel != null) onCancel.run();
+        });
+        btnConfirm.setOnClickListener(v -> {
+            dialog.dismiss();
+            if (onConfirm != null) onConfirm.run();
+        });
+        dialog.show();
+        return dialog;
+    }
+
+    private AlertDialog showMapAckDialog(
+            @NonNull CharSequence title,
+            @NonNull CharSequence message,
+            @NonNull CharSequence buttonText) {
+        View content = inflateMapDialogShell();
+        bindMapDialogTitle(content, title);
+        bindMapDialogMessage(content, message);
+        showMapDialogSingleFooter(content, buttonText);
+        AlertDialog dialog = createMapStyledDialog(content);
+        TextView btnSingle = content.findViewById(R.id.btnMapDialogSingle);
+        if (btnSingle != null) {
+            btnSingle.setOnClickListener(v -> dialog.dismiss());
+        }
+        dialog.show();
+        return dialog;
+    }
+
+    private void addMapDialogActionRow(@NonNull View shell, @NonNull CharSequence label, @Nullable Runnable onClick) {
+        LinearLayout actions = shell.findViewById(R.id.layoutMapDialogExtraActions);
+        if (actions == null) return;
+        actions.setVisibility(View.VISIBLE);
+        if (actions.getChildCount() > 0) {
+            View divider = new View(requireContext());
+            divider.setLayoutParams(new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
+            divider.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.map_dialog_divider));
+            actions.addView(divider);
+        }
+        TextView row = (TextView) LayoutInflater.from(requireContext())
+                .inflate(R.layout.item_map_dialog_action, actions, false);
+        row.setText(label);
+        actions.addView(row);
+        row.setOnClickListener(v -> {
+            if (onClick != null) onClick.run();
+        });
+    }
+
+    /** 弹窗内容区主操作按钮文字样式（绿字、16sp），用于成员列表等行内操作。 */
     private void styleMapDialogContentActionButton(Button b) {
         b.setAllCaps(false);
         b.setTextColor(Color.parseColor("#00B578"));
@@ -4669,6 +4785,7 @@ public class Fragment_map extends Fragment {
         tryRequestMarkSyncSnapshot();
         locationHandler.postDelayed(this::tryRequestMarkSyncSnapshot, 2000L);
         locationHandler.postDelayed(this::tryRequestMarkSyncSnapshot, 6000L);
+        locationHandler.postDelayed(this::tryRestoreLocalMarkLinksIfNeeded, 6500L);
         if (mapLibreMap != null && getContext() != null && (currentLatLng == null || pendingLocationListener == null)) {
             boolean ok = ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                     || ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
@@ -5986,18 +6103,7 @@ public class Fragment_map extends Fragment {
             if (dlgRef[0] != null) dlgRef[0].dismiss();
         });
 
-        dlgRef[0] = new AlertDialog.Builder(ctx).setView(content).create();
-        dlgRef[0].setOnShowListener(d -> {
-            AlertDialog ad = (AlertDialog) d;
-            Window w = ad.getWindow();
-            if (w != null) {
-                w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-                WindowManager.LayoutParams lp = w.getAttributes();
-                lp.width = (int) (ctx.getResources().getDisplayMetrics().widthPixels * 0.84f);
-                lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
-                w.setAttributes(lp);
-            }
-        });
+        dlgRef[0] = createMapStyledDialog(content);
         dlgRef[0].show();
     }
 
@@ -6511,14 +6617,8 @@ public class Fragment_map extends Fragment {
             return;
         }
         String name = getUserDisplayName(userId);
-        AlertDialog dialog = new AlertDialog.Builder(requireContext())
-                .setCustomTitle(buildMapDialogTitle("视频通话"))
-                .setMessage("是否与 " + name + " 进行视频通话？")
-                .setNegativeButton("确定", (d, w) -> onActiveMemberVideoClick(userId))
-                .setPositiveButton("取消", null)
-                .create();
-        dialog.setOnShowListener(d -> styleMapDialogWindowAndButtons((AlertDialog) d, MAP_DLG_BTN_BATTLE));
-        dialog.show();
+        showMapConfirmDialog("视频通话", "是否与 " + name + " 进行视频通话？", "确定", "取消",
+                () -> onActiveMemberVideoClick(userId), null);
     }
 
     @NonNull
@@ -7257,8 +7357,7 @@ public class Fragment_map extends Fragment {
             }
             if (from == null) continue;
             Feature f = Feature.fromGeometry(LineString.fromLngLats(buildMarkLinkPoints(from, mark.latLng)));
-            String lineColorHex = (link.userId == selfUserId) ? "#00B35A" : "#FDD835";
-            f.addStringProperty("color", lineColorHex);
+            f.addStringProperty("color", resolveMarkLinkColorHex(link));
             features.add(f);
         }
         source.setGeoJson(FeatureCollection.fromFeatures(features));
@@ -7355,133 +7454,101 @@ public class Fragment_map extends Fragment {
         Collections.sort(syncedMarks, (a, b) -> Long.compare(b.ts, a.ts));
 
         Context ctx = requireContext();
-        ScrollView scroll = new ScrollView(ctx);
-        LinearLayout box = new LinearLayout(ctx);
-        box.setOrientation(LinearLayout.VERTICAL);
-        int pad = dp(12);
-        box.setPadding(pad, dp(4), pad, dp(4));
-        scroll.addView(box, new ScrollView.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
+        View content = LayoutInflater.from(ctx).inflate(R.layout.dialog_synced_mark_notes, null, false);
+        RecyclerView rv = content.findViewById(R.id.rvSyncedMarkNotes);
+        ViewGroup.LayoutParams rvLp = rv.getLayoutParams();
+        rvLp.height = computeActiveMembersScrollMaxHeightPx();
+        rv.setLayoutParams(rvLp);
+        rv.setLayoutManager(new LinearLayoutManager(ctx));
         final AlertDialog[] dlgRef = new AlertDialog[1];
-        for (int i = 0; i < syncedMarks.size(); i++) {
-            BattleMark mark = syncedMarks.get(i);
-            LinearLayout row = new LinearLayout(ctx);
-            row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setPadding(0, dp(10), 0, dp(10));
+        rv.setAdapter(new SyncedMarkNotesAdapter(syncedMarks, mark -> {
+            if (dlgRef[0] != null) dlgRef[0].dismiss();
+            locateToBattleMark(mark);
+        }, mark -> {
+            if (dlgRef[0] != null) dlgRef[0].dismiss();
+            showDeleteMarkConfirmDialog(mark);
+        }));
+        DividerItemDecoration div = new DividerItemDecoration(ctx, DividerItemDecoration.VERTICAL);
+        Drawable divDrawable = ContextCompat.getDrawable(ctx, R.drawable.bg_map_dialog_list_divider);
+        if (divDrawable != null) {
+            div.setDrawable(divDrawable);
+        }
+        rv.addItemDecoration(div);
 
-            ImageView icon = new ImageView(ctx);
-            icon.setImageResource(getBattleMarkIconRes(mark.typeIndex));
-            icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            row.addView(icon, new LinearLayout.LayoutParams(dp(42), dp(42)));
+        TextView btnClose = content.findViewById(R.id.btnSyncedMarkNotesClose);
+        btnClose.setOnClickListener(v -> {
+            if (dlgRef[0] != null) dlgRef[0].dismiss();
+        });
 
-            LinearLayout ownerCol = new LinearLayout(ctx);
-            ownerCol.setOrientation(LinearLayout.VERTICAL);
-            ownerCol.setGravity(Gravity.CENTER_VERTICAL);
-            ownerCol.setPadding(dp(8), 0, dp(8), 0);
+        dlgRef[0] = createMapStyledDialog(content);
+        dlgRef[0].show();
+    }
 
-            TextView ownerLabel = new TextView(ctx);
-            ownerLabel.setText("\u6807\u6ce8\u4eba");
-            ownerLabel.setTextColor(Color.parseColor("#8A9099"));
-            ownerLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-            ownerLabel.setSingleLine(true);
-            ownerCol.addView(ownerLabel);
+    private static final class SyncedMarkNoteViewHolder extends RecyclerView.ViewHolder {
+        final ImageView ivIcon;
+        final TextView tvOwner;
+        final TextView tvTitle;
+        final TextView tvDistance;
+        final TextView tvLink;
+        final TextView btnLocate;
+        final TextView btnDelete;
 
-            TextView ownerValue = new TextView(ctx);
-            ownerValue.setText(getBattleMarkOwnerDisplayName(mark));
-            ownerValue.setTextColor(Color.parseColor("#111111"));
-            ownerValue.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-            ownerValue.setSingleLine(true);
-            ownerValue.setEllipsize(TextUtils.TruncateAt.END);
-            ownerValue.setMaxWidth(dp(72));
-            ownerCol.addView(ownerValue);
-            row.addView(ownerCol, new LinearLayout.LayoutParams(dp(84), ViewGroup.LayoutParams.WRAP_CONTENT));
+        SyncedMarkNoteViewHolder(@NonNull View itemView) {
+            super(itemView);
+            ivIcon = itemView.findViewById(R.id.ivSyncedMarkIcon);
+            tvOwner = itemView.findViewById(R.id.tvSyncedMarkOwner);
+            tvTitle = itemView.findViewById(R.id.tvSyncedMarkTitle);
+            tvDistance = itemView.findViewById(R.id.tvSyncedMarkDistance);
+            tvLink = itemView.findViewById(R.id.tvSyncedMarkLink);
+            btnLocate = itemView.findViewById(R.id.btnSyncedMarkLocate);
+            btnDelete = itemView.findViewById(R.id.btnSyncedMarkDelete);
+        }
+    }
 
-            LinearLayout info = new LinearLayout(ctx);
-            info.setOrientation(LinearLayout.VERTICAL);
-            info.setPadding(dp(10), 0, dp(8), 0);
+    private final class SyncedMarkNotesAdapter extends RecyclerView.Adapter<SyncedMarkNoteViewHolder> {
+        private final List<BattleMark> items;
+        private final Consumer<BattleMark> onLocate;
+        private final Consumer<BattleMark> onDelete;
 
-            TextView title = new TextView(ctx);
-            title.setText(battleMarks[Math.max(0, Math.min(mark.typeIndex, battleMarks.length - 1))]);
-            title.setTextColor(Color.parseColor("#111111"));
-            title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-            title.setSingleLine(true);
-            info.addView(title);
+        SyncedMarkNotesAdapter(@NonNull List<BattleMark> items,
+                               @NonNull Consumer<BattleMark> onLocate,
+                               @NonNull Consumer<BattleMark> onDelete) {
+            this.items = items;
+            this.onLocate = onLocate;
+            this.onDelete = onDelete;
+        }
 
-            TextView distance = new TextView(ctx);
-            distance.setText("距离: " + formatDistanceToMark(mark));
-            distance.setTextColor(Color.parseColor("#5F6673"));
-            distance.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-            info.addView(distance);
+        @NonNull
+        @Override
+        public SyncedMarkNoteViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View v = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_synced_mark_note, parent, false);
+            return new SyncedMarkNoteViewHolder(v);
+        }
 
-            TextView linked = new TextView(ctx);
-            linked.setText("连线: " + formatSelfMarkLinkState(mark.id));
-            linked.setTextColor(Color.parseColor("#5F6673"));
-            linked.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-            info.addView(linked);
-
-            row.addView(info, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-
-            TextView locate = new TextView(ctx);
-            locate.setText("定位");
-            locate.setGravity(Gravity.CENTER);
-            locate.setMinWidth(dp(54));
-            locate.setMinHeight(dp(40));
-            styleMapDialogRowActionText(locate);
-            locate.setOnClickListener(v -> {
-                if (dlgRef[0] != null) dlgRef[0].dismiss();
-                locateToBattleMark(mark);
-            });
-            row.addView(locate, new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
+        @Override
+        public void onBindViewHolder(@NonNull SyncedMarkNoteViewHolder h, int position) {
+            BattleMark mark = items.get(position);
+            h.ivIcon.setImageResource(getBattleMarkIconRes(mark.typeIndex));
+            h.tvOwner.setText(getBattleMarkOwnerDisplayName(mark));
+            h.tvTitle.setText(battleMarks[Math.max(0, Math.min(mark.typeIndex, battleMarks.length - 1))]);
+            h.tvDistance.setText("距离: " + formatDistanceToMark(mark));
+            h.tvLink.setText("连线: " + formatSelfMarkLinkState(mark.id));
+            h.btnLocate.setOnClickListener(v -> onLocate.accept(mark));
+            ensureSelfUserId();
             if (selfUserId > 0 && mark.ownerId == selfUserId) {
-                TextView delete = new TextView(ctx);
-                delete.setText("\u5220\u9664");
-                delete.setGravity(Gravity.CENTER);
-                delete.setMinWidth(dp(54));
-                delete.setMinHeight(dp(40));
-                styleMapDialogRowActionText(delete);
-                delete.setTextColor(Color.parseColor("#D32F2F"));
-                delete.setOnClickListener(v -> {
-                    if (dlgRef[0] != null) dlgRef[0].dismiss();
-                    showDeleteMarkConfirmDialog(mark);
-                });
-                LinearLayout.LayoutParams deleteLp = new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                deleteLp.leftMargin = dp(6);
-                row.addView(delete, deleteLp);
-            }
-
-            box.addView(row, new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-            if (i < syncedMarks.size() - 1) {
-                View div = new View(ctx);
-                div.setBackgroundColor(Color.parseColor("#1A000000"));
-                box.addView(div, new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(1))));
+                h.btnDelete.setVisibility(View.VISIBLE);
+                h.btnDelete.setOnClickListener(v -> onDelete.accept(mark));
+            } else {
+                h.btnDelete.setVisibility(View.GONE);
+                h.btnDelete.setOnClickListener(null);
             }
         }
 
-        dlgRef[0] = new AlertDialog.Builder(ctx)
-                .setCustomTitle(buildMapDialogTitle("同步注记列表"))
-                .setView(scroll)
-                .setPositiveButton("关闭", null)
-                .create();
-        dlgRef[0].setOnShowListener(d -> {
-            AlertDialog ad = (AlertDialog) d;
-            styleMapDialogWindowAndButtons(ad, MAP_DLG_BTN_DISMISS_GRAY);
-            Window w = ad.getWindow();
-            if (w != null) {
-                WindowManager.LayoutParams lp = w.getAttributes();
-                lp.width = (int) (ctx.getResources().getDisplayMetrics().widthPixels * 0.88f);
-                lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
-                w.setAttributes(lp);
-            }
-        });
-        dlgRef[0].show();
+        @Override
+        public int getItemCount() {
+            return items.size();
+        }
     }
 
     @NonNull
@@ -7526,12 +7593,82 @@ public class Fragment_map extends Fragment {
             markLinks.put(key, link);
         }
         link.synced = synced || link.synced;
-        link.ts = ts > 0 ? ts : System.currentTimeMillis();        return link;
+        link.ts = ts > 0 ? ts : System.currentTimeMillis();
+        persistLocalMarkLinksToSp();
+        return link;
     }
 
     private void removeMarkLink(@NonNull String markId, long userId) {
         if (TextUtils.isEmpty(markId) || userId <= 0) return;
-        markLinks.remove(markLinkKey(userId, markId));    }
+        markLinks.remove(markLinkKey(userId, markId));
+        persistLocalMarkLinksToSp();
+    }
+
+    @NonNull
+    private String localMarkLinksPrefKey() {
+        return PREF_KEY_LOCAL_LINKS_PREFIX + selfUserId;
+    }
+
+    private void persistLocalMarkLinksToSp() {
+        if (suppressLocalMarkLinkPersistence) return;
+        ensureSelfUserId();
+        if (selfUserId <= 0 || getContext() == null) return;
+        try {
+            JSONArray arr = new JSONArray();
+            for (MarkLink link : markLinks.values()) {
+                if (link == null || link.synced || TextUtils.isEmpty(link.markId) || link.userId <= 0) {
+                    continue;
+                }
+                JSONObject item = new JSONObject();
+                item.put("markId", link.markId);
+                item.put("userId", link.userId);
+                item.put("ts", link.ts);
+                arr.put(item);
+            }
+            requireContext().getSharedPreferences(PREF_MAP_MARK_LOCAL, Context.MODE_PRIVATE)
+                    .edit()
+                    .putString(localMarkLinksPrefKey(), arr.toString())
+                    .apply();
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void restoreLocalMarkLinksFromSp() {
+        ensureSelfUserId();
+        if (selfUserId <= 0 || !isAdded() || getContext() == null) return;
+        try {
+            String json = requireContext().getSharedPreferences(PREF_MAP_MARK_LOCAL, Context.MODE_PRIVATE)
+                    .getString(localMarkLinksPrefKey(), "[]");
+            if (TextUtils.isEmpty(json)) return;
+            JSONArray arr = new JSONArray(json);
+            suppressLocalMarkLinkPersistence = true;
+            try {
+                for (int i = 0; i < arr.length(); i++) {
+                    JSONObject item = arr.optJSONObject(i);
+                    if (item == null) continue;
+                    String markId = item.optString("markId", null);
+                    long userId = item.optLong("userId", 0L);
+                    long ts = item.optLong("ts", 0L);
+                    if (TextUtils.isEmpty(markId) || userId <= 0) continue;
+                    if (!battleMarksOnMap.containsKey(markId)) continue;
+                    MarkLink existing = markLinks.get(markLinkKey(userId, markId));
+                    if (existing != null && existing.synced) continue;
+                    upsertMarkLink(markId, userId, false, ts > 0 ? ts : System.currentTimeMillis());
+                }
+            } finally {
+                suppressLocalMarkLinkPersistence = false;
+            }
+            persistLocalMarkLinksToSp();
+        } catch (Exception ignored) {
+            suppressLocalMarkLinkPersistence = false;
+        }
+    }
+
+    private void tryRestoreLocalMarkLinksIfNeeded() {
+        if (!isAdded() || battleMarksOnMap.isEmpty()) return;
+        restoreLocalMarkLinksFromSp();
+        flushMarkConnectionLinesNow();
+    }
 
     private void removeLinksForMark(@NonNull String markId) {
         if (TextUtils.isEmpty(markId) || markLinks.isEmpty()) return;
@@ -7562,6 +7699,19 @@ public class Fragment_map extends Fragment {
         if (remote != null && now - remote.ts <= REMOTE_STALE_MS) return true;
         Set<Long> ids = activeGrpIds != null ? activeGrpIds : loadActiveGroupIdsFromTaskGrp();
         return isMemberOnlineForActiveGroups(userId, ids);
+    }
+
+    private int resolveMarkLinkColor(@NonNull MarkLink link) {
+        return Color.parseColor(resolveMarkLinkColorHex(link));
+    }
+
+    @NonNull
+    private String resolveMarkLinkColorHex(@NonNull MarkLink link) {
+        ensureSelfUserId();
+        if (link.userId == selfUserId) {
+            return link.synced ? MARK_LINK_COLOR_SELF_SYNCED : MARK_LINK_COLOR_LOCAL;
+        }
+        return MARK_LINK_COLOR_OTHER_SYNCED;
     }
 
     private boolean isBattleMarkLatLngLikelyOnScreen(@NonNull LatLng latLng) {
@@ -8104,24 +8254,16 @@ public class Fragment_map extends Fragment {
 
     private void showSyncConfirmDialog(@NonNull BattleMark mark) {
         if (!isAdded()) return;
-        AlertDialog dialog = new AlertDialog.Builder(requireContext())
-                .setCustomTitle(buildMapDialogTitle("作战标注"))
-                .setMessage("是否同步到各组员？")
-                .setNegativeButton("确定", (d, w) -> {
-                    sendBattleMarkToPeers(mark);
-                    mark.pending = false;
-                    if (TextUtils.equals(editingBattleMarkId, mark.id)) {
-                        editingBattleMarkId = null;
-                    }
-                    updateBattleMarkPendingChromeVisibility(mark);
-                    updateBattleMarkEditChrome(mark);
-                    updateBattleMarkOverlays();
-                })
-                .setPositiveButton("取消", (d, w) -> {
-                })
-                .create();
-        dialog.setOnShowListener(d -> styleMapDialogWindowAndButtons((AlertDialog) d, MAP_DLG_BTN_BATTLE));
-        dialog.show();
+        showMapConfirmDialog("作战标注", "是否同步到各组员？", "确定", "取消", () -> {
+            sendBattleMarkToPeers(mark);
+            mark.pending = false;
+            if (TextUtils.equals(editingBattleMarkId, mark.id)) {
+                editingBattleMarkId = null;
+            }
+            updateBattleMarkPendingChromeVisibility(mark);
+            updateBattleMarkEditChrome(mark);
+            updateBattleMarkOverlays();
+        }, null);
     }
 
     private void sendBattleMarkToPeers(@NonNull BattleMark mark) {
@@ -8177,6 +8319,11 @@ public class Fragment_map extends Fragment {
     }
 
     private void tryRequestMarkSyncSnapshot() {
+        tryRequestMarkSyncSnapshot(false);
+    }
+
+    /** 与地图 onResume / 登录后相同的标注与连线拉取流程；{@code force} 为 true 时跳过节流。 */
+    private void tryRequestMarkSyncSnapshot(boolean force) {
         if (!markSyncCacheEnabled || !isAdded()) return;
         ensureSelfUserId();
         if (selfUserId <= 0) return;
@@ -8185,13 +8332,35 @@ public class Fragment_map extends Fragment {
         for (Long groupId : activeGrpIds) {
             if (groupId == null || groupId <= 0 || !isSelfMemberOfGroup(groupId)) continue;
             Long last = lastMarkSyncReqTsByGroup.get(groupId);
-            if (last != null && now - last < MARK_SYNC_REQ_MIN_INTERVAL_MS) continue;
+            if (!force && last != null && now - last < MARK_SYNC_REQ_MIN_INTERVAL_MS) continue;
             markSyncGroupsWithSnapshot.remove(groupId);
             markSyncReqAttemptByGroup.put(groupId, 0);
             if (sendMarkSyncRequest(groupId, now)) {
                 scheduleMarkSyncRequestRetry(groupId);
             }
         }
+    }
+
+    private void showManualMarkSyncConfirmDialog() {
+        if (!isAdded()) return;
+        showMapConfirmDialog("同步标注", "是否重新同步标注信息？", "确认", "取消",
+                this::performManualMarkSync, null);
+    }
+
+    /** 手动重新同步：与 onResume 中登录后拉取标注/连线的时序一致。 */
+    private void performManualMarkSync() {
+        if (!isAdded()) return;
+        ensureSelfUserId();
+        if (selfUserId <= 0) {
+            Toast.makeText(requireContext(), "请先登录", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Toast.makeText(requireContext(), "正在重新同步标注信息…", Toast.LENGTH_SHORT).show();
+        trySyncBattleMarksAndCompassFromHub();
+        tryRequestMarkSyncSnapshot(true);
+        locationHandler.postDelayed(() -> tryRequestMarkSyncSnapshot(true), 2000L);
+        locationHandler.postDelayed(() -> tryRequestMarkSyncSnapshot(true), 6000L);
+        locationHandler.postDelayed(this::tryRestoreLocalMarkLinksIfNeeded, 6500L);
     }
 
     private void scheduleMarkSyncRequestRetry(final long groupId) {
@@ -8721,6 +8890,7 @@ public class Fragment_map extends Fragment {
                 removeMarkLink(parts.markId, parts.userId);
             }
         }
+        restoreLocalMarkLinksFromSp();
         flushMarkConnectionLinesNow();
     }
 
@@ -8751,18 +8921,13 @@ public class Fragment_map extends Fragment {
             Toast.makeText(requireContext(), "仅创建该作战标注的人员可删除", Toast.LENGTH_SHORT).show();
             return;
         }
-        AlertDialog dialog = new AlertDialog.Builder(requireContext())
-                .setCustomTitle(buildMapDialogTitle("删除作战标注"))
-                .setMessage("是否删除该作战标注？\n\n注意事项：\n1. 删除将同步到各组成员。\n2. 只有创建作战标注的人员才可删除。")
-                .setNegativeButton("确定", (d, w) -> {
+        showMapConfirmDialog("删除作战标注",
+                "是否删除该作战标注？\n\n注意事项：\n1. 删除将同步到各组成员。\n2. 只有创建作战标注的人员才可删除。",
+                "确定", "取消",
+                () -> {
                     removeBattleMark(mark.id);
                     sendDeleteMarkToPeers(mark.id);
-                })
-                .setPositiveButton("取消", (d, w) -> {
-                })
-                .create();
-        dialog.setOnShowListener(d -> styleMapDialogWindowAndButtons((AlertDialog) d, MAP_DLG_BTN_BATTLE));
-        dialog.show();
+                }, null);
     }
 
     private void handleRemoteMarkLinkMsg(long fromId, String text) {
@@ -9064,38 +9229,39 @@ public class Fragment_map extends Fragment {
     }
 
     private void showOfflineMapPromptThenContinue(@NonNull String cityName) {
-        new AlertDialog.Builder(requireContext())
-                .setTitle("离线地图")
-                .setMessage("当前城市：" + cityName + "\n是否下载该城市离线地图数据？\n（下载完成后可选择导航终点）")
-                .setNegativeButton("跳过", (d, w) -> {
+        showMapConfirmDialog("离线地图",
+                "当前城市：" + cityName + "\n是否下载该城市离线地图数据？\n（下载完成后可选择导航终点）",
+                "下载", "跳过",
+                () -> startAmapOfflineDownload(cityName),
+                () -> {
                     pendingNavCityName = cityName;
                     beginDestinationPicking();
-                })
-                .setPositiveButton("下载", (d, w) -> startAmapOfflineDownload(cityName))
-                .show();
+                });
     }
 
     private void startAmapOfflineDownload(@NonNull String cityName) {
         Log.i(TAG_OFFLINE, "startAmapOfflineDownload city=" + cityName);
         dismissOfflineDownloadDialog();
+        View content = inflateMapDialogShell();
+        bindMapDialogTitle(content, "离线地图下载");
+        hideMapDialogFooter(content);
         android.widget.ProgressBar pb = new android.widget.ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal);
         pb.setMax(100);
         pb.setProgress(0);
         TextView tv = new TextView(requireContext());
-        tv.setPadding(dp(12), dp(8), dp(12), dp(8));
+        tv.setPadding(dp(16), dp(4), dp(16), dp(12));
         tv.setText("准备下载…");
+        tv.setTextColor(Color.parseColor("#111111"));
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         LinearLayout box = new LinearLayout(requireContext());
         box.setOrientation(LinearLayout.VERTICAL);
         box.addView(tv);
         box.addView(pb);
-        offlineDownloadDialog = new AlertDialog.Builder(requireContext())
-                .setTitle("离线地图下载")
-                .setView(box)
-                .setCancelable(true)
-                .setOnCancelListener(d -> {
-                    amapOfflineMapMgrKeepalive = null;
-                })
-                .show();
+        setMapDialogCustomContent(content, box);
+        offlineDownloadDialog = createMapStyledDialog(content);
+        offlineDownloadDialog.setCancelable(true);
+        offlineDownloadDialog.setOnCancelListener(d -> amapOfflineMapMgrKeepalive = null);
+        offlineDownloadDialog.show();
         amapOfflineMapMgrKeepalive = AmapOfflineMapHelper.ensureCityOffline(requireContext(), cityName, new AmapOfflineMapHelper.DownloadUi() {
             @Override
             public void onProgress(int percent, String name) {
@@ -9190,48 +9356,56 @@ public class Fragment_map extends Fragment {
             return;
         }
         MarkLink link = getSelfMarkLink(mark.id);
-        AlertDialog dialog;
+        View content = inflateMapDialogShell();
+        bindMapDialogTitle(content, "作战连线");
+        AlertDialog dialog = createMapStyledDialog(content);
+        TextView btnCancel = content.findViewById(R.id.btnMapDialogCancel);
+        TextView btnConfirm = content.findViewById(R.id.btnMapDialogConfirm);
+        View btnDivider = content.findViewById(R.id.viewMapDialogFooterBtnDivider);
         if (link == null) {
-            dialog = new AlertDialog.Builder(requireContext())
-                    .setCustomTitle(buildMapDialogTitle("作战连线"))
-                    .setMessage("是否与该目标点连线？")
-                    .setPositiveButton("仅本地连线", (d, w) -> {
-                        upsertMarkLink(mark.id, selfUserId, false, System.currentTimeMillis());
-                        flushMarkConnectionLinesNow();
-                    })
-                    .setNegativeButton("连线并同步", (d, w) -> {
-                        sendMarkLinkToPeers(mark.id, true);
-                        flushMarkConnectionLinesNow();
-                    })
-                    .setNeutralButton("取消", null)
-                    .create();
+            bindMapDialogMessage(content, "是否与该目标点连线？");
+            addMapDialogActionRow(content, "仅本地连线", () -> {
+                dialog.dismiss();
+                upsertMarkLink(mark.id, selfUserId, false, System.currentTimeMillis());
+                flushMarkConnectionLinesNow();
+            });
+            addMapDialogActionRow(content, "连线并同步", () -> {
+                dialog.dismiss();
+                sendMarkLinkToPeers(mark.id, true);
+                flushMarkConnectionLinesNow();
+            });
+            btnConfirm.setVisibility(View.GONE);
+            if (btnDivider != null) btnDivider.setVisibility(View.GONE);
+            btnCancel.setText("取消");
+            btnCancel.setOnClickListener(v -> dialog.dismiss());
         } else if (!link.synced) {
-            dialog = new AlertDialog.Builder(requireContext())
-                    .setCustomTitle(buildMapDialogTitle("作战连线"))
-                    .setMessage("是否同步或删除与该目标点的连线？")
-                    .setPositiveButton("同步", (d, w) -> {
-                        sendMarkLinkToPeers(mark.id, true);
-                        flushMarkConnectionLinesNow();
-                    })
-                    .setNegativeButton("删除连线", (d, w) -> {
-                        removeMarkLink(mark.id, selfUserId);
-                        flushMarkConnectionLinesNow();
-                    })
-                    .setNeutralButton("取消", null)
-                    .create();
+            bindMapDialogMessage(content, "是否同步或删除与该目标点的连线？");
+            addMapDialogActionRow(content, "同步", () -> {
+                dialog.dismiss();
+                sendMarkLinkToPeers(mark.id, true);
+                flushMarkConnectionLinesNow();
+            });
+            addMapDialogActionRow(content, "删除连线", () -> {
+                dialog.dismiss();
+                removeMarkLink(mark.id, selfUserId);
+                flushMarkConnectionLinesNow();
+            });
+            btnConfirm.setVisibility(View.GONE);
+            if (btnDivider != null) btnDivider.setVisibility(View.GONE);
+            btnCancel.setText("取消");
+            btnCancel.setOnClickListener(v -> dialog.dismiss());
         } else {
-            dialog = new AlertDialog.Builder(requireContext())
-                    .setCustomTitle(buildMapDialogTitle("作战连线"))
-                    .setMessage("是否断开与该目标点的连线？")
-                    .setPositiveButton("断开连线", (d, w) -> {
-                        removeMarkLink(mark.id, selfUserId);
-                        sendMarkLinkToPeers(mark.id, false);
-                        flushMarkConnectionLinesNow();
-                    })
-                    .setNegativeButton("取消", null)
-                    .create();
+            bindMapDialogMessage(content, "是否断开与该目标点的连线？");
+            btnConfirm.setText("断开连线");
+            btnCancel.setText("取消");
+            btnConfirm.setOnClickListener(v -> {
+                dialog.dismiss();
+                removeMarkLink(mark.id, selfUserId);
+                sendMarkLinkToPeers(mark.id, false);
+                flushMarkConnectionLinesNow();
+            });
+            btnCancel.setOnClickListener(v -> dialog.dismiss());
         }
-        dialog.setOnShowListener(d -> styleMapDialogWindowAndButtons((AlertDialog) d, MAP_DLG_BTN_BATTLE));
         dialog.show();
     }
 
@@ -9255,19 +9429,24 @@ public class Fragment_map extends Fragment {
                     pendingNavDestination.getLatitude(),
                     pendingNavDestination.getLongitude()));
         }
-        AlertDialog dlg = new AlertDialog.Builder(requireContext())
-                .setTitle("导航方式")
-                .setView(sheet)
-                .setNegativeButton("取消", (d, w) -> {
-                    pendingNavDestination = null;
-                })
-                .setPositiveButton("确定", (d, w) -> {
-                    boolean driving = rbDrive != null && rbDrive.isChecked();
-                    startAmapRouteSearch(driving);
-                })
-                .create();
-        dlg.setOnShowListener(d -> {
-            if (rbDrive != null) rbDrive.setChecked(true);
+        View content = inflateMapDialogShell();
+        bindMapDialogTitle(content, "导航方式");
+        bindMapDialogMessage(content, null);
+        setMapDialogCustomContent(content, sheet);
+        TextView btnCancel = content.findViewById(R.id.btnMapDialogCancel);
+        TextView btnConfirm = content.findViewById(R.id.btnMapDialogConfirm);
+        btnCancel.setText("取消");
+        btnConfirm.setText("确定");
+        AlertDialog dlg = createMapStyledDialog(content);
+        if (rbDrive != null) rbDrive.setChecked(true);
+        btnCancel.setOnClickListener(v -> {
+            dlg.dismiss();
+            pendingNavDestination = null;
+        });
+        btnConfirm.setOnClickListener(v -> {
+            dlg.dismiss();
+            boolean driving = rbDrive != null && rbDrive.isChecked();
+            startAmapRouteSearch(driving);
         });
         dlg.show();
     }
@@ -9361,11 +9540,7 @@ public class Fragment_map extends Fragment {
         if (!isAdded() || getContext() == null) {
             return;
         }
-        new AlertDialog.Builder(requireContext())
-                .setTitle("离线导航数据检查失败")
-                .setMessage(message)
-                .setPositiveButton("知道了", null)
-                .show();
+        showMapAckDialog("离线导航数据检查失败", message, "知道了");
     }
 
     /**
@@ -10043,14 +10218,17 @@ public class Fragment_map extends Fragment {
                 LatLng selfLineLatLng = displayedLatLng != null ? displayedLatLng : currentLatLng;
                 if (selfLineLatLng == null) continue;
                 PointF selfPt = mapLibreMap.getProjection().toScreenLocation(selfLineLatLng);
-                if (selfPt != null) items.add(buildLine(selfPt, markPt, "我", withLabels, true));
+                if (selfPt != null) {
+                    items.add(buildLine(selfPt, markPt, "我", withLabels, resolveMarkLinkColor(link)));
+                }
             } else {
                 RemoteLoc r = remoteLocs.get(link.userId);
                 LatLng remoteLineLatLng = r != null && r.displayLatLng != null ? r.displayLatLng : (r != null ? r.latLng : null);
                 if (remoteLineLatLng == null) continue;
                 PointF rp = mapLibreMap.getProjection().toScreenLocation(remoteLineLatLng);
                 if (rp != null) {
-                    items.add(buildLine(rp, markPt, getUserDisplayNameCached(link.userId), false, false));
+                    items.add(buildLine(rp, markPt, getUserDisplayNameCached(link.userId), false,
+                            resolveMarkLinkColor(link)));
                 }
             }
         }
@@ -10058,11 +10236,11 @@ public class Fragment_map extends Fragment {
     }
 
     @SuppressLint("DefaultLocale")
-    private LineItem buildLine(PointF from, PointF to, String who, boolean withLabel, boolean isSelfLine) {
+    private LineItem buildLine(PointF from, PointF to, String who, boolean withLabel, int color) {
         LineItem li = new LineItem();
         li.from = from;
         li.to = to;
-        li.color = Color.parseColor(isSelfLine ? "#00B35A" : "#FDD835");
+        li.color = color;
         if (!withLabel) {
             li.label = null;
             return li;

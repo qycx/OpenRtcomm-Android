@@ -2863,11 +2863,13 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         locKeywordDialogShowing = true;
 
         View content = LayoutInflater.from(this).inflate(R.layout.dialog_map_loc_keyword, null, false);
+        content.setClipToOutline(true);
+        content.setOutlineProvider(android.view.ViewOutlineProvider.BACKGROUND);
         EditText input = content.findViewById(R.id.edtMapLocKeyword);
         TextView btnCancel = content.findViewById(R.id.btnMapLocKeywordCancel);
         TextView btnConfirm = content.findViewById(R.id.btnMapLocKeywordConfirm);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new AlertDialog.Builder(this, R.style.MapStyledDialogTheme)
                 .setView(content)
                 .setCancelable(true)
                 .create();
@@ -2876,6 +2878,24 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             Window w = dialog.getWindow();
             if (w != null) {
                 w.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+                View decor = w.getDecorView();
+                if (decor != null) {
+                    decor.setBackgroundResource(android.R.color.transparent);
+                }
+                View panel = w.findViewById(android.R.id.content);
+                if (panel != null) {
+                    panel.setBackgroundResource(android.R.color.transparent);
+                }
+                android.view.ViewParent parent = content.getParent();
+                while (parent instanceof View) {
+                    View wrapper = (View) parent;
+                    wrapper.setBackgroundResource(android.R.color.transparent);
+                    wrapper.setPadding(0, 0, 0, 0);
+                    if (wrapper.getId() == android.R.id.content) {
+                        break;
+                    }
+                    parent = wrapper.getParent();
+                }
                 WindowManager.LayoutParams lp = w.getAttributes();
                 lp.width = (int) (getResources().getDisplayMetrics().widthPixels * 0.84f);
                 lp.height = WindowManager.LayoutParams.WRAP_CONTENT;

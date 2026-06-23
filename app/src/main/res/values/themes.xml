@@ -13,4 +13,16 @@
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
     </style>
+
+    <!-- 地图自定义弹窗：透明窗口，避免圆角外白边 -->
+    <style name="MapStyledDialogTheme" parent="Theme.MaterialComponents.Light.Dialog.Alert">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:padding">0dp</item>
+        <item name="android:panelBackground">@android:color/transparent</item>
+        <item name="panelBackground">@android:color/transparent</item>
+    </style>
 </resources>

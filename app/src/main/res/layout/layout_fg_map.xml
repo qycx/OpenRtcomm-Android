@@ -336,7 +336,7 @@
         android:padding="9dp"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_mark_note"
-        android:contentDescription="同步注记列表" />
+        android:contentDescription="同步注记列表，长按重新同步" />
 
     <FrameLayout
         android:id="@+id/layoutCompassPanel"

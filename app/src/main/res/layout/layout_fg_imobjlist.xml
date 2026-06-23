@@ -10,6 +10,18 @@
         android:layout_height="48dp"
         android:background="@color/bg_topbar">
 
+        <ImageView
+            android:id="@+id/img_back"
+            android:layout_width="40dp"
+            android:layout_height="match_parent"
+            android:layout_alignParentLeft="true"
+            android:layout_marginLeft="8dp"
+            android:padding="8dp"
+            android:scaleType="centerInside"
+            android:rotation="180"
+            android:src="@drawable/back"
+            android:contentDescription="@null"/>
+
         <TextView
             android:id="@+id/txt_title"
             android:layout_width="wrap_content"
@@ -42,9 +54,10 @@
 
     </RelativeLayout>
 
-    <ListView android:id="@+id/list"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:cacheColorHint="#ffdaff7f"/>
 
 </LinearLayout>
