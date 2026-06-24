@@ -11,13 +11,18 @@ import android.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
+import android.view.ViewParent;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -200,8 +205,10 @@ public class Fragment_me extends Fragment {
     private void showChangePasswordDialog() {
         if (getActivity() == null) return;
         View content = getLayoutInflater().inflate(R.layout.dialog_me_change_password, null);
+        content.setClipToOutline(true);
+        content.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
         EditText edtNewPassword = content.findViewById(R.id.edtMeNewPassword);
-        AlertDialog dialog = new AlertDialog.Builder(getActivity())
+        AlertDialog dialog = new AlertDialog.Builder(getActivity(), R.style.MapStyledDialogTheme)
                 .setView(content)
                 .setCancelable(true)
                 .create();
@@ -216,11 +223,39 @@ public class Fragment_me extends Fragment {
             dialog.dismiss();
             showChangePasswordConfirmDialog();
         });
+        dialog.setOnShowListener(d -> applyStyledDialogWindow(dialog, content));
         dialog.show();
-        Window wnd = dialog.getWindow();
-        if (wnd != null) {
-            wnd.setGravity(Gravity.CENTER);
+    }
+
+    /** 透明窗口 + 去掉内层白底，避免圆角弹窗外漏白边。 */
+    private void applyStyledDialogWindow(AlertDialog dialog, View content) {
+        if (getActivity() == null || dialog == null) return;
+        Window w = dialog.getWindow();
+        if (w == null) return;
+        w.setGravity(Gravity.CENTER);
+        w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        View decor = w.getDecorView();
+        if (decor != null) {
+            decor.setBackgroundResource(android.R.color.transparent);
         }
+        View panel = w.findViewById(android.R.id.content);
+        if (panel != null) {
+            panel.setBackgroundResource(android.R.color.transparent);
+        }
+        ViewParent parent = content.getParent();
+        while (parent instanceof View) {
+            View wrapper = (View) parent;
+            wrapper.setBackgroundResource(android.R.color.transparent);
+            wrapper.setPadding(0, 0, 0, 0);
+            if (wrapper.getId() == android.R.id.content) {
+                break;
+            }
+            parent = wrapper.getParent();
+        }
+        WindowManager.LayoutParams lp = w.getAttributes();
+        lp.width = (int) (getResources().getDisplayMetrics().widthPixels * 0.84f);
+        lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+        w.setAttributes(lp);
     }
 
     private void showChangePasswordConfirmDialog() {

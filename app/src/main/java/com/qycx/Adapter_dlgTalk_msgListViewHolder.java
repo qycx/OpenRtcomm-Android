@@ -4,6 +4,8 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.qycx.base.qyDefs;
+
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.qycx.base.TableItem;
@@ -16,6 +18,7 @@ import com.qycx.base.tmpProc;
 public class Adapter_dlgTalk_msgListViewHolder extends RecyclerView.ViewHolder {
     public ImageView iv;
     public TextView tv_speaker;
+    public TextView tv_time;
     public TextView tv_msg;
 
 
@@ -23,6 +26,7 @@ public class Adapter_dlgTalk_msgListViewHolder extends RecyclerView.ViewHolder {
         super(itemView);
         iv = itemView.findViewById(R.id.iv);
         tv_speaker = itemView.findViewById(R.id.tv_speaker);
+        tv_time = itemView.findViewById(R.id.tv_time);
         tv_msg = itemView.findViewById(R.id.tv_msg);
 
         itemView.setOnClickListener(v -> {
@@ -49,17 +53,16 @@ public class Adapter_dlgTalk_msgListViewHolder extends RecyclerView.ViewHolder {
         // Bind data to views
         // ...
 
-        String str;
+        String timeStr = displayShortTime.qyFuncs_Droid.displayShortTime(item.tStartTime);
+        tv_time.setText(timeStr);
         if (mActivity.m_talker.m_var.addr.uiObjType == qyDefs.Consts.CONST_objType_imGrp) {
-            str = String.format("%s %s %s", item.dw, item.bm, item.syr);
-            str += " " + displayShortTime.qyFuncs_Droid.displayShortTime(item.tStartTime);
-            tv_speaker.setText(str);
+            tv_speaker.setVisibility(View.VISIBLE);
+            tv_speaker.setText(String.format("%s %s %s", item.dw, item.bm, item.syr));
         } else {
-            str = item.syr;
-            str += " " + displayShortTime.qyFuncs_Droid.displayShortTime(item.tStartTime);
-            tv_speaker.setText(str);
+            tv_speaker.setVisibility(View.GONE);
         }
         iv.setImageResource(item.ImageResourceId);
+        String str;
 
         if (item.iTaskId == 0) {
             str = item.msg;
