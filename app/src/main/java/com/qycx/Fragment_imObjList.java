@@ -196,64 +196,68 @@ public class Fragment_imObjList extends Fragment {
         groups.sort(Comparator.comparingLong(a -> a.ui64Id));
         friends.sort(Comparator.comparingLong(a -> a.ui64Id));
 
-        List<Adapter_imObjTreeList.TreeRow> rows = new ArrayList<>();
+        List<Adapter_imObjTreeList.SectionData> sections = new ArrayList<>();
+        sections.add(buildGroupSection(groups));
+        sections.add(buildFriendSection(friends));
+        treeAdapter.setSections(sections);
+    }
 
-        Adapter_imObjTreeList.TreeRow grpCat = new Adapter_imObjTreeList.TreeRow();
-        grpCat.type = Adapter_imObjTreeList.TYPE_CATEGORY;
-        grpCat.id = CATEGORY_GRP;
-        grpCat.title = "群组";
-        grpCat.expanded = grpCategoryExpanded;
-        grpCat.indentDp = 8;
-        rows.add(grpCat);
-
-        if (grpCategoryExpanded) {
-            for (TableItem.TableItem_imObj grp : groups) {
-                boolean grpExpanded = expandedGroupIds.contains(grp.ui64Id);
-                Adapter_imObjTreeList.TreeRow grpRow = new Adapter_imObjTreeList.TreeRow();
-                grpRow.type = Adapter_imObjTreeList.TYPE_GROUP;
-                grpRow.id = grp.ui64Id;
-                grpRow.title = grp.grpName != null && !grp.grpName.isEmpty() ? grp.grpName : String.valueOf(grp.ui64Id);
-                grpRow.subtitle = String.format("(分组) %s", grp.ui64Id);
-                grpRow.imageRes = grp.ImageResourceId;
-                grpRow.expanded = grpExpanded;
-                grpRow.indentDp = 24;
-                rows.add(grpRow);
-
-                if (grpExpanded) {
-                    List<TableItem.TableItem_imObj> members = loadGroupMembers(grp.ui64Id);
-                    for (TableItem.TableItem_imObj mem : members) {
-                        rows.add(buildContactRow(mem, 48));
-                    }
+    private Adapter_imObjTreeList.SectionData buildGroupSection(List<TableItem.TableItem_imObj> groups) {
+        Adapter_imObjTreeList.SectionData section = new Adapter_imObjTreeList.SectionData();
+        section.categoryKey = CATEGORY_GRP;
+        section.title = String.format("群组(%d)", groups.size());
+        section.expanded = grpCategoryExpanded;
+        if (!grpCategoryExpanded) {
+            return section;
+        }
+        for (TableItem.TableItem_imObj grp : groups) {
+            boolean grpExpanded = expandedGroupIds.contains(grp.ui64Id);
+            Adapter_imObjTreeList.TreeRow grpRow = new Adapter_imObjTreeList.TreeRow();
+            grpRow.type = Adapter_imObjTreeList.TYPE_GROUP;
+            grpRow.id = grp.ui64Id;
+            grpRow.title = grp.grpName != null && !grp.grpName.isEmpty() ? grp.grpName : String.valueOf(grp.ui64Id);
+            grpRow.badgeText = String.format("(分组)%s", grp.ui64Id);
+            grpRow.badgeStyle = Adapter_imObjTreeList.BADGE_GROUP;
+            grpRow.imageRes = grp.ImageResourceId;
+            grpRow.expanded = grpExpanded;
+            section.items.add(grpRow);
+            if (grpExpanded) {
+                List<TableItem.TableItem_imObj> members = loadGroupMembers(grp.ui64Id);
+                for (TableItem.TableItem_imObj mem : members) {
+                    section.items.add(buildContactRow(mem));
                 }
             }
         }
-
-        Adapter_imObjTreeList.TreeRow friendCat = new Adapter_imObjTreeList.TreeRow();
-        friendCat.type = Adapter_imObjTreeList.TYPE_CATEGORY;
-        friendCat.id = CATEGORY_FRIEND;
-        friendCat.title = "好友";
-        friendCat.expanded = friendCategoryExpanded;
-        friendCat.indentDp = 8;
-        rows.add(friendCat);
-
-        if (friendCategoryExpanded) {
-            for (TableItem.TableItem_imObj friend : friends) {
-                rows.add(buildContactRow(friend, 24));
-            }
-        }
-
-        treeAdapter.setRows(rows);
+        return section;
     }
 
-    private Adapter_imObjTreeList.TreeRow buildContactRow(TableItem.TableItem_imObj item, int indentDp) {
+    private Adapter_imObjTreeList.SectionData buildFriendSection(List<TableItem.TableItem_imObj> friends) {
+        Adapter_imObjTreeList.SectionData section = new Adapter_imObjTreeList.SectionData();
+        section.categoryKey = CATEGORY_FRIEND;
+        section.title = String.format("好友(%d)", friends.size());
+        section.expanded = friendCategoryExpanded;
+        if (!friendCategoryExpanded) {
+            return section;
+        }
+        for (TableItem.TableItem_imObj friend : friends) {
+            section.items.add(buildContactRow(friend));
+        }
+        return section;
+    }
+
+    private Adapter_imObjTreeList.TreeRow buildContactRow(TableItem.TableItem_imObj item) {
         Adapter_imObjTreeList.TreeRow row = new Adapter_imObjTreeList.TreeRow();
         row.type = Adapter_imObjTreeList.TYPE_CONTACT;
         row.id = item.ui64Id;
-        row.title = item.syr != null && !item.syr.isEmpty() ? item.syr : String.valueOf(item.ui64Id);
-        row.subtitle = String.format("%s %s %s", item.dw, item.bm, item.ui64Id);
+        String displayName = item.syr;
+        if (displayName == null || displayName.isEmpty()) {
+            displayName = String.valueOf(item.ui64Id);
+        }
+        row.title = displayName;
         row.imageRes = item.ImageResourceId != 0 ? item.ImageResourceId : R.drawable.contact;
-        row.online = isUserOnline(item.ui64Id);
-        row.indentDp = indentDp;
+        if (isUserOnline(item.ui64Id)) {
+            row.badgeStyle = Adapter_imObjTreeList.BADGE_ONLINE;
+        }
         return row;
     }
 
@@ -365,7 +369,6 @@ public class Fragment_imObjList extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.layout_fg_imobjlist, container, false);
-        view.findViewById(R.id.img_back).setOnClickListener(v -> quitApp());
         tv_topMenu = view.findViewById(R.id.txt_topMenu);
         tv_topMenu.setOnClickListener(Tv_topMenu_Click);
 
@@ -373,7 +376,7 @@ public class Fragment_imObjList extends Fragment {
         if (pQyMc == null) return view;
 
         m_tv_txtTitle = view.findViewById(R.id.txt_title);
-        m_tv_txtTitle.setText(mainWnd.m_str_title);
+        m_tv_txtTitle.setText("联系人");
 
         listView = view.findViewById(R.id.list);
         listView.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -440,9 +443,9 @@ public class Fragment_imObjList extends Fragment {
         if (mainWnd == null) return 0;
 
         if (pProcInfo.av.talk.bChannelReady) {
-            m_tv_txtTitle.setText(mainWnd.m_str_title);
+            m_tv_txtTitle.setText("联系人");
         } else {
-            m_tv_txtTitle.setText(mainWnd.m_str_title + "(离线)");
+            m_tv_txtTitle.setText("联系人(离线)");
         }
         return 0;
     }

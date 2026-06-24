@@ -5328,6 +5328,9 @@ public class Fragment_map extends Fragment {
                 Toast.makeText(requireContext(), "已切换活动组：" + getSelectedActiveGroupDisplayName(), Toast.LENGTH_SHORT).show();
             }
         }
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).notifyMeActiveGroupChanged();
+        }
     }
 
     private void refreshGroupStatsByActiveGroups() {

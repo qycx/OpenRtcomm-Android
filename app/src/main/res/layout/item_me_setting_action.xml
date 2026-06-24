@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:background="?android:attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="16dp"
+    android:paddingEnd="12dp">
+
+    <TextView
+        android:id="@+id/tvMeActionTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textColor="#111111"
+        android:textSize="15sp" />
+
+    <TextView
+        android:id="@+id/tvMeActionValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="4dp"
+        android:textColor="#8A8F99"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/ivMeActionChevron"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_imobj_tree_chevron_right"
+        android:visibility="gone" />
+</LinearLayout>

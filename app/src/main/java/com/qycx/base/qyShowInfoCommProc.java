@@ -758,14 +758,17 @@ public class qyShowInfoCommProc {
         }
 
         //
-        public static int showInfo_getStatus(String status) {
-            if(sShowInfoStruct == null)
-            {
-                return -1;
+        public static String showInfo_getStatusText() {
+            if (sShowInfoStruct == null) {
+                return "";
             }
-            status = String.format("%s %s %s", sShowInfoStruct.servIp, sShowInfoStruct.status_bSessionOpen ? "connected" : "not connected", showInfo_getQ2Nodes());
-            return 0;
+            return String.format("%s %s %s", sShowInfoStruct.servIp,
+                    sShowInfoStruct.status_bSessionOpen ? "connected" : "not connected",
+                    showInfo_getQ2Nodes());
+        }
 
+        public static int showInfo_getStatus(String status) {
+            return showInfo_getStatusText().isEmpty() ? -1 : 0;
         }
 
         public static int showInfo_cfgServer(String serv) {

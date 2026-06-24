@@ -143,10 +143,14 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     public RelativeLayout m_layout_total;
     //private TextView txt_topbar;
     //
-    private TextView txt_map;
-    private TextView txt_msg;
-    private TextView txt_contact;
-    private TextView txt_me;
+    private View tab_map;
+    private View tab_msg;
+    private View tab_contact;
+    private View tab_me;
+    private View tab_map_indicator;
+    private View tab_msg_indicator;
+    private View tab_contact_indicator;
+    private View tab_me_indicator;
     private ViewPager vPager;
     private BroadcastReceiver screenOffReceiver;
     private boolean locKeywordDialogShowing;
@@ -163,6 +167,12 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
     public FragmentPagerAdapter_main getMainPagerAdapter() {
         return mAdapter;
+    }
+
+    public void notifyMeActiveGroupChanged() {
+        if (mAdapter != null && mAdapter.mFragment_me != null) {
+            mAdapter.mFragment_me.onActiveGroupChanged();
+        }
     }
 
     //
@@ -318,6 +328,9 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                             if (mainWnd.mAdapter.mFragment_map instanceof Fragment_map) {
                                 ((Fragment_map) mainWnd.mAdapter.mFragment_map).onActiveGroupCandidatesChanged();
                             }
+                            if (mainWnd.mAdapter.mFragment_me != null) {
+                                mainWnd.notifyMeActiveGroupChanged();
+                            }
                             break;
                         case qyWmComm.Consts.CONST_qyWmParam_allContactsRetrieved:
                             //
@@ -331,6 +344,9 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                             }
                             if (mainWnd.mAdapter != null && mainWnd.mAdapter.mFragment_map instanceof Fragment_map) {
                                 ((Fragment_map) mainWnd.mAdapter.mFragment_map).onActiveGroupCandidatesChanged();
+                            }
+                            if (mainWnd.mAdapter != null) {
+                                mainWnd.notifyMeActiveGroupChanged();
                             }
 
                             //
@@ -2321,8 +2337,8 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     }
 
     private void ensureMapTabForFloatingAv(@NonNull ctxQyMc.CCtxQyMc pQyMc) {
-        if (pQyMc.appParams != null && pQyMc.appParams.bENABLE_MAP_TAB && txt_map != null) {
-            txt_map.performClick();
+        if (pQyMc.appParams != null && pQyMc.appParams.bENABLE_MAP_TAB && tab_map != null) {
+            tab_map.performClick();
         }
     }
 
@@ -2964,21 +2980,23 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         m_layout_total = findViewById(R.id.layout_total);
         //txt_topbar = findViewById(R.id.txt_topbar);
 
-        txt_map = findViewById(R.id.txt_map);
-        txt_msg = findViewById(R.id.txt_msg);
-        txt_contact = findViewById(R.id.txt_contact);
-        txt_me = findViewById(R.id.txt_me);
+        tab_map = findViewById(R.id.tab_map);
+        tab_msg = findViewById(R.id.tab_msg);
+        tab_contact = findViewById(R.id.tab_contact);
+        tab_me = findViewById(R.id.tab_me);
+        tab_map_indicator = findViewById(R.id.tab_map_indicator);
+        tab_msg_indicator = findViewById(R.id.tab_msg_indicator);
+        tab_contact_indicator = findViewById(R.id.tab_contact_indicator);
+        tab_me_indicator = findViewById(R.id.tab_me_indicator);
 
-        //
         if (pQyMc.appParams.bENABLE_MAP_TAB) {
-            txt_map.setOnClickListener(this);
+            tab_map.setOnClickListener(this);
         } else {
-            txt_map.setVisibility(View.GONE);
+            tab_map.setVisibility(View.GONE);
         }
-        //
-        txt_msg.setOnClickListener(this);
-        txt_contact.setOnClickListener(this);
-        txt_me.setOnClickListener(this);
+        tab_msg.setOnClickListener(this);
+        tab_contact.setOnClickListener(this);
+        tab_me.setOnClickListener(this);
 
         vPager = findViewById(R.id.vpager);
         vPager.setAdapter(mAdapter);
@@ -2989,35 +3007,56 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         vPager.addOnPageChangeListener(this);
         //
         if (pQyMc.appParams.bENABLE_MAP_TAB) {
-            txt_map.performClick();
+            tab_map.performClick();
         } else {
-            txt_msg.performClick();
+            tab_msg.performClick();
+        }
+    }
+
+    private void setTabSelected(View tab, View indicator, boolean selected) {
+        if (tab != null) {
+            tab.setSelected(selected);
+        }
+        if (indicator != null) {
+            indicator.setVisibility(selected ? View.VISIBLE : View.INVISIBLE);
         }
     }
 
     private void clearSelected() {
         ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
 
-        txt_msg.setSelected(false);
-        txt_contact.setSelected(false);
-        txt_me.setSelected(false);
-        //
+        setTabSelected(tab_msg, tab_msg_indicator, false);
+        setTabSelected(tab_contact, tab_contact_indicator, false);
+        setTabSelected(tab_me, tab_me_indicator, false);
         if (pQyMc.appParams.bENABLE_MAP_TAB) {
-            txt_map.setSelected(false);
+            setTabSelected(tab_map, tab_map_indicator, false);
+        }
+    }
+
+    private void applyTabSelection(int page) {
+        clearSelected();
+        if (g_pQyMc.appParams.bENABLE_MAP_TAB && page == PAGE_FOUR) {
+            setTabSelected(tab_map, tab_map_indicator, true);
+        } else if (page == PAGE_ONE) {
+            setTabSelected(tab_msg, tab_msg_indicator, true);
+        } else if (page == PAGE_TWO) {
+            setTabSelected(tab_contact, tab_contact_indicator, true);
+        } else if (page == PAGE_THREE) {
+            setTabSelected(tab_me, tab_me_indicator, true);
         }
     }
 
     public void onClick(View v) {
         ctxQyMc.CCtxQyMc pQyMc  = g_pQyMc;
 
-        if  (  pQyMc.appParams.bENABLE_MAP_TAB  &&  v.getId()==R.id.txt_map) {
+        if  (  pQyMc.appParams.bENABLE_MAP_TAB  &&  v.getId()==R.id.tab_map) {
             navigateToTab(PAGE_FOUR);
         }
-        else if (v.getId() == R.id.txt_msg) {
+        else if (v.getId() == R.id.tab_msg) {
             navigateToTab(PAGE_ONE);
-        } else if (v.getId() == R.id.txt_contact) {
+        } else if (v.getId() == R.id.tab_contact) {
             navigateToTab(PAGE_TWO);
-        } else if (v.getId() == R.id.txt_me) {
+        } else if (v.getId() == R.id.tab_me) {
             navigateToTab(PAGE_THREE);
         }
     }
@@ -3031,19 +3070,14 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         if (vPager == null) {
             return;
         }
-        clearSelected();
+        applyTabSelection(page);
         if (pQyMc.appParams.bENABLE_MAP_TAB && page == PAGE_FOUR) {
-
-            txt_map.setSelected(true);
             vPager.setCurrentItem(PAGE_FOUR, false);
         } else if (page == PAGE_ONE) {
-            txt_msg.setSelected(true);
             vPager.setCurrentItem(PAGE_ONE, false);
         } else if (page == PAGE_TWO) {
-            txt_contact.setSelected(true);
             vPager.setCurrentItem(PAGE_TWO, false);
         } else if (page == PAGE_THREE) {
-            txt_me.setSelected(true);
             vPager.setCurrentItem(PAGE_THREE, false);
         }
         if (m_floatingView_fg != null) {
@@ -3276,20 +3310,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     public void onPageScrollStateChanged(int state) {
         //throw new NotImplementedException();
         if (state == 2) {
-            switch (vPager.getCurrentItem()) {
-                case PAGE_ONE:
-                    clearSelected();
-                    txt_msg.setSelected(true);
-                    break;
-                case PAGE_TWO:
-                    clearSelected();
-                    txt_contact.setSelected(true);
-                    break;
-                case PAGE_THREE:
-                    clearSelected();
-                    txt_me.setSelected(true);
-                    break;
-            }
+            applyTabSelection(vPager.getCurrentItem());
         }
     }
 

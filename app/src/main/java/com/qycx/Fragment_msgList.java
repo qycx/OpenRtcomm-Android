@@ -8,11 +8,11 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.qycx.base.TableItem;
 import com.qycx.base.ctxQmc;
@@ -48,7 +48,8 @@ import java.util.List;
 public class Fragment_msgList extends Fragment {
     //    private static final String TAG = Fragment_msgList.class.getSimpleName();
     List<TableItem.TableItem_msg> mTableItems = new ArrayList<TableItem.TableItem_msg>();
-    ListView listView;
+    RecyclerView listView;
+    Adapter_msgList msgAdapter;
     TextView tv_topMenu;
     TextView m_tv_txtTitle;
 
@@ -63,17 +64,37 @@ public class Fragment_msgList extends Fragment {
         tv_topMenu = view.findViewById(R.id.txt_topMenu);
         tv_topMenu.setOnClickListener(Tv_topMenu_Click);
 
-        MainActivity mainWnd = (MainActivity) getActivity();
-
         ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
         if (pQyMc == null) return view;
+
         m_tv_txtTitle = view.findViewById(R.id.txt_title);
-        m_tv_txtTitle.setText(mainWnd.m_str_title);
+        m_tv_txtTitle.setText("消息");
 
         listView = view.findViewById(R.id.list);
-        listView.setAdapter(new Adapter_msgList(inflater, mTableItems));
-        listView.setOnItemClickListener(onItemClickListener);
+        listView.setLayoutManager(new LinearLayoutManager(getContext()));
+        msgAdapter = new Adapter_msgList(inflater, mTableItems);
+        msgAdapter.setListener(this::onMessageItemClick);
+        listView.setAdapter(msgAdapter);
         return view;
+    }
+
+    private void onMessageItemClick(int position) {
+        if (position < 0 || position >= mTableItems.size()) return;
+        TableItem.TableItem_msg item_sel = mTableItems.get(position);
+
+        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        qyDefs.QY_MESSENGER_ID idInfo = new qyDefs.QY_MESSENGER_ID();
+        idInfo.ui64Id = item_sel.ui64Id;
+
+        isCliHelpPublic.PARAM_talkToMessenger param = new isCliHelpPublic.PARAM_talkToMessenger();
+        boolean bStay_toAvCall = false;
+        dlgTalkProc_help.qyFuncs_Droid.talkToMessenger(pQyMc, idInfo.ui64Id, false, true, bStay_toAvCall, param);
+    }
+
+    private void refreshMsgAdapter() {
+        if (msgAdapter != null) {
+            msgAdapter.notifyDataSetChanged();
+        }
     }
 
     private showPopupMenu.qyFuncs_Droid.PF_procMenu procMenu = (Context context, int iMenuCmd) -> {
@@ -224,8 +245,7 @@ public class Fragment_msgList extends Fragment {
         //
         Log.d("loadRecentContacts()", "async l223: Notify msg_list adapter");
         if (listView != null) {
-            Adapter_msgList adapter = (Adapter_msgList) listView.getAdapter();
-            adapter.notifyDataSetChanged();
+            refreshMsgAdapter();
         }
 
         iErr = 0;
@@ -406,8 +426,7 @@ public class Fragment_msgList extends Fragment {
                 mTableItems.add(item);
                 Collections.sort(mTableItems, (x, y) -> Long.compare(y.tRecvTime, x.tRecvTime));
 
-                Adapter_msgList adapter = (Adapter_msgList) listView.getAdapter();
-                adapter.notifyDataSetChanged();
+                refreshMsgAdapter();
             } else {
                 //
                 if (item.uiObjType == 0) {
@@ -427,8 +446,7 @@ public class Fragment_msgList extends Fragment {
 
                 Collections.sort(mTableItems, (x, y) -> Long.compare(y.tRecvTime, x.tRecvTime));
 
-                Adapter_msgList adapter = (Adapter_msgList) listView.getAdapter();
-                adapter.notifyDataSetChanged();
+                refreshMsgAdapter();
                 //
                 int kk = 0;
             }
@@ -445,38 +463,14 @@ public class Fragment_msgList extends Fragment {
     public int gui_onTimer(Object p0, Object p1, Object p2) {
         ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
-        MainActivity mainWnd = (MainActivity) getActivity();
-        if (mainWnd == null) return 0;
+        if (getActivity() == null) return 0;
 
         if (pProcInfo.av.talk.bChannelReady) {
-            m_tv_txtTitle.setText(mainWnd.m_str_title);
+            m_tv_txtTitle.setText("消息");
         } else {
-            m_tv_txtTitle.setText(mainWnd.m_str_title + "(离线)");
+            m_tv_txtTitle.setText("消息(离线)");
         }
         return 0;
     }
 
-    private AdapterView.OnItemClickListener onItemClickListener = (parent, view, position, id) -> {
-        TableItem.TableItem_msg item_sel = mTableItems.get(position);
-
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
-        ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
-        qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo.pMisCnt;
-
-        qyDefs.QY_MESSENGER_ID idInfo = new qyDefs.QY_MESSENGER_ID();
-        idInfo.ui64Id = item_sel.ui64Id;
-
-        qnmCommProc_mis.MSGR_ADDR addr = new qnmCommProc_mis.MSGR_ADDR();
-        addr.idInfo.ui64Id = item_sel.ui64Id;
-        isCliHelpPublic.PARAM_talkToMessenger param = new isCliHelpPublic.PARAM_talkToMessenger();
-
-        //
-        boolean bStay_toAvCall = false;
-
-        //
-        dlgTalkProc_help.qyFuncs_Droid.talkToMessenger(pQyMc, addr.idInfo.ui64Id, false, true, bStay_toAvCall, param);
-    };
-
 }
-
-
