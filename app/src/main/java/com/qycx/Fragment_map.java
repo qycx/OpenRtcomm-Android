@@ -255,6 +255,8 @@ public class Fragment_map extends Fragment {
     private static final String MARK_LINK_COLOR_SELF_SYNCED = "#00B35A";
     private static final String MARK_LINK_COLOR_OTHER_SYNCED = "#42A5F5";
     private static final String MARK_SYNC_PREFIX = "__QY_MARK_SYNC_V1__";
+    private static final String MARK_DELETE_PREFIX = "__QY_MARK_DELETE_V1__";
+    private static final String MARK_DELETE_OP_GROUP = "group";
     private static final String MARK_OP_ADD = "add";
     private static final String MARK_OP_DEL = "del";
     private static final String MARK_SYNC_OP_REQ = "req";
@@ -5077,6 +5079,10 @@ public class Fragment_map extends Fragment {
             handleRemoteMarkSyncMsg(userId, trimmed);
             return;
         }
+        if (trimmed.startsWith(MARK_DELETE_PREFIX)) {
+            handleRemoteGroupMarkDelete(userId, trimmed);
+            return;
+        }
         if (selfUserId > 0 && userId == selfUserId) return;
         if (trimmed.startsWith(MARK_LINK_PREFIX)) {
             handleRemoteMarkLinkMsg(userId, trimmed);
@@ -7847,9 +7853,103 @@ public class Fragment_map extends Fragment {
     }
 
     @NonNull
-    private String localMarkLinksPrefKey() {
+    private String localMarkLinksPrefKeyForGroup(long groupId) {
         return PREF_KEY_LOCAL_LINKS_PREFIX + selfUserId
-                + PREF_KEY_LOCAL_LINKS_GROUP_PART + getSelectedActiveGroupId();
+                + PREF_KEY_LOCAL_LINKS_GROUP_PART + groupId;
+    }
+
+    @NonNull
+    private String localMarkLinksPrefKey() {
+        return localMarkLinksPrefKeyForGroup(getSelectedActiveGroupId());
+    }
+
+    private void clearLocalMarkLinksPrefForGroup(long groupId) {
+        ensureSelfUserId();
+        if (selfUserId <= 0 || groupId <= 0 || getContext() == null) return;
+        try {
+            requireContext().getSharedPreferences(PREF_MAP_MARK_LOCAL, Context.MODE_PRIVATE)
+                    .edit()
+                    .remove(localMarkLinksPrefKeyForGroup(groupId))
+                    .apply();
+        } catch (Exception ignored) {
+        }
+    }
+
+    /** 会管按组物理删除后：清空当前活动组地图标注、连线与同步缓存。 */
+    private void applyGroupMarkPurgeLocally(long groupId) {
+        if (groupId <= 0) return;
+        clearLocalMarkLinksPrefForGroup(groupId);
+        lastMarkSyncReqTsByGroup.remove(groupId);
+        markSyncReqAttemptByGroup.remove(groupId);
+        markSyncGroupsWithSnapshot.remove(groupId);
+        if (groupId != getSelectedActiveGroupId()) {
+            return;
+        }
+        selectedBattleMarkIndex = -1;
+        editingBattleMarkId = null;
+        clearBattleMarks();
+        clearMarkSyncCache();
+        refreshGroupStatsByActiveGroups();
+        updateBattleMarkOverlays();
+        flushMarkConnectionLinesNow();
+    }
+
+    private void handleRemoteGroupMarkDelete(long fromId, @NonNull String text) {
+        try {
+            String line = firstMarkOperationLine(text);
+            if (line == null || !line.startsWith(MARK_DELETE_PREFIX)) return;
+            String[] parts = line.split(",", -1);
+            if (parts.length < 6) {
+                Log.w(TAG_MAP_SYNC_FLOW, "group mark delete bad line from=" + fromId);
+                return;
+            }
+            if (!MARK_DELETE_OP_GROUP.equalsIgnoreCase(parts[1].trim())) return;
+            long groupId = Long.parseLong(parts[2].trim());
+            if (groupId <= 0) return;
+            if (!isSelfMemberOfGroup(groupId)) {
+                Log.d(TAG_MAP_SYNC_FLOW, "group mark delete skip non-member group=" + groupId);
+                return;
+            }
+            long actorId = 0L;
+            try {
+                actorId = Long.parseLong(parts[3].trim());
+            } catch (NumberFormatException ignored) {
+            }
+            long operatorId = actorId > 0 ? actorId : fromId;
+            Log.d(TAG_MAP_SYNC_FLOW, "group mark delete recv from=" + fromId
+                    + " actor=" + actorId + " group=" + groupId + " line=" + line);
+            boolean clearedCurrentGroup = groupId == getSelectedActiveGroupId();
+            applyGroupMarkPurgeLocally(groupId);
+            if (clearedCurrentGroup) {
+                showGroupMarkDeleteNotice(operatorId);
+            }
+        } catch (Exception e) {
+            Log.w(TAG_MAP_SYNC_FLOW, "group mark delete parse failed from=" + fromId, e);
+        }
+    }
+
+    private void showGroupMarkDeleteNotice(long operatorId) {
+        if (!isAdded()) return;
+        String who;
+        if (operatorId <= 0) {
+            who = "会管";
+        } else if (selfUserId > 0 && operatorId == selfUserId) {
+            who = "您";
+        } else {
+            who = getUserDisplayNameCached(operatorId);
+        }
+        showMapAckDialog("作战标注", who + "删除了全部注记，请注意", "知道了");
+    }
+
+    @Nullable
+    private static String firstMarkOperationLine(@NonNull String payload) {
+        String[] items = payload.split("[;；]");
+        for (String item : items) {
+            if (item == null) continue;
+            String line = item.trim();
+            if (!line.isEmpty()) return line;
+        }
+        return null;
     }
 
     private void persistLocalMarkLinksToSp() {

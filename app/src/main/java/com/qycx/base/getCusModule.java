@@ -22,6 +22,7 @@ public class getCusModule
 			for (index = 0; index < pModules.mems.length; index++)
 			{
 				pModule = pModules.mems[index];
+				if (pModule == null) continue;
 				//
 				if (pModule.common.uiType != uiModuleType) continue;
 
