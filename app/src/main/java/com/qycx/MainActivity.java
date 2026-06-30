@@ -1748,10 +1748,9 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             return;
         }
         Fragment_map mapFg = (Fragment_map) mAdapter.mFragment_map;
-        final boolean compact = isMapOverlayTextCompactEnabled();
         Runnable apply = () -> {
             if (mapFg.isAdded()) {
-                mapFg.applyMapOverlayTextCompact(compact);
+                mapFg.refreshMapOverlayTextScale();
             }
         };
         if (mapFg.isAdded()) {
@@ -2749,6 +2748,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         }
         updateSplitDividersVisibility();
         notifyMapFloatingLayoutChanged();
+        refreshMapFragmentOverlayTextScale();
     }
 
     private void notifyMapFloatingAvFragmentLayoutChanged() {
@@ -3099,16 +3099,66 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        refreshMapFragmentOverlayTextScale();
-        if (m_floatingView_fg == null || m_floatingAvShell == null) return;
-        // 旋转时保留用户已选模式（分屏/浮窗/全屏），仅按新方向重排布局
+        // 竖屏浮窗、横屏分屏：旋转时按方向恢复默认视频布局，避免竖屏仍保持横屏分屏导致地图字号/布局异常
+        if (m_floatingView_fg != null && isOnMapTab()) {
+            floatingAvUserMode = getDefaultFloatingAvModeForOrientation();
+        }
+        notifyMapFragmentConfigurationChanged(newConfig);
+        scheduleMapFragmentOverlayRefreshAfterRotation(newConfig);
+        if (m_floatingView_fg == null || m_floatingAvShell == null) {
+            return;
+        }
         m_floatingAvShell.post(() -> {
             syncFloatingAvLayoutForCurrentTab();
             clampFloatingAvShellToSafeBounds();
             ensureFloatingAvShellFillParent();
+            notifyMapFloatingLayoutChanged();
             refreshMapFragmentOverlayTextScale();
         });
+        m_floatingAvShell.postDelayed(() -> {
+            notifyMapFloatingLayoutChanged();
+            refreshMapFragmentOverlayTextScale();
+        }, 280L);
         m_floatingAvShell.postDelayed(this::restartMapFloatingCameraAfterRotationSettled, 320L);
+    }
+
+    private void scheduleMapFragmentOverlayRefreshAfterRotation(@NonNull Configuration newConfig) {
+        refreshMapFragmentOverlayTextScale();
+        if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {
+            return;
+        }
+        Fragment_map mapFg = (Fragment_map) mAdapter.mFragment_map;
+        Runnable refresh = () -> {
+            if (mapFg.isAdded()) {
+                mapFg.scheduleMapOverlayTextRefresh(newConfig);
+            }
+        };
+        if (vPager != null) {
+            vPager.post(refresh);
+            vPager.postDelayed(refresh, 150);
+            vPager.postDelayed(refresh, 350);
+        } else {
+            refresh.run();
+        }
+    }
+
+    private void notifyMapFragmentConfigurationChanged(@NonNull Configuration newConfig) {
+        if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {
+            return;
+        }
+        Fragment_map mapFg = (Fragment_map) mAdapter.mFragment_map;
+        if (mapFg.isAdded()) {
+            mapFg.onHostConfigurationChanged(newConfig);
+        } else if (vPager != null) {
+            vPager.postDelayed(() -> {
+                if (mAdapter.mFragment_map instanceof Fragment_map) {
+                    Fragment_map fg = (Fragment_map) mAdapter.mFragment_map;
+                    if (fg.isAdded()) {
+                        fg.onHostConfigurationChanged(newConfig);
+                    }
+                }
+            }, 120);
+        }
     }
 
     private void restartMapFloatingCameraAfterRotationSettled() {

@@ -274,6 +274,7 @@ public class Fragment_map extends Fragment {
     private static final String TAG_OFFLINE = "Fragment_map.offline";
     /** 地图+视频卡顿排查：{@code adb logcat -s QY_MAP_AV_PERF} */
     private static final String TAG_MAP_AV_PERF = "QY_MAP_AV_PERF";
+    private static final String TAG_MAP_OVERLAY = "Fragment_map.overlay";
     /** 相机拖动时作战连线重算合并间隔（低缩放）。 */
     private static final long MAP_LINES_DEBOUNCE_MS = 50L;
     /** 高缩放下瓦片与叠加更吃性能，连线防抖略加长。 */
@@ -434,15 +435,56 @@ public class Fragment_map extends Fragment {
     private int lastMapContainerH = -1;
 
     public void onHostConfigurationChanged(@NonNull Configuration newConfig) {
-        if (getView() != null) {
-            captureMapOverlayPortraitSnapshotIfNeeded(getView());
-            applyMapOverlayOrientationUi();
+        if (isMapSplitOverlayHost()) {
+            if (getView() != null) {
+                applyMapOverlayOrientationUi(newConfig);
+            }
+        } else if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            if (getView() != null) {
+                applyMapOverlayOrientationUi(newConfig);
+            }
+            if (mapView != null) {
+                forceMapViewFillParent();
+                mapView.postDelayed(this::forceMapViewFillParent, 120);
+                mapView.postDelayed(this::forceMapViewFillParent, 280);
+                mapView.postDelayed(this::restartMapRenderPipelineIfNeeded, 360);
+            }
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            forcePortraitOverlayNonSplitDefaults();
+            scheduleMapOverlayTextRefresh(newConfig);
         }
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && mapView != null) {
-            forceMapViewFillParent();
-            mapView.postDelayed(this::forceMapViewFillParent, 120);
-            mapView.postDelayed(this::forceMapViewFillParent, 280);
-            mapView.postDelayed(this::restartMapRenderPipelineIfNeeded, 360);
+    }
+
+    /** 旋转后延迟多次刷新，避免 Configuration 尚未同步时字号/布局未恢复。 */
+    public void scheduleMapOverlayTextRefresh(@Nullable Configuration config) {
+        Configuration immediate = config != null ? config : getResources().getConfiguration();
+        Runnable refreshNow = () -> {
+            if (getView() == null) {
+                return;
+            }
+            if (!isMapSplitOverlayHost() && immediate.orientation == Configuration.ORIENTATION_PORTRAIT) {
+                forcePortraitOverlayNonSplitDefaults();
+            } else {
+                applyMapOverlayOrientationUi(immediate);
+            }
+        };
+        Runnable refreshLater = () -> {
+            if (getView() == null) {
+                return;
+            }
+            if (!isMapSplitOverlayHost()
+                    && getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+                forcePortraitOverlayNonSplitDefaults();
+            } else {
+                applyMapOverlayOrientationUi(null);
+            }
+        };
+        refreshNow.run();
+        View root = getView();
+        if (root != null) {
+            root.post(refreshLater);
+            root.postDelayed(refreshLater, 120);
+            root.postDelayed(refreshLater, 320);
         }
     }
 
@@ -450,6 +492,29 @@ public class Fragment_map extends Fragment {
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         onHostConfigurationChanged(newConfig);
+    }
+
+    /** 首次竖屏 XML 渲染时的 overlay 像素基准，切回竖屏时按此精确恢复。 */
+    private static final class MapOverlayBaseline {
+        float groupStatsTextPx;
+        float meetingEntryTextPx;
+        float coordTextPx;
+        int groupStatsGravity;
+        int groupStatsTopMargin;
+        int groupStatsMarginStart;
+        int groupStatsMarginEnd;
+        int compassWidth;
+        int compassHeight;
+        int compassGravity;
+        int compassTopMargin;
+        int compassMarginEnd;
+        int layerBarGravity;
+        int layerBarTopMargin;
+        int layerBarBottomMargin;
+        int layerBarMarginEnd;
+        int rightToolsGravity;
+        int rightToolsTopMargin;
+        int rightToolsMarginEnd;
     }
 
     /** 竖屏默认 overlay 参数，用于横屏切换后恢复。 */
@@ -476,6 +541,9 @@ public class Fragment_map extends Fragment {
 
     private void captureMapOverlayPortraitSnapshotIfNeeded(@NonNull View root) {
         if (mapOverlayPortraitSnapshot != null) {
+            return;
+        }
+        if (getResources().getConfiguration().orientation != Configuration.ORIENTATION_PORTRAIT) {
             return;
         }
         if (layoutGroupStatsBar == null) {
@@ -524,6 +592,173 @@ public class Fragment_map extends Fragment {
         mapOverlayPortraitSnapshot = s;   
     }
 
+    /** 竖屏首次进入时捕获 XML 渲染后的像素基准，避免 dp/sp 重算导致偏大。 */
+    private void captureMapOverlayBaselineIfNeeded(@NonNull View root) {
+        if (mapOverlayBaseline != null) {
+            return;
+        }
+        if (getResources().getConfiguration().orientation != Configuration.ORIENTATION_PORTRAIT) {
+            return;
+        }
+        if (layoutGroupStatsBar == null) {
+            layoutGroupStatsBar = root.findViewById(R.id.layoutGroupStatsBar);
+        }
+        if (layoutLayerBarRoot == null) {
+            layoutLayerBarRoot = root.findViewById(R.id.layoutLayerBar);
+        }
+        if (layoutRightToolsRoot == null) {
+            layoutRightToolsRoot = root.findViewById(R.id.layoutRightTools);
+        }
+        if (ivCompass == null) {
+            ivCompass = root.findViewById(R.id.ivCompass);
+        }
+        MapOverlayBaseline b = new MapOverlayBaseline();
+        if (tvGroupStats != null) {
+            b.groupStatsTextPx = tvGroupStats.getTextSize();
+        }
+        if (tvActiveGrpMeetingEntry != null) {
+            b.meetingEntryTextPx = tvActiveGrpMeetingEntry.getTextSize();
+        }
+        if (tvCurrentCoord != null) {
+            b.coordTextPx = tvCurrentCoord.getTextSize();
+        }
+        if (layoutGroupStatsBar != null) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) layoutGroupStatsBar.getLayoutParams();
+            b.groupStatsGravity = lp.gravity;
+            b.groupStatsTopMargin = lp.topMargin;
+            b.groupStatsMarginStart = lp.getMarginStart();
+            b.groupStatsMarginEnd = lp.getMarginEnd();
+        }
+        if (ivCompass != null) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) ivCompass.getLayoutParams();
+            b.compassWidth = lp.width;
+            b.compassHeight = lp.height;
+            b.compassGravity = lp.gravity;
+            b.compassTopMargin = lp.topMargin;
+            b.compassMarginEnd = lp.getMarginEnd();
+        }
+        if (layoutLayerBarRoot != null) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) layoutLayerBarRoot.getLayoutParams();
+            b.layerBarGravity = lp.gravity;
+            b.layerBarTopMargin = lp.topMargin;
+            b.layerBarBottomMargin = lp.bottomMargin;
+            b.layerBarMarginEnd = lp.getMarginEnd();
+        }
+        if (layoutRightToolsRoot != null) {
+            ViewGroup.LayoutParams raw = layoutRightToolsRoot.getLayoutParams();
+            if (raw instanceof FrameLayout.LayoutParams) {
+                FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) raw;
+                b.rightToolsGravity = lp.gravity;
+                b.rightToolsTopMargin = lp.topMargin;
+                b.rightToolsMarginEnd = lp.getMarginEnd();
+            }
+        }
+        mapOverlayBaseline = b;
+        logMapOverlayTextSizes("baseline-capture");
+    }
+
+    private void logMapOverlayTextSizes(@NonNull String phase) {
+        if (!isAdded()) {
+            return;
+        }
+        float scaledDensity = getResources().getDisplayMetrics().scaledDensity;
+        float density = getResources().getDisplayMetrics().density;
+        float dimen12Px = getResources().getDimension(R.dimen.map_overlay_text_sp);
+        float groupPx = tvGroupStats != null ? tvGroupStats.getTextSize() : -1f;
+        float meetingPx = tvActiveGrpMeetingEntry != null ? tvActiveGrpMeetingEntry.getTextSize() : -1f;
+        float coordPx = tvCurrentCoord != null ? tvCurrentCoord.getTextSize() : -1f;
+        int compassW = -1;
+        int compassH = -1;
+        if (ivCompass != null) {
+            ViewGroup.LayoutParams lp = ivCompass.getLayoutParams();
+            compassW = lp.width;
+            compassH = lp.height;
+        }
+        Log.i(TAG_MAP_OVERLAY, String.format(Locale.US,
+                "[%s] portrait overlay text: groupStats px=%.2f sp=%.2f, meeting px=%.2f sp=%.2f, coord px=%.2f sp=%.2f"
+                        + " | dimen12spPx=%.2f | density=%.3f scaledDensity=%.3f | compass=%dx%d",
+                phase,
+                groupPx, groupPx > 0 ? groupPx / scaledDensity : -1f,
+                meetingPx, meetingPx > 0 ? meetingPx / scaledDensity : -1f,
+                coordPx, coordPx > 0 ? coordPx / scaledDensity : -1f,
+                dimen12Px, density, scaledDensity, compassW, compassH));
+    }
+
+    private void restoreMapOverlayBaselineTextSizes(@NonNull View root) {
+        MapOverlayBaseline b = mapOverlayBaseline;
+        if (b == null) {
+            return;
+        }
+        applyMapOverlayTextSizePx(tvGroupStats, b.groupStatsTextPx);
+        applyMapOverlayTextSizePx(tvActiveGrpMeetingEntry, b.meetingEntryTextPx);
+        applyMapOverlayTextSizePx(tvCurrentCoord, b.coordTextPx);
+        if (tvGroupStats == null) {
+            applyMapOverlayTextSizePx(root.findViewById(R.id.tvGroupStats), b.groupStatsTextPx);
+            applyMapOverlayTextSizePx(root.findViewById(R.id.tvActiveGrpMeetingEntry), b.meetingEntryTextPx);
+            applyMapOverlayTextSizePx(root.findViewById(R.id.tvCurrentCoord), b.coordTextPx);
+        }
+    }
+
+    private void restoreMapOverlayBaselineDefaults() {
+        View root = getView();
+        if (root == null) {
+            return;
+        }
+        MapOverlayBaseline b = mapOverlayBaseline;
+        if (b == null) {
+            resetPortraitMapOverlayLayoutToXmlDefaults();
+            return;
+        }
+        if (layoutGroupStatsBar == null) {
+            layoutGroupStatsBar = root.findViewById(R.id.layoutGroupStatsBar);
+        }
+        if (layoutGroupStatsBar != null) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) layoutGroupStatsBar.getLayoutParams();
+            lp.gravity = b.groupStatsGravity;
+            lp.topMargin = b.groupStatsTopMargin;
+            lp.setMarginStart(b.groupStatsMarginStart);
+            lp.setMarginEnd(b.groupStatsMarginEnd);
+            layoutGroupStatsBar.setLayoutParams(lp);
+        }
+        if (ivCompass == null) {
+            ivCompass = root.findViewById(R.id.ivCompass);
+        }
+        if (ivCompass != null) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) ivCompass.getLayoutParams();
+            lp.width = b.compassWidth;
+            lp.height = b.compassHeight;
+            lp.gravity = b.compassGravity;
+            lp.topMargin = b.compassTopMargin;
+            lp.setMarginEnd(b.compassMarginEnd);
+            ivCompass.setLayoutParams(lp);
+        }
+        if (layoutRightToolsRoot == null) {
+            layoutRightToolsRoot = root.findViewById(R.id.layoutRightTools);
+        }
+        if (layoutRightToolsRoot != null) {
+            ViewGroup.LayoutParams raw = layoutRightToolsRoot.getLayoutParams();
+            if (raw instanceof FrameLayout.LayoutParams) {
+                FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) raw;
+                lp.gravity = b.rightToolsGravity;
+                lp.topMargin = b.rightToolsTopMargin;
+                lp.setMarginEnd(b.rightToolsMarginEnd);
+                layoutRightToolsRoot.setLayoutParams(lp);
+            }
+        }
+        if (layoutLayerBarRoot == null) {
+            layoutLayerBarRoot = root.findViewById(R.id.layoutLayerBar);
+        }
+        if (layoutLayerBarRoot != null) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) layoutLayerBarRoot.getLayoutParams();
+            lp.gravity = b.layerBarGravity;
+            lp.topMargin = b.layerBarTopMargin;
+            lp.bottomMargin = b.layerBarBottomMargin;
+            lp.setMarginEnd(b.layerBarMarginEnd);
+            layoutLayerBarRoot.setLayoutParams(lp);
+        }
+        restoreMapOverlayBaselineTextSizes(root);
+    }
+
     /** 与导航/定位等右侧圆钮一致：42dp 圆盘 + 8dp 内边距。 */
     private void normalizeMapToolImageButton(@NonNull ImageView btn) {
         int size = dp(42);
@@ -562,19 +797,56 @@ public class Fragment_map extends Fragment {
         layoutRightToolsRoot.setLayoutParams(lp);
     }
 
-    private boolean isMapLandscape() {
-        return getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+    private boolean isMapLandscape(@Nullable Configuration config) {
+        Configuration c = config != null ? config : getResources().getConfiguration();
+        return c.orientation == Configuration.ORIENTATION_LANDSCAPE;
+    }
+
+    /** 竖屏且无分屏：按首次进入时捕获的像素基准恢复布局与字号。 */
+    public void forcePortraitOverlayNonSplitDefaults() {
+        if (!isAdded() || getView() == null || isMapSplitOverlayHost()) {
+            return;
+        }
+        if (getResources().getConfiguration().orientation != Configuration.ORIENTATION_PORTRAIT) {
+            return;
+        }
+        View root = getView();
+        if (mapOverlayBaseline == null) {
+            captureMapOverlayBaselineIfNeeded(root);
+        }
+        applyPortraitMapOverlayLayoutNonSplit();
+        mapOverlayTextCompactApplied = false;
     }
 
     private void applyMapOverlayTextSizePx(@Nullable TextView tv, float textSizePx) {
-        if (tv == null) {
+        if (tv == null || textSizePx <= 0f) {
             return;
         }
         tv.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSizePx);
     }
 
-    /** 由 MainActivity 在分屏布局应用后调用，避免 Fragment 自行猜测分屏状态失败。 */
-    public void applyMapOverlayTextCompact(boolean compact) {
+    private void applyMapOverlayTextSizeSp(@Nullable TextView tv, float textSizeSp) {
+        if (tv == null) {
+            return;
+        }
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp);
+    }
+
+    private float mapOverlayDimenToSp(int dimenRes) {
+        return getResources().getDimension(dimenRes) / getResources().getDisplayMetrics().scaledDensity;
+    }
+
+    /** 分屏时按横/竖屏选用紧凑字号；非分屏退出分屏后恢复 baseline。 */
+    private int resolveMapOverlayTextDimenRes(boolean splitEmbedded, @Nullable Configuration config) {
+        if (!splitEmbedded) {
+            return R.dimen.map_overlay_text_sp;
+        }
+        return isMapLandscape(config)
+                ? R.dimen.map_overlay_text_sp_compact
+                : R.dimen.map_overlay_text_sp_split_portrait;
+    }
+
+    private void applyMapOverlayTextSizes(@Nullable Configuration config) {
         if (!isAdded()) {
             return;
         }
@@ -582,27 +854,36 @@ public class Fragment_map extends Fragment {
         if (root == null) {
             return;
         }
-        int compactDimen = R.dimen.map_overlay_text_sp_compact;
-        if (compact && getActivity() instanceof MainActivity) {
-            compactDimen = ((MainActivity) getActivity()).getMapOverlayTextCompactDimenResId();
+        if (isMapSplitOverlayHost()) {
+            mapOverlayTextCompactApplied = true;
+            float sp = mapOverlayDimenToSp(resolveMapOverlayTextDimenRes(true, config));
+            applyMapOverlayTextSizeSp(tvGroupStats != null ? tvGroupStats : root.findViewById(R.id.tvGroupStats), sp);
+            applyMapOverlayTextSizeSp(tvActiveGrpMeetingEntry != null ? tvActiveGrpMeetingEntry
+                    : root.findViewById(R.id.tvActiveGrpMeetingEntry), sp);
+            applyMapOverlayTextSizeSp(tvCurrentCoord != null ? tvCurrentCoord
+                    : root.findViewById(R.id.tvCurrentCoord), sp);
+            return;
         }
-        float px = getResources().getDimension(compact ? compactDimen : R.dimen.map_overlay_text_sp);
-        applyMapOverlayTextSizePx(root.findViewById(R.id.tvGroupStats), px);
-        applyMapOverlayTextSizePx(root.findViewById(R.id.tvActiveGrpMeetingEntry), px);
-        applyMapOverlayTextSizePx(root.findViewById(R.id.tvCurrentCoord), px);
+        if (mapOverlayTextCompactApplied) {
+            if (!isMapLandscape(config)) {
+                restoreMapOverlayBaselineDefaults();
+            }
+            mapOverlayTextCompactApplied = false;
+        }
+    }
+
+    /** 由 MainActivity 在分屏布局应用后调用，避免 Fragment 自行猜测分屏状态失败。 */
+    public void applyMapOverlayTextCompact(boolean compact_unused) {
+        applyMapOverlayTextSizes(null);
     }
 
     public void refreshMapOverlayTextScale() {
-        if (!isAdded()) {
-            return;
+        if (!isMapSplitOverlayHost()
+                && getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            forcePortraitOverlayNonSplitDefaults();
+        } else {
+            applyMapOverlayTextSizes(null);
         }
-        android.app.Activity act = getActivity();
-        boolean compact = act instanceof MainActivity && ((MainActivity) act).isMapOverlayTextCompactEnabled();
-        applyMapOverlayTextCompact(compact);
-    }
-
-    private void applyMapOverlayTextSizes() {
-        refreshMapOverlayTextScale();
     }
 
     private boolean isMapSplitOverlayHost() {
@@ -610,20 +891,33 @@ public class Fragment_map extends Fragment {
         return act instanceof MainActivity && ((MainActivity) act).isMapFloatingAvSplitEmbedded();
     }
 
-    private void applyMapOverlayOrientationUi() {
+    private void applyMapOverlayOrientationUi(@Nullable Configuration config) {
         View root = getView();
         if (!isAdded() || root == null) {
             return;
         }
-        captureMapOverlayPortraitSnapshotIfNeeded(root);
         if (isMapSplitOverlayHost()) {
             applySplitMapOverlayLayout(root);
-        } else if (isMapLandscape()) {
+            applyMapOverlayTextSizes(config);
+        } else if (isMapLandscape(config)) {
             applyLandscapeMapOverlayLayout(root);
-        } else {
-            restorePortraitMapOverlayLayout();
         }
-        applyMapOverlayTextSizes();
+        // 竖屏非分屏：保持 XML 基准，仅在 forcePortraitOverlayNonSplitDefaults 中恢复
+    }
+
+    /** 竖屏且非分屏：强制恢复 layout_fg_map 默认布局，不依赖可能被横屏污染的快照。 */
+    private void applyPortraitMapOverlayLayoutNonSplit() {
+        detachLayerBtnToLayerBar();
+        updateLandscapeLayerPanelLayout(false);
+        if (layoutLayerBarRoot != null) {
+            layoutLayerBarRoot.setVisibility(View.VISIBLE);
+        }
+        restoreMapOverlayBaselineDefaults();
+        resetLayerPanelBodyScrollForPortrait();
+        View root = getView();
+        if (root != null) {
+            captureMapOverlayPortraitSnapshotIfNeeded(root);
+        }
     }
 
     /** 横屏分屏：活动组条顶中、罗盘 72dp。 */
@@ -689,7 +983,7 @@ public class Fragment_map extends Fragment {
     }
 
     private void applySplitMapOverlayLayout(@NonNull View root) {
-        if (isMapLandscape()) {
+        if (isMapLandscape(null)) {
             applyLandscapeSplitMapOverlayStyle(root);
             applyLandscapeRightToolsPosition();
             attachLayerBtnToRightToolsColumn();
@@ -757,7 +1051,7 @@ public class Fragment_map extends Fragment {
 
     /** 竖屏分屏：图层钮在右侧竖排时仅控制图层栏宿主显隐，不改动右侧工具列 Frame 位置。 */
     private void updateSplitLayerBarHostVisibility(boolean panelVisible) {
-        if (!isAdded() || layoutLayerBarRoot == null || !layerBtnAttachedToRightTools || isMapLandscape()) {
+        if (!isAdded() || layoutLayerBarRoot == null || !layerBtnAttachedToRightTools || isMapLandscape(null)) {
             return;
         }
         if (!isMapSplitOverlayHost()) {
@@ -786,7 +1080,7 @@ public class Fragment_map extends Fragment {
         if (!isAdded() || layoutLayerBarRoot == null || layoutLayerPanel == null) {
             return;
         }
-        if (!isMapLandscape()) {
+        if (!isMapLandscape(null)) {
             layoutLayerBarRoot.setVisibility(View.VISIBLE);
             return;
         }
@@ -828,7 +1122,7 @@ public class Fragment_map extends Fragment {
     }
 
     private void applyLandscapeLayerPanelMaxHeight(@NonNull View root) {
-        if (!isAdded() || !isMapLandscape() || layoutLayerPanel == null || layoutRightToolsRoot == null) {
+        if (!isAdded() || !isMapLandscape(null) || layoutLayerPanel == null || layoutRightToolsRoot == null) {
             return;
         }
         int[] toolsLoc = new int[2];
@@ -884,6 +1178,7 @@ public class Fragment_map extends Fragment {
         }
         MapOverlayPortraitSnapshot s = mapOverlayPortraitSnapshot;
         if (s == null) {
+            resetPortraitMapOverlayLayoutToXmlDefaults();
             return;
         }
         if (layoutGroupStatsBar != null) {
@@ -931,6 +1226,64 @@ public class Fragment_map extends Fragment {
         }
     }
 
+    /** 无竖屏快照时（例如先横屏再竖屏），恢复 layout_fg_map 默认位置与罗盘尺寸。 */
+    private void resetPortraitMapOverlayLayoutToXmlDefaults() {
+        View root = getView();
+        if (root == null) {
+            return;
+        }
+        if (layoutGroupStatsBar == null) {
+            layoutGroupStatsBar = root.findViewById(R.id.layoutGroupStatsBar);
+        }
+        if (layoutGroupStatsBar != null) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) layoutGroupStatsBar.getLayoutParams();
+            lp.gravity = Gravity.TOP | Gravity.START;
+            lp.topMargin = dp(16);
+            lp.setMarginStart(dp(12));
+            lp.setMarginEnd(0);
+            lp.leftMargin = dp(12);
+            lp.rightMargin = 0;
+            layoutGroupStatsBar.setLayoutParams(lp);
+        }
+        if (ivCompass == null) {
+            ivCompass = root.findViewById(R.id.ivCompass);
+        }
+        if (ivCompass != null) {
+            int sizePx = dp(112);
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) ivCompass.getLayoutParams();
+            lp.width = sizePx;
+            lp.height = sizePx;
+            lp.gravity = Gravity.TOP | Gravity.END;
+            lp.topMargin = dp(14);
+            lp.setMarginEnd(dp(14));
+            ivCompass.setLayoutParams(lp);
+        }
+        if (layoutRightToolsRoot == null) {
+            layoutRightToolsRoot = root.findViewById(R.id.layoutRightTools);
+        }
+        if (layoutRightToolsRoot != null) {
+            ViewGroup.LayoutParams raw = layoutRightToolsRoot.getLayoutParams();
+            if (raw instanceof FrameLayout.LayoutParams) {
+                FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) raw;
+                lp.gravity = Gravity.CENTER_VERTICAL | Gravity.END;
+                lp.topMargin = 0;
+                lp.setMarginEnd(dp(14));
+                layoutRightToolsRoot.setLayoutParams(lp);
+            }
+        }
+        if (layoutLayerBarRoot == null) {
+            layoutLayerBarRoot = root.findViewById(R.id.layoutLayerBar);
+        }
+        if (layoutLayerBarRoot != null) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) layoutLayerBarRoot.getLayoutParams();
+            lp.gravity = Gravity.BOTTOM | Gravity.END;
+            lp.topMargin = 0;
+            lp.bottomMargin = dp(72);
+            lp.setMarginEnd(dp(14));
+            layoutLayerBarRoot.setLayoutParams(lp);
+        }
+    }
+
     /**
      * 宿主（如通话页分屏/浮窗切换）改动了地图容器尺寸后，主动触发一次尺寸与视口刷新。
      * 否则可能出现“先显示半屏，手势后才完整重绘”。
@@ -938,7 +1291,7 @@ public class Fragment_map extends Fragment {
     public void onHostEmbeddedLayoutChanged() {
         if (mapView == null) return;
         if (getView() != null) {
-            applyMapOverlayOrientationUi();
+            applyMapOverlayOrientationUi(null);
         } else {
             refreshMapOverlayTextScale();
         }
@@ -1308,6 +1661,20 @@ public class Fragment_map extends Fragment {
     private final Map<Long, Long> lastMarkSyncReqTsByGroup = new HashMap<>();
     private final Map<Long, Integer> markSyncReqAttemptByGroup = new HashMap<>();
     private final Set<Long> markSyncGroupsWithSnapshot = new HashSet<>();
+    private static final int MARK_SYNC_MARK_BATCH_SIZE = 48;
+    private static final long MARK_SYNC_APPLY_DEBOUNCE_MS = 150L;
+    private static final String MARK_SYNC_LOADER_THREAD = "map-mark-sync-loader";
+    /** 每轮分批上图 id；切换组时递增以作废进行中的批次。 */
+    private int activeMarkSyncBatchId;
+    private int activeGroupChangeGeneration;
+    private boolean battleMarkBulkApplyInProgress;
+    @Nullable
+    private List<CachedMark> pendingMarkSyncMarkBatch;
+    private int pendingMarkSyncMarkBatchIndex;
+    @Nullable
+    private List<CachedLink> pendingMarkSyncLinkBatch;
+    private int pendingMarkSyncLinkBatchIndex;
+    private final Runnable debouncedApplyMarkSyncCacheRunnable = this::applyMarkSyncCacheToMapNow;
     private long activeGroupMemberCacheTs;
     private long lastGroupStatsRefreshTs;
     private long selfUserId;
@@ -1482,6 +1849,10 @@ public class Fragment_map extends Fragment {
     private View layoutLayerBarRoot;
     @Nullable
     private MapOverlayPortraitSnapshot mapOverlayPortraitSnapshot;
+    @Nullable
+    private MapOverlayBaseline mapOverlayBaseline;
+    /** 分屏紧凑字号已应用，退出分屏后需在竖屏恢复 12sp。 */
+    private boolean mapOverlayTextCompactApplied;
     @Nullable
     private FrameLayout.LayoutParams layerBtnPortraitFrameLp;
     private boolean layerBtnAttachedToRightTools;
@@ -1702,6 +2073,16 @@ public class Fragment_map extends Fragment {
 
     private static class DeleteTombstone {
         long ts;
+    }
+
+    /** 后台线程解析标注同步 JSON，主线程再写入 cache 并分批上图。 */
+    private static final class MarkSyncPayloadParseResult {
+        final List<CachedMark> marks = new ArrayList<>();
+        final List<CachedLink> links = new ArrayList<>();
+        final List<String> deletedMarkIds = new ArrayList<>();
+        final List<Long> deletedMarkTs = new ArrayList<>();
+        final List<String> deletedLinkKeys = new ArrayList<>();
+        final List<Long> deletedLinkTs = new ArrayList<>();
     }
 
     private static final class NavRouteProgress {
@@ -2022,6 +2403,10 @@ public class Fragment_map extends Fragment {
         viewActiveGrpMeetingLamp = view.findViewById(R.id.viewActiveGrpMeetingLamp);
         tvActiveGrpMeetingEntry = view.findViewById(R.id.tvActiveGrpMeetingEntry);
         tvCurrentCoord = view.findViewById(R.id.tvCurrentCoord);
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            captureMapOverlayBaselineIfNeeded(view);
+            captureMapOverlayPortraitSnapshotIfNeeded(view);
+        }
         layoutFloatingFragmentHost = view.findViewById(R.id.layoutFloatingFragmentHost);
         // 停用页面内旧悬浮窗，统一改走系统级悬浮窗。
         if (layoutFloatingVideoLegacy != null) {
@@ -2171,9 +2556,11 @@ public class Fragment_map extends Fragment {
         updateGroupStatsView(0, 0);
         updateActiveGroupMeetingEntry(false, 0);
         view.post(() -> {
-            captureMapOverlayPortraitSnapshotIfNeeded(view);
-            applyMapOverlayOrientationUi();
-            refreshMapOverlayTextScale();
+            if (isMapSplitOverlayHost() || isMapLandscape(null)) {
+                applyMapOverlayOrientationUi(null);
+            } else if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+                logMapOverlayTextSizes("portrait-first-layout");
+            }
         });
         return view;
     }
@@ -2364,20 +2751,20 @@ public class Fragment_map extends Fragment {
             mapLayerPanelVisible = !mapLayerPanelVisible;
             layoutLayerPanel.setVisibility(mapLayerPanelVisible ? View.VISIBLE : View.GONE);
             if (mapLayerPanelVisible) {
-                if (isMapLandscape()) {
+                if (isMapLandscape(null)) {
                     updateLandscapeLayerPanelLayout(true);
                 } else if (isMapSplitOverlayHost()) {
                     updateSplitLayerBarHostVisibility(true);
                 }
                 bringLayerBarToFront();
                 layoutLayerPanel.post(() -> {
-                    if (isMapLandscape() && getView() != null) {
+                    if (isMapLandscape(null) && getView() != null) {
                         applyLandscapeLayerPanelMaxHeight(getView());
                     }
                     bringLayerBarToFront();
                 });
             } else {
-                if (isMapLandscape()) {
+                if (isMapLandscape(null)) {
                     updateLandscapeLayerPanelLayout(false);
                 } else if (isMapSplitOverlayHost()) {
                     updateSplitLayerBarHostVisibility(false);
@@ -2842,6 +3229,15 @@ public class Fragment_map extends Fragment {
         int current = getResources().getConfiguration().orientation;
         if (current == Configuration.ORIENTATION_LANDSCAPE) {
             host.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            if (!isMapSplitOverlayHost()) {
+                View root = getView();
+                if (root != null) {
+                    Runnable force = this::forcePortraitOverlayNonSplitDefaults;
+                    root.post(force);
+                    root.postDelayed(force, 150);
+                    root.postDelayed(force, 400);
+                }
+            }
         } else {
             host.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
@@ -2989,7 +3385,7 @@ public class Fragment_map extends Fragment {
         if (layoutLayerPanel != null && layoutLayerPanel.getVisibility() == View.VISIBLE) {
             layoutLayerPanel.setVisibility(View.GONE);
             mapLayerPanelVisible = false;
-            if (isMapLandscape()) {
+            if (isMapLandscape(null)) {
                 updateLandscapeLayerPanelLayout(false);
             }
             resetLayerBarStackOrder();
@@ -4198,7 +4594,6 @@ public class Fragment_map extends Fragment {
                     currentLocationProviderLabel,
                     latLng.getLongitude(), latLng.getLatitude()));
         }
-        applyMapOverlayTextSizes();
     }
 
     @NonNull
@@ -5306,6 +5701,9 @@ public class Fragment_map extends Fragment {
     }
 
     private void onActiveGroupChanged(boolean manualSwitch) {
+        activeGroupChangeGeneration++;
+        final int changeGen = activeGroupChangeGeneration;
+        cancelPendingMarkSyncApply();
         clearRemoteLocations();
         activeGroupMemberIdsCache.clear();
         cachedPeers.clear();
@@ -5313,7 +5711,7 @@ public class Fragment_map extends Fragment {
         clearBattleMarks();
         clearMarkSyncCache();
         lastLocSendMs = 0L;
-        refreshGroupStatsByActiveGroups();
+        refreshGroupStatsByActiveGroupsAsync(changeGen);
         refreshActiveGroupMeetingStatus();
         if (hasSelectedActiveGroup()) {
             if (getActivity() instanceof MainActivity && MapLocSettings.isEncryptionEnabled()) {
@@ -5325,10 +5723,14 @@ public class Fragment_map extends Fragment {
                     main.requestMapLocKeywordIfNeeded();
                 }
             }
-            tryRequestMarkSyncSnapshot(true);
-            if (locationHandler != null) {
-                locationHandler.postDelayed(() -> tryRequestMarkSyncSnapshot(true), 2000L);
-            }
+            locationHandler.post(() -> {
+                if (changeGen != activeGroupChangeGeneration || !isAdded()) return;
+                tryRequestMarkSyncSnapshot(true);
+            });
+            locationHandler.postDelayed(() -> {
+                if (changeGen != activeGroupChangeGeneration || !isAdded()) return;
+                tryRequestMarkSyncSnapshot(true);
+            }, 2000L);
             flushSelfLocationToGroupNow();
             if (manualSwitch && isAdded()) {
                 Toast.makeText(requireContext(), "已切换活动组：" + getSelectedActiveGroupDisplayName(), Toast.LENGTH_SHORT).show();
@@ -5340,22 +5742,36 @@ public class Fragment_map extends Fragment {
     }
 
     private void refreshGroupStatsByActiveGroups() {
-        Set<Long> activeGrpIds = loadActiveGroupIdsFromTaskGrp();
-        if (activeGrpIds.isEmpty()) {
-            updateGroupStatsView(0, 0);
-            return;
-        }
-        Set<Long> allMembers = new HashSet<>();
-        for (Long grpId : activeGrpIds) {
-            if (grpId == null || grpId <= 0) continue;
-            allMembers.addAll(loadGroupMemberIds(grpId));
-        }
-        int onlineCnt = 0;
-        for (Long userId : allMembers) {
-            if (userId == null || userId <= 0) continue;
-            if (isMemberOnlineForActiveGroups(userId, activeGrpIds)) onlineCnt++;
-        }
-        updateGroupStatsView(allMembers.size(), onlineCnt);
+        refreshGroupStatsByActiveGroupsAsync(activeGroupChangeGeneration);
+    }
+
+    private void refreshGroupStatsByActiveGroupsAsync(final int changeGen) {
+        new Thread(() -> {
+            int memberCount = 0;
+            int onlineCnt = 0;
+            try {
+                Set<Long> activeGrpIds = loadActiveGroupIdsFromTaskGrp();
+                if (!activeGrpIds.isEmpty()) {
+                    Set<Long> allMembers = new HashSet<>();
+                    for (Long grpId : activeGrpIds) {
+                        if (grpId == null || grpId <= 0) continue;
+                        allMembers.addAll(loadGroupMemberIds(grpId));
+                    }
+                    memberCount = allMembers.size();
+                    for (Long userId : allMembers) {
+                        if (userId == null || userId <= 0) continue;
+                        if (isMemberOnlineForActiveGroups(userId, activeGrpIds)) onlineCnt++;
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+            final int finalMemberCount = memberCount;
+            final int finalOnlineCnt = onlineCnt;
+            locationHandler.post(() -> {
+                if (changeGen != activeGroupChangeGeneration || !isAdded()) return;
+                updateGroupStatsView(finalMemberCount, finalOnlineCnt);
+            });
+        }, "map-active-group-stats").start();
     }
 
     /**
@@ -5451,7 +5867,6 @@ public class Fragment_map extends Fragment {
             tvGroupStats.setText(String.format(Locale.CHINA, "活动组[%s]：成员 %d 在线 %d",
                     getSelectedActiveGroupDisplayName(), memberCount, onlineCount));
         }
-        applyMapOverlayTextSizes();
     }
 
     private void startActiveGroupMeetingStatusMonitor() {
@@ -5516,7 +5931,6 @@ public class Fragment_map extends Fragment {
             tvActiveGrpMeetingEntry.setTextColor(Color.parseColor(running ? "#00D26A" : "#FFFFFF"));
             tvActiveGrpMeetingEntry.setEnabled(running);
         }
-        applyMapOverlayTextSizes();
     }
 
     @Nullable
@@ -5802,6 +6216,7 @@ public class Fragment_map extends Fragment {
         if (avCallProc.blockDuplicateVideoMeetingStart()) {
             return false;
         }
+        audioRecorder_android.qyFuncs_Droid.setMicrophoneOn(true);
         ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
         if (pQyMc == null || !(pQyMc.gui.hMainWnd instanceof MainActivity)) {
             return false;
@@ -6441,6 +6856,7 @@ public class Fragment_map extends Fragment {
     /** M0：静默注册 talker → 发起组会议 → 等待任务 → 地图悬浮窗入会。 */
     private void startMapGroupConferenceAndEnterFloating(long groupId) {
         mapGroupNotifyAcceptedGroupId = 0;
+        audioRecorder_android.qyFuncs_Droid.setMicrophoneOn(true);
         ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
         if (pQyMc != null && pQyMc.gui.hMainWnd instanceof MainActivity) {
             MainActivity main = (MainActivity) pQyMc.gui.hMainWnd;
@@ -8136,6 +8552,10 @@ public class Fragment_map extends Fragment {
         mark.latLng = latLng;
         mark.ts = System.currentTimeMillis();
         mark.pending = pending;
+        if (battleMarkBulkApplyInProgress && useMapLibreBattleMarks && !pending) {
+            battleMarksOnMap.put(mark.id, mark);
+            return mark;
+        }
         setupBattleMarkOverlayViews(mark);
         bindBattleMarkOverlayListeners(mark);
         applyBattleMarkRotation(mark);
@@ -8147,7 +8567,10 @@ public class Fragment_map extends Fragment {
         parent.setClipToPadding(false);
         parent.addView(mark.root, indexToInsertMapOverlayBelowRightTools(parent), lp);
         battleMarksOnMap.put(mark.id, mark);
-        updateBattleMarkOverlays();        return mark;
+        if (!battleMarkBulkApplyInProgress) {
+            updateBattleMarkOverlays();
+        }
+        return mark;
     }
 
     private TextView buildBattleMarkOwnerTextView(@NonNull BattleMark mark) {
@@ -9088,20 +9511,48 @@ public class Fragment_map extends Fragment {
 
     private void mergeMarkSyncSnapshotPayload(@NonNull String payload) {
         if (!markSyncCacheEnabled || TextUtils.isEmpty(payload)) return;
+        new Thread(() -> {
+            MarkSyncPayloadParseResult parsed = parseMarkSyncSnapshotPayload(payload);
+            if (parsed == null) return;
+            locationHandler.post(() -> {
+                if (!markSyncCacheEnabled || !isAdded()) return;
+                mergeMarkSyncParseResultIntoCache(parsed);
+                scheduleApplyMarkSyncCacheToMapDebounced();
+            });
+        }, MARK_SYNC_LOADER_THREAD).start();
+    }
+
+    /** 等多段 snapshot 都 merge 进 cache 后再统一上图，避免只加载首段。 */
+    private void scheduleApplyMarkSyncCacheToMapDebounced() {
+        if (!markSyncCacheEnabled || !isAdded()) return;
+        locationHandler.removeCallbacks(debouncedApplyMarkSyncCacheRunnable);
+        locationHandler.postDelayed(debouncedApplyMarkSyncCacheRunnable, MARK_SYNC_APPLY_DEBOUNCE_MS);
+    }
+
+    @Nullable
+    private static MarkSyncPayloadParseResult parseMarkSyncSnapshotPayload(@NonNull String payload) {
         try {
             JSONObject root = new JSONObject(payload);
+            MarkSyncPayloadParseResult result = new MarkSyncPayloadParseResult();
             JSONArray deletedMarks = root.optJSONArray("deletedMarks");
             if (deletedMarks != null) {
                 for (int i = 0; i < deletedMarks.length(); i++) {
                     JSONObject item = deletedMarks.optJSONObject(i);
-                    if (item != null) cacheDeletedMark(item.optString("markId", null), item.optLong("ts", 0L));
+                    if (item == null) continue;
+                    result.deletedMarkIds.add(item.optString("markId", null));
+                    result.deletedMarkTs.add(item.optLong("ts", 0L));
                 }
             }
             JSONArray deletedLinks = root.optJSONArray("deletedLinks");
             if (deletedLinks != null) {
                 for (int i = 0; i < deletedLinks.length(); i++) {
                     JSONObject item = deletedLinks.optJSONObject(i);
-                    if (item != null) cacheDeletedLink(item.optString("markId", null), item.optLong("userId", 0L), item.optLong("ts", 0L));
+                    if (item == null) continue;
+                    String markId = item.optString("markId", null);
+                    long userId = item.optLong("userId", 0L);
+                    if (TextUtils.isEmpty(markId) || userId <= 0) continue;
+                    result.deletedLinkKeys.add(markLinkKey(userId, markId));
+                    result.deletedLinkTs.add(item.optLong("ts", 0L));
                 }
             }
             JSONArray marks = root.optJSONArray("marks");
@@ -9109,22 +9560,65 @@ public class Fragment_map extends Fragment {
                 for (int i = 0; i < marks.length(); i++) {
                     JSONObject item = marks.optJSONObject(i);
                     if (item == null) continue;
-                    cacheSyncedMarkData(item.optString("id", null), item.optLong("ownerId", 0L),
-                            item.optInt("typeIndex", 0), item.optDouble("lat", 0d),
-                            item.optDouble("lng", 0d), item.optLong("ts", 0L),
-                            (float) item.optDouble("rotation", 0d));
+                    CachedMark mark = new CachedMark();
+                    mark.id = item.optString("id", null);
+                    mark.ownerId = item.optLong("ownerId", 0L);
+                    mark.typeIndex = item.optInt("typeIndex", 0);
+                    mark.lat = item.optDouble("lat", 0d);
+                    mark.lng = item.optDouble("lng", 0d);
+                    mark.ts = item.optLong("ts", 0L);
+                    mark.rotationDeg = (float) item.optDouble("rotation", 0d);
+                    result.marks.add(mark);
                 }
             }
             JSONArray links = root.optJSONArray("links");
             if (links != null) {
                 for (int i = 0; i < links.length(); i++) {
                     JSONObject item = links.optJSONObject(i);
-                    if (item != null) cacheSyncedLink(item.optString("markId", null), item.optLong("userId", 0L), item.optLong("ts", 0L));
+                    if (item == null) continue;
+                    CachedLink link = new CachedLink();
+                    link.markId = item.optString("markId", null);
+                    link.userId = item.optLong("userId", 0L);
+                    link.ts = item.optLong("ts", 0L);
+                    result.links.add(link);
                 }
             }
-            applyMarkSyncCacheToMap();
+            return result;
         } catch (Exception ignored) {
+            return null;
         }
+    }
+
+    private void mergeMarkSyncParseResultIntoCache(@NonNull MarkSyncPayloadParseResult parsed) {
+        for (int i = 0; i < parsed.deletedMarkIds.size(); i++) {
+            cacheDeletedMark(parsed.deletedMarkIds.get(i),
+                    i < parsed.deletedMarkTs.size() ? parsed.deletedMarkTs.get(i) : 0L);
+        }
+        for (int i = 0; i < parsed.deletedLinkKeys.size(); i++) {
+            MarkLinkKeyParts parts = parseMarkLinkKey(parsed.deletedLinkKeys.get(i));
+            if (parts == null) continue;
+            cacheDeletedLink(parts.markId, parts.userId,
+                    i < parsed.deletedLinkTs.size() ? parsed.deletedLinkTs.get(i) : 0L);
+        }
+        for (CachedMark mark : parsed.marks) {
+            if (mark == null || TextUtils.isEmpty(mark.id)) continue;
+            cacheSyncedMarkData(mark.id, mark.ownerId, mark.typeIndex, mark.lat, mark.lng, mark.ts, mark.rotationDeg);
+        }
+        for (CachedLink link : parsed.links) {
+            if (link == null || TextUtils.isEmpty(link.markId) || link.userId <= 0) continue;
+            cacheSyncedLink(link.markId, link.userId, link.ts);
+        }
+    }
+
+    private void cancelPendingMarkSyncApply() {
+        activeMarkSyncBatchId++;
+        locationHandler.removeCallbacks(debouncedApplyMarkSyncCacheRunnable);
+        pendingMarkSyncMarkBatch = null;
+        pendingMarkSyncMarkBatchIndex = 0;
+        pendingMarkSyncLinkBatch = null;
+        pendingMarkSyncLinkBatchIndex = 0;
+        battleMarkBulkApplyInProgress = false;
+        suppressLocalMarkLinkPersistence = false;
     }
 
     private void cacheSyncedMark(@Nullable BattleMark mark) {
@@ -9204,7 +9698,27 @@ public class Fragment_map extends Fragment {
     }
 
     private void applyMarkSyncCacheToMap() {
+        scheduleApplyMarkSyncCacheToMapDebounced();
+    }
+
+    private void applyMarkSyncCacheToMapNow() {
         if (!markSyncCacheEnabled || !isAdded() || mapView == null) return;
+        final int batchId = ++activeMarkSyncBatchId;
+        applyMarkSyncCacheDeletePass();
+        pendingMarkSyncMarkBatch = new ArrayList<>(syncedMarkCache.values());
+        pendingMarkSyncMarkBatchIndex = 0;
+        pendingMarkSyncLinkBatch = new ArrayList<>(syncedLinkCache.values());
+        pendingMarkSyncLinkBatchIndex = 0;
+        battleMarkBulkApplyInProgress = true;
+        suppressLocalMarkLinkPersistence = true;
+        if (pendingMarkSyncMarkBatch.isEmpty()) {
+            scheduleMarkSyncCacheLinkBatchStep(batchId);
+        } else {
+            scheduleMarkSyncCacheMarkBatchStep(batchId);
+        }
+    }
+
+    private void applyMarkSyncCacheDeletePass() {
         for (Map.Entry<String, DeleteTombstone> entry : deletedMarkCache.entrySet()) {
             if (entry == null || TextUtils.isEmpty(entry.getKey()) || entry.getValue() == null) continue;
             BattleMark mark = battleMarksOnMap.get(entry.getKey());
@@ -9212,7 +9726,32 @@ public class Fragment_map extends Fragment {
                 removeBattleMarkQuiet(entry.getKey());
             }
         }
-        for (CachedMark cached : syncedMarkCache.values()) {
+    }
+
+    private void scheduleMarkSyncCacheMarkBatchStep(final int batchId) {
+        locationHandler.post(() -> applyMarkSyncCacheMarkBatchStep(batchId));
+    }
+
+    private void scheduleMarkSyncCacheLinkBatchStep(final int batchId) {
+        locationHandler.post(() -> applyMarkSyncCacheLinkBatchStep(batchId));
+    }
+
+    private boolean isMarkSyncBatchStepActive(int batchId) {
+        return batchId > 0 && batchId == activeMarkSyncBatchId;
+    }
+
+    private void applyMarkSyncCacheMarkBatchStep(int batchId) {
+        if (!isMarkSyncBatchStepActive(batchId) || !markSyncCacheEnabled || !isAdded() || mapView == null) {
+            return;
+        }
+        List<CachedMark> batch = pendingMarkSyncMarkBatch;
+        if (batch == null || batch.isEmpty()) {
+            scheduleMarkSyncCacheLinkBatchStep(batchId);
+            return;
+        }
+        int end = Math.min(pendingMarkSyncMarkBatchIndex + MARK_SYNC_MARK_BATCH_SIZE, batch.size());
+        for (int i = pendingMarkSyncMarkBatchIndex; i < end; i++) {
+            CachedMark cached = batch.get(i);
             if (cached == null || TextUtils.isEmpty(cached.id)) continue;
             DeleteTombstone deleted = deletedMarkCache.get(cached.id);
             if (deleted != null && deleted.ts >= cached.ts) continue;
@@ -9226,14 +9765,45 @@ public class Fragment_map extends Fragment {
                 applyBattleMarkRotation(mark);
             }
         }
-        for (CachedLink cached : syncedLinkCache.values()) {
-            if (cached == null || TextUtils.isEmpty(cached.markId) || cached.userId <= 0) continue;
-            if (!battleMarksOnMap.containsKey(cached.markId)) continue;
-            DeleteTombstone deletedMark = deletedMarkCache.get(cached.markId);
-            if (deletedMark != null && deletedMark.ts >= cached.ts) continue;
-            DeleteTombstone deletedLink = deletedLinkCache.get(markLinkKey(cached.userId, cached.markId));
-            if (deletedLink != null && deletedLink.ts >= cached.ts) continue;
-            upsertMarkLink(cached.markId, cached.userId, true, cached.ts);
+        pendingMarkSyncMarkBatchIndex = end;
+        if (end < batch.size()) {
+            scheduleMarkSyncCacheMarkBatchStep(batchId);
+        } else {
+            scheduleMarkSyncCacheLinkBatchStep(batchId);
+        }
+    }
+
+    private void applyMarkSyncCacheLinkBatchStep(int batchId) {
+        if (!isMarkSyncBatchStepActive(batchId) || !markSyncCacheEnabled || !isAdded() || mapView == null) {
+            return;
+        }
+        List<CachedLink> batch = pendingMarkSyncLinkBatch;
+        if (batch != null && !batch.isEmpty()) {
+            int end = Math.min(pendingMarkSyncLinkBatchIndex + MARK_SYNC_MARK_BATCH_SIZE, batch.size());
+            for (int i = pendingMarkSyncLinkBatchIndex; i < end; i++) {
+                CachedLink cached = batch.get(i);
+                if (cached == null || TextUtils.isEmpty(cached.markId) || cached.userId <= 0) continue;
+                if (!battleMarksOnMap.containsKey(cached.markId)) continue;
+                DeleteTombstone deletedMark = deletedMarkCache.get(cached.markId);
+                if (deletedMark != null && deletedMark.ts >= cached.ts) continue;
+                DeleteTombstone deletedLink = deletedLinkCache.get(markLinkKey(cached.userId, cached.markId));
+                if (deletedLink != null && deletedLink.ts >= cached.ts) continue;
+                upsertMarkLink(cached.markId, cached.userId, true, cached.ts);
+            }
+            pendingMarkSyncLinkBatchIndex = end;
+            if (end < batch.size()) {
+                scheduleMarkSyncCacheLinkBatchStep(batchId);
+                return;
+            }
+        }
+        finishMarkSyncCacheApply(batchId);
+    }
+
+    private void finishMarkSyncCacheApply(int batchId) {
+        if (!isMarkSyncBatchStepActive(batchId) || !isAdded() || mapView == null) {
+            battleMarkBulkApplyInProgress = false;
+            suppressLocalMarkLinkPersistence = false;
+            return;
         }
         for (Map.Entry<String, DeleteTombstone> entry : deletedLinkCache.entrySet()) {
             MarkLinkKeyParts parts = parseMarkLinkKey(entry.getKey());
@@ -9244,7 +9814,13 @@ public class Fragment_map extends Fragment {
             }
         }
         restoreLocalMarkLinksFromSp();
+        battleMarkBulkApplyInProgress = false;
+        suppressLocalMarkLinkPersistence = false;
+        persistLocalMarkLinksToSp();
+        updateBattleMarkOverlays();
         flushMarkConnectionLinesNow();
+        pendingMarkSyncMarkBatch = null;
+        pendingMarkSyncLinkBatch = null;
     }
 
     @Nullable
