@@ -39,7 +39,8 @@ import static com.qycx.base.qyWndContentType.Consts.CONST_talkUsage_doConf;
 import static com.qycx.base.refreshTalkerList.qyFuncs.resetTalkerList_mgr;
 import static com.qycx.base.startQThreadToShareAv.qyFuncs.newstartQThreadToShareAv;
 import static com.qycx.base.taskAvProc.qyFuncs.adjustAudioBitrate;
-import static com.qysd.atOpen.test_muxStream.test_getMuxStreamsCfg;
+import static com.qysd.atOpen.test_muxStream.testInit_getMuxStreamsCfg;
+
 
 import com.qycx.Activity_dlgTalk;
 import com.qycx.Activity_dlgTalk_av;
@@ -184,7 +185,7 @@ public class doCmd_startAvCall {
                                 //
                                 //if  (  pQyMc.appParams.bDbg)
                                 {
-                                    test_getMuxStreamsCfg(muxStreamsCfg);
+                                    testInit_getMuxStreamsCfg(level, muxStreamsCfg);
 
                                 }
 

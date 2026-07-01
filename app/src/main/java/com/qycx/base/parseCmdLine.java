@@ -13,8 +13,12 @@ public class parseCmdLine {
         bVal  =  BuildConfig.DEBUG;     //  没用
 
         //
-        if  (  true  ) {
+        if  (  false  ) {
             pParams.bENABLE_MAP_TAB=true;
+
+            //
+            pParams.bStay_toAvCall = true;
+            showInfo_open.qyFuncs.showInfo_open("test: bStay_toAv set to true");
         }
 
         //
@@ -22,6 +26,20 @@ public class parseCmdLine {
             pParams.bDbg = true;
             Log.d("qy","Note: parseCmdLine_qyMc: set bDbg to true");
         }
+
+        //
+        if  (  pParams.bDbg)  {
+
+            //
+            if  (  false ) {
+                pParams.bTest_ancSndMarkToHg = true;
+                Log.d("qy","Note: parseCmdLine_qyMc: set bTest_andSndMarkToHg to true");
+            }
+
+
+        }
+
+
 
         //
         return  0;

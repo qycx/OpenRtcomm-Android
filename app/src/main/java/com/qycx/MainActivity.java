@@ -614,7 +614,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             dlgTalkProc.DLG_TALK_var m_var = talker.m_var;
 
             //
-            boolean bStay_toAvCall = pProcInfo.bStay_toAvCall;
+            boolean bStay_toAvCall = pQyMc.appParams.bStay_toAvCall;
             //
             doTask_av_accept(this, m_var, bStay_toAvCall);
 
@@ -1081,7 +1081,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                 }
 
                 //
-                boolean bStay_toAvCall = pProcInfo.bStay_toAvCall;
+                boolean bStay_toAvCall = pQyMc.appParams.bStay_toAvCall;
                 //
                 isCliHelpPublic.PARAM_talkToMessenger param = new isCliHelpPublic.PARAM_talkToMessenger();
                 param.wParam = qyWmComm.Consts.CONST_qyWmParam_doTask;
@@ -1333,12 +1333,6 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             showInfo_open.qyFuncs.showInfo_open("For test: bUse100k set to true");
         }
 
-        //
-        if  (  true ) {
-            //
-            pProcInfo.bStay_toAvCall = true;
-            showInfo_open.qyFuncs.showInfo_open("test: bStay_toAv set to true");
-        }
 
         //
         if  (  pQyMc.appParams.bDbg)  {

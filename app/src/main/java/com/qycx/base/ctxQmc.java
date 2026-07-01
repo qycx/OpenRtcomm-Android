@@ -716,10 +716,6 @@ public class ctxQmc {
         //
         public boolean b_break_forDbg;
 
-        //
-        //  留在本页面实现视频通话. false, 则启动actifity_dlgtalk，在那里进行视频通话。
-        //  true, 则在本页面实现
-        public boolean bStay_toAvCall;
 
         //
         public static class Tmp_chkMixerPlayer {

@@ -8,11 +8,13 @@ import static com.qycx.base.genericQueue.qyFuncs.emptyGenericQ;
 import static com.qycx.base.genericQueue.qyFuncs.isQFull;
 import static com.qycx.base.genericQueue.qyFuncs.qPostMsg;
 import static com.qycx.base.genericQueue.qyFuncs.qPostMsgAndTrigger;
+import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_anHgData;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_confReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_getCfgsReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_lStream;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_ptzControlCmd;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_ptzControlReq;
+import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_qisCaReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_refreshRecentFriendsReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_remoteAssistReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferAudioData;
@@ -478,7 +480,9 @@ public class postMsg2MgrFunc {
                 }
                 case CONST_misMsgType_req: {
                     qnmCommProc_mis.MIS_MSG_REQ req = new qnmCommProc_mis.MIS_MSG_REQ();
+                    //
                     //req.buffer = ByteBuffer.allocate(bufSize_transferVideoData);
+                    //
                     req.buffer = ByteBuffer.allocate(cntof_imHtmlContent_wBuf);
                     req.uiType = uiMisMsgType;
                     req.ucFlg = ucFlg;
@@ -518,13 +522,19 @@ public class postMsg2MgrFunc {
                             //
                             break;
                         }
+                        case  CONST_imCommType_qisCaReq:
+                        case  CONST_imCommType_anHgData:
+                        case CONST_imCommType_confReq:
+                              break;
+
                         default:
                             //
                             if  (  data.uiType==CONST_imCommType_confReq)  {
                                 Log.d("at","makeMsg2mgrFunc_mc l524: confReq");
                             }
                             //
-                            Log.w("unknow uiType :" + req.uiType);
+                            Log.w("unknow uiType :" + data.uiType);
+                            //
                             break;
                     }
                     return req;

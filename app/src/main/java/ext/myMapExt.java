@@ -34,11 +34,11 @@ public class myMapExt extends MapExtTmpl {
         if (0!=super.gui_onTimer(p0, pVar, p2))  return  -1;
 
         //
-        if (  pQyMc.appParams.bDbg) {
+        if (  pQyMc.appParams.bTest_ancSndMarkToHg) {
 
             if  (  true  ) {
                 //
-                Log.d("at", "l36: test to sendLocation");
+                Log.d("at", "l36: test to sendMarkToHg");
 
                 if (0 == (var.loopCtrl % 5)) {
                     //
@@ -94,6 +94,7 @@ public class myMapExt extends MapExtTmpl {
         //
         ancSndLocation(0, locStr, imGrp_related_ui64Id);
 
+        //
         return 0;
     }
 
@@ -103,8 +104,11 @@ public class myMapExt extends MapExtTmpl {
         if  (  param.pTransferLocData==null)  return  -1;
         if  (  param.pTransferLocData instanceof qnmCommProc_mis.TransferLocData  )  {
             qnmCommProc_mis.TransferLocData  tld = (qnmCommProc_mis.TransferLocData) param.pTransferLocData;
+
             //
-            Log.d("at","onRecv_locations: cnt "  +  tld.usCnt);
+            if  (  false  ) {
+                Log.d("at", "onRecv_locations: cnt " + tld.usCnt);
+            }
 
         }
         //

@@ -3,6 +3,7 @@ import com.qycx.base.util.Log;
 
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -130,7 +131,34 @@ public class Aes {
             //
             Cipher cipher = Cipher.getInstance(TRANSFORMATION);
             cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
-            byte[] decryptedBytes = cipher.doFinal(cipherTextBuffer.array(),0,cipherTextBuffer.remaining());
+
+            //
+            if (  false  ) {
+                Log.d("AES",
+                        "position=" + cipherTextBuffer.position()
+                                + ", remaining=" + cipherTextBuffer.remaining()
+                                + ", limit=" + cipherTextBuffer.limit());
+
+                Log.d("AES", "cipherLen=" + cipherTextBuffer.remaining());
+                //
+                Log.d("AES", "keyLen=" + keySpec.getEncoded().length);
+                Log.d("AES", Arrays.toString(keySpec.getEncoded()));
+                //
+                Log.d("AES","TRANSFORMATION="  +  Aes.TRANSFORMATION);
+                //
+                Log.d("AES", "ivLen=" + ivSpec.getIV().length);
+                Log.d("AES", Arrays.toString(ivSpec.getIV()));
+                //
+                byte[] cipher1 = Arrays.copyOfRange(
+                        cipherTextBuffer.array(),
+                        cipherTextBuffer.position(),
+                        cipherTextBuffer.position() + cipherTextBuffer.remaining());
+
+                Log.d("AES", Arrays.toString(cipher1));
+            }
+
+            //
+            byte[] decryptedBytes = cipher.doFinal(cipherTextBuffer.array(),cipherTextBuffer.position(),cipherTextBuffer.remaining());
 
             return ByteBuffer.wrap(decryptedBytes);
 
