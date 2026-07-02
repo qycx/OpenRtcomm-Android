@@ -628,7 +628,7 @@ public class qyMcMainDaemon_isCli_mgr {
                 if (pContent != null && pContent.uiType == CONST_imCommType_anHgData) {
                     Log.d("at1111", "procMsgInput_mgr_req: anHgData usCode=" + pMsgInput.usCode
                             + " len=" + pMsgInput.lenInBytes);
-                    doAnHgData(pProcInfo, (qnmCommProc_mis.AnHg_req) pContent);
+                    doAnHgData(pProcInfo, (qnmCommProc_mis.AnHgData) pContent);
                     return 0;
                 }
                 Log.e("at1111", "procMsgInput_mgr_req: non-route unhandled type="

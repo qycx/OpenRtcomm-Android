@@ -1191,7 +1191,7 @@ public class qyMcMainProc_isCli_robot {
             if (!isUcFlgRouteTalkData(pMsgInput.ucFlg)) {
                 if (pContent != null && pContent.uiType == CONST_imCommType_anHgData) {
                     Log.d("at1111", "procMsgInput_other_req: anHgData usCode=" + pMsgInput.usCode);
-                    doAnHgData(pProcInfo, (qnmCommProc_mis.AnHg_req) pContent);
+                    doAnHgData(pProcInfo, (qnmCommProc_mis.AnHgData) pContent);
                 } else {
                     Log.e("at1111", "procMsgInput_other_req: non-route type="
                             + (pContent != null ? pContent.uiType : -1) + " usCode=" + pMsgInput.usCode);

@@ -2838,7 +2838,7 @@ public class isProtocolFunc {
                     }
                     break;
                 case  CONST_imCommType_anHgData:
-                    if (0>(lenInBytes=anHgData2Stream(pContent.uiType, (qnmCommProc_mis.AnHg_req) pContent, content_buffer))) {
+                    if (0>(lenInBytes=anHgData2Stream(pContent.uiType, (qnmCommProc_mis.AnHgData) pContent, content_buffer))) {
                         return iErr;
                     }
                     //
@@ -3518,7 +3518,7 @@ public class isProtocolFunc {
 
 
         //
-        public static int  anHgData2Stream(int  uiStreamId, qnmCommProc_mis.AnHg_req pReq, ByteBuffer ptr)
+        public static int  anHgData2Stream(int  uiStreamId, qnmCommProc_mis.AnHgData pReq, ByteBuffer ptr)
         {
             int				iErr = -1;
             int				i = 0;
@@ -3585,7 +3585,7 @@ public class isProtocolFunc {
             int iErr = -1;
             if (uiStreamId != CONST_imCommType_anHgData) return iErr;
 
-            qnmCommProc_mis.AnHg_req pContent = (qnmCommProc_mis.AnHg_req) p1;
+            qnmCommProc_mis.AnHgData pContent = (qnmCommProc_mis.AnHgData) p1;
             if (null == pContent) return iErr;
 
             int tmp_cfgId = pItem.cfgId;
@@ -4034,7 +4034,7 @@ public class isProtocolFunc {
                          break;
 
                     case CONST_imCommType_anHgData:
-                        pContent = new qnmCommProc_mis.AnHg_req();
+                        pContent = new qnmCommProc_mis.AnHgData();
                         if (0 > stream2Data(data, size, filterStream_is, tmpHandler_stream2AnHgData, null, pContent)) {
                             return null;
                         }

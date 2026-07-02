@@ -3079,10 +3079,12 @@ public class qnmCommProc_mis {
     //
 
     /** 融合中心 AnHgData 请求（对应 C++ AnHgData） */
-    public static class AnHg_req extends IM_CONTENTU {
+    public static class AnHgData extends IM_CONTENTU {
+        //
         public short sHgCmd;
-        public byte[] hg_cliData = new byte[Consts.MAX_hg_cliDataLen];
+        //
         public int hg_cliDataLen;
+        public byte[] hg_cliData = new byte[Consts.MAX_hg_cliDataLen];
     }
 
 

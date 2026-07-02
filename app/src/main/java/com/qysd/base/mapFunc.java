@@ -201,7 +201,7 @@ public class mapFunc {
             Log.d("at", "ancSndMarkToHg failed: hgCliData too long, len=" + payloadBytes.length);
             return -1;
         }
-        qnmCommProc_mis.AnHg_req req = new qnmCommProc_mis.AnHg_req();
+        qnmCommProc_mis.AnHgData req = new qnmCommProc_mis.AnHgData();
         req.uiType = CONST_imCommType_anHgData;
         req.sHgCmd = CONST_hgCmd_ulAnHgData;
         System.arraycopy(payloadBytes, 0, req.hg_cliData, 0, payloadBytes.length);
@@ -220,7 +220,7 @@ public class mapFunc {
     }
 
     /** 对应 PC {@code m_pQmcExt->doAnHgData}：解析融合中心下发的 hg_cliData 并分发给地图扩展。 */
-    public static int doAnHgData(ctxQmc.CCtxQmc pProcInfo, qnmCommProc_mis.AnHg_req req) {
+    public static int doAnHgData(ctxQmc.CCtxQmc pProcInfo, qnmCommProc_mis.AnHgData req) {
         if (pProcInfo == null || req == null || req.hg_cliDataLen <= 0) {
             return -1;
         }
@@ -371,7 +371,7 @@ public class mapFunc {
         String hgCliData = "[obj=80 len=12]123456789012";
         byte []payloadBytes=hgCliData.getBytes(StandardCharsets.UTF_8);
 
-        qnmCommProc_mis.AnHg_req req = new qnmCommProc_mis.AnHg_req();
+        qnmCommProc_mis.AnHgData req = new qnmCommProc_mis.AnHgData();
         req.uiType = CONST_imCommType_anHgData;
         req.sHgCmd = CONST_hgCmd_ulAnHgData;
         System.arraycopy(payloadBytes, 0, req.hg_cliData, 0, payloadBytes.length);
