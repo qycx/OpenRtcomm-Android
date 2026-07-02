@@ -32,14 +32,16 @@ public abstract class MapExtTmpl {
     /////////////////////////
     //
     public static class AncMark {
-        long ui64Id;
-        String markStr;
+        public long ui64Id;
+        public String markStr;
     };
 
     //
     public static class Param_onRecv_marks {
-        long  imGrp_ui64Id;
-        List<AncMark>  m_marks;
+       public long  imGrp_ui64Id;
+       /** 融合中心外层 [msgr=...] 投递目标，个人 id 或组 id */
+       public long  outerMsgrId;
+       public List<AncMark>  m_marks;
     };
 
     /////////////////////////////////////

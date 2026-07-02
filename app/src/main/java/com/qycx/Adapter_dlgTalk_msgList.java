@@ -52,22 +52,16 @@ public class Adapter_dlgTalk_msgList extends RecyclerView.Adapter<Adapter_dlgTal
         var item = items.get(position);
 
         //holder.TextView.setText( items[position];
-        String str;
+        String timeStr = displayShortTime.qyFuncs_Droid.displayShortTime(item.tStartTime);
+        holder.tv_time.setText(timeStr);
         if (mActivity.m_talker.m_var.addr.uiObjType == qyDefs.Consts.CONST_objType_imGrp) {
-            str = String.format("%s %s %s", item.dw, item.bm, item.syr);
-            //
-            str += " " + displayShortTime.qyFuncs_Droid.displayShortTime(item.tStartTime);
-            //
-            holder.tv_speaker.setText(str);
+            holder.tv_speaker.setVisibility(View.VISIBLE);
+            holder.tv_speaker.setText(String.format("%s %s %s", item.dw, item.bm, item.syr));
         } else {
-            str = item.syr;
-            //
-            str += " " + displayShortTime.qyFuncs_Droid.displayShortTime(item.tStartTime);
-            //
-            holder.tv_speaker.setText(str);
+            holder.tv_speaker.setVisibility(View.GONE);
         }
         holder.iv.setImageResource(item.ImageResourceId);
-        //
+        String str;
         if (item.iTaskId == 0) str = item.msg;
         else {
             int iStatus = tmpProc.qyFuncs.getStatusByTaskId(item.iTaskId);

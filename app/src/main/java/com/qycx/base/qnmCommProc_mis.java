@@ -2840,9 +2840,9 @@ public class qnmCommProc_mis {
     public static class TransferLocDataMem								{
 
         //
-        qyDefs.QY_MESSENGER_ID idInfo=new qyDefs.QY_MESSENGER_ID();
+        public qyDefs.QY_MESSENGER_ID idInfo=new qyDefs.QY_MESSENGER_ID();
         //
-        AncLocData											locData=new AncLocData();
+        public AncLocData											locData=new AncLocData();
 
     }		 ;
 
@@ -2859,7 +2859,7 @@ public class qnmCommProc_mis {
 
         //
     public short									usCnt;
-        TransferLocDataMem		[]							mems;
+        public TransferLocDataMem		[]							mems;
 
         public TransferLocData()
         {
@@ -3088,6 +3088,13 @@ public class qnmCommProc_mis {
 
 
     //
+
+    /** 融合中心 AnHgData 请求（对应 C++ AnHgData） */
+    public static class AnHg_req extends IM_CONTENTU {
+        public short sHgCmd;
+        public byte[] hg_cliData = new byte[com.qycx.anc.hgCommProc.Consts.MAX_hg_cliDataLen];
+        public int hg_cliDataLen;
+    }
 
     public static class QIS_ca_req extends IM_CONTENTU {
 
@@ -6800,6 +6807,37 @@ public class qnmCommProc_mis {
 
             return total_len;
         }
+
+        public static isProtocolFunc.PF_handler_stream2Data tmpHandler_stream2AnHgData = (isProtocolFunc.CTX_stream2Data pCtx, Object p0, Object p1, int uiStreamId, qnmCommProc.QY_CFGITEM pItem) ->
+        {
+            int iErr = -1;
+            if (uiStreamId != CONST_imCommType_anHgData) return iErr;
+
+            AnHg_req pContent = (AnHg_req) p1;
+            if (null == pContent) return iErr;
+
+            int tmp_cfgId = pItem.cfgId;
+            switch (tmp_cfgId) {
+                case CONST_qnmCfgId_start:
+                    pContent.uiType = uiStreamId;
+                    break;
+                case CONST_qnmCfgId_hg_cliData: {
+                    ByteBuffer lData = getFieldData_lData(pItem);
+                    if (null == lData) return iErr;
+                    int copyLen = lData.remaining();
+                    if (copyLen <= 0 || copyLen > pContent.hg_cliData.length) return iErr;
+                    lData.get(pContent.hg_cliData, 0, copyLen);
+                    pContent.hg_cliDataLen = copyLen;
+                    break;
+                }
+                case CONST_qnmCfgId_sHgCmd:
+                    if (0 > (pContent.sHgCmd = (short) getFieldData_short(pItem))) return iErr;
+                    break;
+                default:
+                    break;
+            }
+            return 0;
+        };
 
         public static isProtocolFunc.PF_handler_stream2Data tmpHandler_stream2QisGetCfgsReq = (isProtocolFunc.CTX_stream2Data pCtx, Object p0, Object p1, int uiStreamId, qnmCommProc.QY_CFGITEM pItem) ->
         {

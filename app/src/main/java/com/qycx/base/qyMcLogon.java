@@ -85,6 +85,14 @@ public class qyMcLogon {
             //
             pQyMc.bLogon = false;
 
+            Object hMain = pQyMc.gui.hMainWnd;
+            if (hMain instanceof com.qycx.MainActivity) {
+                com.qycx.MainActivity main = (com.qycx.MainActivity) hMain;
+                main.runOnUiThread(main::clearMapLocKeywordAndRemoteLocations);
+            } else {
+                com.qysd.base.MapLocKeyword.clearOnLogoff();
+            }
+
             //
             qyMcMainProc.qyFuncs.exitAllDaemonThreads(pQyMc);
             pProcInfo.processQ_media.emptyQ();

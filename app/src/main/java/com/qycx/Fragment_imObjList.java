@@ -7,11 +7,11 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.qycx.base.TableItem;
 import com.qycx.base.ctxQmc;
@@ -25,6 +25,7 @@ import com.qycx.base.myDb;
 import com.qycx.base.qmCommFunc_mis;
 import com.qycx.base.qnmCommProc;
 import com.qycx.base.qnmCommProc_mis;
+import com.qycx.base.qyCusResPublic;
 import com.qycx.base.qyDefs;
 import com.qycx.base.qyMcMain_global;
 import com.qycx.base.qyWmComm;
@@ -33,18 +34,40 @@ import com.qycx.base.showPopupMenu;
 import com.qycx.base.util.Log;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Fragment_imObjList extends Fragment {
+    private static final int CATEGORY_GRP = 0;
+    private static final int CATEGORY_FRIEND = 1;
+
     MainActivity mainWnd;
-    ListView listView;
+    RecyclerView listView;
     TextView tv_topMenu;
     TextView m_tv_txtTitle;
+    Adapter_imObjTreeList treeAdapter;
 
     public List<TableItem.TableItem_imObj> mTableItems_imObj = new ArrayList<>();
 
     /** 供 {@link TaskActiveGrp} 读取 IM 群 id；与 {@link #mTableItems_imObj} 在 fillList 后同步。 */
     private static final List<TableItem.TableItem_imObj> sTableItems_imObj = new ArrayList<>();
+
+    private boolean grpCategoryExpanded = true;
+    private boolean friendCategoryExpanded = true;
+    private final Set<Long> expandedGroupIds = new HashSet<>();
+
+    private final qyDefs.PF_commonHandler tmpHandler_collectGrpMemberIds = (Object p0, Object p1, Object p2) -> {
+        long grpIdInfo = (long) p0;
+        @SuppressWarnings("unchecked")
+        Set<Long> out = (Set<Long>) p1;
+        qnmCommProc_mis.IM_GRP_MEM pQMem = (qnmCommProc_mis.IM_GRP_MEM) p2;
+        if (pQMem != null && pQMem.idInfo_grp.ui64Id == grpIdInfo) {
+            out.add(pQMem.idInfo_mem.ui64Id);
+        }
+        return 0;
+    };
 
     int th_fillList_imObj(imObj_proc.QMem_imObj_intQ pMem) {
         int iErr = -1;
@@ -117,6 +140,8 @@ public class Fragment_imObjList extends Fragment {
 
         sTableItems_imObj.clear();
         sTableItems_imObj.addAll(mTableItems_imObj);
+        TaskActiveGrp.resolveSelectionAfterLogin();
+        rebuildTreeRows();
         return 0;
     }
 
@@ -137,13 +162,200 @@ public class Fragment_imObjList extends Fragment {
         return result;
     }
 
+    public static String getGroupName(long groupId) {
+        if (groupId <= 0) return "";
+        for (TableItem.TableItem_imObj item : sTableItems_imObj) {
+            if (item != null
+                    && item.uiObjType == qyDefs.Consts.CONST_objType_imGrp
+                    && item.ui64Id == groupId) {
+                return item.grpName != null ? item.grpName : "";
+            }
+        }
+        return "";
+    }
+
     //
     public int display_imObjList() {
-        if (listView != null) {
-            Adapter_imObjList adapter = (Adapter_imObjList) listView.getAdapter();
-            adapter.notifyDataSetChanged();
-        }
+        rebuildTreeRows();
         return 0;
+    }
+
+    private void rebuildTreeRows() {
+        if (treeAdapter == null) return;
+
+        List<TableItem.TableItem_imObj> groups = new ArrayList<>();
+        List<TableItem.TableItem_imObj> friends = new ArrayList<>();
+        for (TableItem.TableItem_imObj item : mTableItems_imObj) {
+            if (item == null) continue;
+            if (item.uiObjType == qyDefs.Consts.CONST_objType_imGrp) {
+                groups.add(item);
+            } else {
+                friends.add(item);
+            }
+        }
+        groups.sort(Comparator.comparingLong(a -> a.ui64Id));
+        friends.sort(Comparator.comparingLong(a -> a.ui64Id));
+
+        List<Adapter_imObjTreeList.SectionData> sections = new ArrayList<>();
+        sections.add(buildGroupSection(groups));
+        sections.add(buildFriendSection(friends));
+        treeAdapter.setSections(sections);
+    }
+
+    private Adapter_imObjTreeList.SectionData buildGroupSection(List<TableItem.TableItem_imObj> groups) {
+        Adapter_imObjTreeList.SectionData section = new Adapter_imObjTreeList.SectionData();
+        section.categoryKey = CATEGORY_GRP;
+        section.title = String.format("群组(%d)", groups.size());
+        section.expanded = grpCategoryExpanded;
+        if (!grpCategoryExpanded) {
+            return section;
+        }
+        for (TableItem.TableItem_imObj grp : groups) {
+            boolean grpExpanded = expandedGroupIds.contains(grp.ui64Id);
+            Adapter_imObjTreeList.TreeRow grpRow = new Adapter_imObjTreeList.TreeRow();
+            grpRow.type = Adapter_imObjTreeList.TYPE_GROUP;
+            grpRow.id = grp.ui64Id;
+            grpRow.title = grp.grpName != null && !grp.grpName.isEmpty() ? grp.grpName : String.valueOf(grp.ui64Id);
+            grpRow.badgeText = String.format("(分组)%s", grp.ui64Id);
+            grpRow.badgeStyle = Adapter_imObjTreeList.BADGE_GROUP;
+            grpRow.imageRes = grp.ImageResourceId;
+            grpRow.expanded = grpExpanded;
+            section.items.add(grpRow);
+            if (grpExpanded) {
+                List<TableItem.TableItem_imObj> members = loadGroupMembers(grp.ui64Id);
+                for (TableItem.TableItem_imObj mem : members) {
+                    section.items.add(buildContactRow(mem));
+                }
+            }
+        }
+        return section;
+    }
+
+    private Adapter_imObjTreeList.SectionData buildFriendSection(List<TableItem.TableItem_imObj> friends) {
+        Adapter_imObjTreeList.SectionData section = new Adapter_imObjTreeList.SectionData();
+        section.categoryKey = CATEGORY_FRIEND;
+        section.title = String.format("好友(%d)", friends.size());
+        section.expanded = friendCategoryExpanded;
+        if (!friendCategoryExpanded) {
+            return section;
+        }
+        for (TableItem.TableItem_imObj friend : friends) {
+            section.items.add(buildContactRow(friend));
+        }
+        return section;
+    }
+
+    private Adapter_imObjTreeList.TreeRow buildContactRow(TableItem.TableItem_imObj item) {
+        Adapter_imObjTreeList.TreeRow row = new Adapter_imObjTreeList.TreeRow();
+        row.type = Adapter_imObjTreeList.TYPE_CONTACT;
+        row.id = item.ui64Id;
+        String displayName = item.syr;
+        if (displayName == null || displayName.isEmpty()) {
+            displayName = String.valueOf(item.ui64Id);
+        }
+        row.title = displayName;
+        row.imageRes = item.ImageResourceId != 0 ? item.ImageResourceId : R.drawable.contact;
+        if (isUserOnline(item.ui64Id)) {
+            row.badgeStyle = Adapter_imObjTreeList.BADGE_ONLINE;
+        }
+        return row;
+    }
+
+    private List<TableItem.TableItem_imObj> loadGroupMembers(long grpId) {
+        Set<Long> memberIds = loadGroupMemberIds(grpId);
+        List<TableItem.TableItem_imObj> members = new ArrayList<>();
+        for (Long memberId : memberIds) {
+            if (memberId == null || memberId <= 0) continue;
+            TableItem.TableItem_imObj item = findOrLoadContactItem(memberId);
+            if (item != null) {
+                members.add(item);
+            }
+        }
+        members.sort(Comparator.comparingLong(a -> a.ui64Id));
+        return members;
+    }
+
+    private Set<Long> loadGroupMemberIds(long grpId) {
+        Set<Long> members = new HashSet<>();
+        if (grpId <= 0) return members;
+        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        if (pQyMc == null) return members;
+        try {
+            myDb.CMyDb db = (myDb.CMyDb) pQyMc.gui.pDb;
+            if (db == null || db.m_var_pQ_qyImGrpMemTab == null) return members;
+            genericQueue.qyFuncs.qTraverse(db.m_var_pQ_qyImGrpMemTab, tmpHandler_collectGrpMemberIds, grpId, members);
+        } catch (Exception ignored) {
+        }
+        return members;
+    }
+
+    private TableItem.TableItem_imObj findOrLoadContactItem(long ui64Id) {
+        for (TableItem.TableItem_imObj item : mTableItems_imObj) {
+            if (item != null && item.ui64Id == ui64Id && item.uiObjType != qyDefs.Consts.CONST_objType_imGrp) {
+                return item;
+            }
+        }
+        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        if (pQyMc == null) return null;
+        myDb.QM_dbFuncs pDbFuncs = pQyMc.p_g_dbFuncs;
+        qyDefs.QY_MESSENGER_ID idInfo = new qyDefs.QY_MESSENGER_ID();
+        idInfo.ui64Id = ui64Id;
+        qnmCommProc_mis.QY_MESSENGER_INFO msgrInfo = new qnmCommProc_mis.QY_MESSENGER_INFO();
+        qnmCommProc_mis.QY_MESSENGER_REGINFO regInfo = new qnmCommProc_mis.QY_MESSENGER_REGINFO();
+        if (!myDb.QM_dbFuncs.pf_bGetMessengerInfoBySth.call(
+                pDbFuncs, pQyMc.gui.pDb, pQyMc.cfg.db.iDbType,
+                qnmCommProc.qyFuncs.CONST_fieldIdTable_en, "", idInfo, 0,
+                msgrInfo, regInfo, null, null)) {
+            TableItem.TableItem_imObj fallback = new TableItem.TableItem_imObj();
+            fallback.ui64Id = ui64Id;
+            fallback.syr = String.valueOf(ui64Id);
+            fallback.ImageResourceId = R.drawable.contact;
+            return fallback;
+        }
+        if (msgrInfo.uiType == qyDefs.Consts.CONST_objType_imGrp) {
+            return null;
+        }
+        TableItem.TableItem_imObj item = new TableItem.TableItem_imObj();
+        item.ui64Id = ui64Id;
+        item.uiObjType = msgrInfo.uiType;
+        item.dw = regInfo.dw;
+        item.bm = regInfo.bm;
+        item.syr = regInfo.syr;
+        item.ImageResourceId = R.drawable.contact;
+        return item;
+    }
+
+    private boolean isUserOnline(long userId) {
+        if (userId <= 0) return false;
+        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        if (pQyMc == null) return false;
+        ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
+        qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo != null ? pProcInfo.pMisCnt : null;
+        if (pMisCnt != null && userId == pMisCnt.idInfo.ui64Id) {
+            return pMisCnt.status.usRunningStatus == qyCusResPublic.Consts.CONST_usRunningStatus_online;
+        }
+        myDb.QM_dbFuncs pDbFuncs = pQyMc.p_g_dbFuncs;
+        if (pDbFuncs == null || pQyMc.gui.pDb == null) return false;
+        qyDefs.QY_MESSENGER_ID idInfo = new qyDefs.QY_MESSENGER_ID();
+        idInfo.ui64Id = userId;
+        qnmCommProc_mis.QY_MESSENGER_INFO msgrInfo = new qnmCommProc_mis.QY_MESSENGER_INFO();
+        qnmCommProc_mis.QY_MESSENGER_REGINFO regInfo = new qnmCommProc_mis.QY_MESSENGER_REGINFO();
+        if (!myDb.QM_dbFuncs.pf_bGetMessengerInfoBySth.call(
+                pDbFuncs, pQyMc.gui.pDb, pQyMc.cfg.db.iDbType,
+                qnmCommProc.qyFuncs.CONST_fieldIdTable_en, "", idInfo, 0,
+                msgrInfo, regInfo, null, null)) {
+            return false;
+        }
+        return msgrInfo.usRunningStatus == qyCusResPublic.Consts.CONST_usRunningStatus_online;
+    }
+
+    private void talkToMessenger(long ui64Id) {
+        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        if (pQyMc == null) return;
+        Log.i(ui64Id + " clicked ");
+        boolean bStay_toAvCall = false;
+        isCliHelpPublic.PARAM_talkToMessenger param = new isCliHelpPublic.PARAM_talkToMessenger();
+        dlgTalkProc_help.qyFuncs_Droid.talkToMessenger(pQyMc, ui64Id, false, true, bStay_toAvCall, param);
     }
 
 
@@ -164,18 +376,61 @@ public class Fragment_imObjList extends Fragment {
         if (pQyMc == null) return view;
 
         m_tv_txtTitle = view.findViewById(R.id.txt_title);
-        m_tv_txtTitle.setText(mainWnd.m_str_title);
+        m_tv_txtTitle.setText("联系人");
 
         listView = view.findViewById(R.id.list);
-        listView.setAdapter(new Adapter_imObjList(inflater, mTableItems_imObj));
-        listView.setOnItemClickListener(ListView_ItemClick);
+        listView.setLayoutManager(new LinearLayoutManager(getContext()));
+        treeAdapter = new Adapter_imObjTreeList(inflater);
+        treeAdapter.setListener(new Adapter_imObjTreeList.Listener() {
+            @Override
+            public void onCategoryClick(int categoryKey) {
+                if (categoryKey == CATEGORY_GRP) {
+                    grpCategoryExpanded = !grpCategoryExpanded;
+                } else if (categoryKey == CATEGORY_FRIEND) {
+                    friendCategoryExpanded = !friendCategoryExpanded;
+                }
+                rebuildTreeRows();
+            }
+
+            @Override
+            public void onGroupClick(long grpId) {
+                if (expandedGroupIds.contains(grpId)) {
+                    expandedGroupIds.remove(grpId);
+                } else {
+                    expandedGroupIds.add(grpId);
+                }
+                rebuildTreeRows();
+            }
+
+            @Override
+            public void onGroupLongClick(long grpId) {
+                talkToMessenger(grpId);
+            }
+
+            @Override
+            public void onContactClick(long userId) {
+                talkToMessenger(userId);
+            }
+        });
+        listView.setAdapter(treeAdapter);
+        rebuildTreeRows();
         return view;
     }
 
-    showPopupMenu.qyFuncs_Droid.PF_procMenu procMenu = (Context context, int menuId) -> {
+    private void quitApp() {
         ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        if (pQyMc == null) return;
+        guiShare.GuiShare.pf_PostMessage_new.get().call(
+                pQyMc.gui.hMainWnd,
+                qyWndContentType.Consts.CONST_qyWndContentType_mainWnd,
+                qyWmComm.Consts.CONST_qyWm_postComm,
+                qyWmComm.Consts.CONST_qyWmParam_closeWnd,
+                0);
+    }
+
+    showPopupMenu.qyFuncs_Droid.PF_procMenu procMenu = (Context context, int menuId) -> {
         if (menuId == R.id.quit) {
-            guiShare.GuiShare.pf_PostMessage_new.get().call(pQyMc.gui.hMainWnd, qyWndContentType.Consts.CONST_qyWndContentType_mainWnd, qyWmComm.Consts.CONST_qyWm_postComm, qyWmComm.Consts.CONST_qyWmParam_closeWnd, 0);
+            quitApp();
         }
         return 0;
     };
@@ -188,9 +443,9 @@ public class Fragment_imObjList extends Fragment {
         if (mainWnd == null) return 0;
 
         if (pProcInfo.av.talk.bChannelReady) {
-            m_tv_txtTitle.setText(mainWnd.m_str_title);
+            m_tv_txtTitle.setText("联系人");
         } else {
-            m_tv_txtTitle.setText(mainWnd.m_str_title + "(离线)");
+            m_tv_txtTitle.setText("联系人(离线)");
         }
         return 0;
     }
@@ -200,35 +455,5 @@ public class Fragment_imObjList extends Fragment {
     private View.OnClickListener Tv_topMenu_Click = (View view) -> {
         Context context = getActivity();
         showPopupMenu.qyFuncs_Droid.showPopupMenu(context, view, R.menu.layout_imobjlist_topmenu, procMenu);
-    };
-
-    private AdapterView.OnItemClickListener ListView_ItemClick = (AdapterView<?> parent, View view, int position, long id) -> {
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
-        ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
-        qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo.pMisCnt;
-        {
-            if (mTableItems_imObj.size() <= position) {
-                return;
-            }
-            Log.i(mTableItems_imObj.get(position).ui64Id + " clicked ");
-
-            TableItem.TableItem_imObj item_sel = mTableItems_imObj.get(position);
-
-//            Log.d("这里应该提示一下，如果有视频任务在进行，就不能激活新窗口");
-
-            qyDefs.QY_MESSENGER_ID idInfo = new qyDefs.QY_MESSENGER_ID();
-            idInfo.ui64Id = item_sel.ui64Id;
-
-            qnmCommProc_mis.MSGR_ADDR addr = new qnmCommProc_mis.MSGR_ADDR();
-            addr.idInfo.ui64Id = item_sel.ui64Id;
-
-            //
-            boolean bStay_toAvCall = false;
-
-            //
-            isCliHelpPublic.PARAM_talkToMessenger param = new isCliHelpPublic.PARAM_talkToMessenger();
-
-            dlgTalkProc_help.qyFuncs_Droid.talkToMessenger(pQyMc, addr.idInfo.ui64Id, false, true, bStay_toAvCall, param);
-        }
     };
 }

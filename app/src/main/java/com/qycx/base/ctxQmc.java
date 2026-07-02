@@ -1106,10 +1106,8 @@ public class ctxQmc {
                 Log.e("pQyMc == null");
                 return  -1;
             }
-            MainActivity mainActivity = (MainActivity) pQyMc.gui.hMainWnd;
-            //Activity_dlgTalk dlgTalk = (Activity_dlgTalk) hDlgTalk;
-
-
+            // 组会麦克风开关改的是全局 isMuted，结束通话后恢复，避免影响下次通话
+            audioRecorder_android.qyFuncs_Droid.setMicrophoneOn(true);
 
             return  0;
         }

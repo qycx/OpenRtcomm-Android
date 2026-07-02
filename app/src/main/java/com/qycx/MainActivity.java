@@ -33,18 +33,22 @@ import static org.aviran.cookiebar2.CookieBarDismissListener.DismissType.DURATIO
 import static org.aviran.cookiebar2.CookieBarDismissListener.DismissType.USER_ACTION_CLICK;
 import static org.aviran.cookiebar2.CookieBarDismissListener.DismissType.USER_DISMISS;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.util.DisplayMetrics;
@@ -55,6 +59,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.Gravity;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
@@ -107,11 +113,19 @@ import com.qycx.base.test;
 import com.qycx.base.tmpFunc;
 import com.qycx.base.util.Log;
 import com.qycx.base.util.javatuples.Pair;
+import com.qysd.base.MapLocKeyword;
+import com.qysd.base.MapLocSettings;
+import com.qysd.base.MapLocStrCrypto;
+
+import android.app.AlertDialog;
+import android.widget.EditText;
+import android.widget.Toast;
 
 import org.aviran.cookiebar2.*;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.Semaphore;
 
@@ -129,11 +143,18 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     public RelativeLayout m_layout_total;
     //private TextView txt_topbar;
     //
-    private TextView txt_map;
-    private TextView txt_msg;
-    private TextView txt_contact;
-    private TextView txt_me;
+    private View tab_map;
+    private View tab_msg;
+    private View tab_contact;
+    private View tab_me;
+    private View tab_map_indicator;
+    private View tab_msg_indicator;
+    private View tab_contact_indicator;
+    private View tab_me_indicator;
     private ViewPager vPager;
+    private BroadcastReceiver screenOffReceiver;
+    private boolean locKeywordDialogShowing;
+    private int lastPagerPosition = -1;
 
     //Fragment Object
 //private MyFragment fg1, fg2, fg3, fg4;
@@ -146,6 +167,12 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
     public FragmentPagerAdapter_main getMainPagerAdapter() {
         return mAdapter;
+    }
+
+    public void notifyMeActiveGroupChanged() {
+        if (mAdapter != null && mAdapter.mFragment_me != null) {
+            mAdapter.mFragment_me.onActiveGroupChanged();
+        }
     }
 
     //
@@ -298,6 +325,12 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                                 mainWnd.mAdapter.mFragment_imObj1.fillList_imObj();
                                 mainWnd.mAdapter.mFragment_imObj1.display_imObjList();
                             }
+                            if (mainWnd.mAdapter.mFragment_map instanceof Fragment_map) {
+                                ((Fragment_map) mainWnd.mAdapter.mFragment_map).onActiveGroupCandidatesChanged();
+                            }
+                            if (mainWnd.mAdapter.mFragment_me != null) {
+                                mainWnd.notifyMeActiveGroupChanged();
+                            }
                             break;
                         case qyWmComm.Consts.CONST_qyWmParam_allContactsRetrieved:
                             //
@@ -308,6 +341,12 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                             //
                             if (null != mainWnd.mAdapter && mainWnd.mAdapter.mFragment_msg1 != null) {
                                 mainWnd.mAdapter.mFragment_msg1.loadRecentContacts();
+                            }
+                            if (mainWnd.mAdapter != null && mainWnd.mAdapter.mFragment_map instanceof Fragment_map) {
+                                ((Fragment_map) mainWnd.mAdapter.mFragment_map).onActiveGroupCandidatesChanged();
+                            }
+                            if (mainWnd.mAdapter != null) {
+                                mainWnd.notifyMeActiveGroupChanged();
                             }
 
                             //
@@ -1306,6 +1345,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         //
+        MapLocSettings.loadFrom(this);
         pProcInfo.m_pMapExt = ((MyApplication)getApplication()).m_pMapExt;
         pProcInfo.m_pMapExt.m_var.pProcInfo=pProcInfo;
 
@@ -1413,7 +1453,90 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
         //
         this.m_str_title = getString(R.string.CONST_resId_appName);
+        registerMapLocScreenOffReceiver();
         startActivity_login();
+    }
+
+    private void registerMapLocScreenOffReceiver() {
+        if (screenOffReceiver != null) {
+            return;
+        }
+        screenOffReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent != null && Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
+                    clearMapLocKeywordAndRemoteLocations();
+                }
+            }
+        };
+        registerReceiver(screenOffReceiver, new IntentFilter(Intent.ACTION_SCREEN_OFF));
+    }
+
+    private void unregisterMapLocScreenOffReceiver() {
+        if (screenOffReceiver == null) {
+            return;
+        }
+        try {
+            unregisterReceiver(screenOffReceiver);
+        } catch (Exception ignored) {
+        }
+        screenOffReceiver = null;
+    }
+
+    /** 锁屏、退后台、登出时清除定位口令；加密开启时同时清除地图他人位置。 */
+    public void clearMapLocKeywordAndRemoteLocations() {
+        MapLocKeyword.clearOnLogoff();
+        if (MapLocSettings.isEncryptionEnabled()) {
+            clearMapRemoteLocations();
+        }
+        locKeywordDialogShowing = false;
+    }
+
+    /** 进入地图且尚未输入口令时弹窗；加密关闭时不提示。 */
+    public void requestMapLocKeywordIfNeeded() {
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        if (pQyMc == null || !pQyMc.bLogon || isFinishing()) {
+            return;
+        }
+        if (!MapLocSettings.isEncryptionEnabled()) {
+            return;
+        }
+        if (MapLocKeyword.canDecryptOthers() || locKeywordDialogShowing) {
+            return;
+        }
+        showLocKeywordDialog();
+    }
+
+    /** 离开地图 Tab：不清口令（锁屏/退后台/登出时仍会清除）。 */
+    public void onMapTabHidden() {
+    }
+
+    /** 进入地图 Tab：加密开启且未输入口令时弹窗。 */
+    public void onMapTabSelected() {
+        requestMapLocKeywordIfNeeded();
+    }
+
+    /** 口令输入成功后：立即上报本机位置，便于组员解密显示。 */
+    public void notifyMapLocKeywordReady() {
+        if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {
+            return;
+        }
+        ((Fragment_map) mAdapter.mFragment_map).flushSelfLocationToGroupNow();
+    }
+
+    private void handleMapTabPagerChange(int position) {
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        if (pQyMc == null || !pQyMc.appParams.bENABLE_MAP_TAB) {
+            lastPagerPosition = position;
+            return;
+        }
+        if (lastPagerPosition == PAGE_FOUR && position != PAGE_FOUR) {
+            onMapTabHidden();
+        }
+        if (position == PAGE_FOUR) {
+            onMapTabSelected();
+        }
+        lastPagerPosition = position;
     }
 
     private void showTipNotification() {
@@ -1463,6 +1586,43 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     //   private PendingIntent reorderToFrontIntent;
     private NotificationCompat.Action builderAccept;
     private NotificationCompat.Action builderCancel;
+    private static final int REQUEST_CODE_POST_LOGIN_PERMISSIONS = 7921;
+    private boolean requestedPostLoginPermissions;
+
+    /** 登录成功后一次性申请相机、麦克风、定位等运行时权限。 */
+    private void requestPostLoginPermissionsIfNeeded() {
+        if (requestedPostLoginPermissions) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return;
+        }
+        ArrayList<String> missing = new ArrayList<>(5);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            missing.add(Manifest.permission.CAMERA);
+        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            missing.add(Manifest.permission.RECORD_AUDIO);
+        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            missing.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            missing.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            missing.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
+        if (missing.isEmpty()) {
+            return;
+        }
+        requestedPostLoginPermissions = true;
+        ActivityCompat.requestPermissions(
+                this,
+                missing.toArray(new String[0]),
+                REQUEST_CODE_POST_LOGIN_PERMISSIONS);
+    }
 
     private void bindNotificationIntent() {
         var acceptIntent = new Intent(this, AcceptIntentService.class);
@@ -1582,10 +1742,9 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             return;
         }
         Fragment_map mapFg = (Fragment_map) mAdapter.mFragment_map;
-        final boolean compact = isMapOverlayTextCompactEnabled();
         Runnable apply = () -> {
             if (mapFg.isAdded()) {
-                mapFg.applyMapOverlayTextCompact(compact);
+                mapFg.refreshMapOverlayTextScale();
             }
         };
         if (mapFg.isAdded()) {
@@ -1619,11 +1778,11 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                 //
                 if (!pQyMc.bLogon) {
                     Log.d("OnActivityResult: not login, so will quit. resultCode " + resultCode);
+                    clearMapLocKeywordAndRemoteLocations();
                     guiShare.GuiShare.pf_PostMessage.call(pQyMc.gui.hMainWnd, qyWmComm.Consts.CONST_qyWm_postComm, qyWmComm.Consts.CONST_qyWmParam_login_canceled, 0);
                     break;
                 }
-
-                //  logon
+                requestPostLoginPermissionsIfNeeded();
 
             }
         } while ( false  );
@@ -2171,8 +2330,8 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     }
 
     private void ensureMapTabForFloatingAv(@NonNull ctxQyMc.CCtxQyMc pQyMc) {
-        if (pQyMc.appParams != null && pQyMc.appParams.bENABLE_MAP_TAB && txt_map != null) {
-            txt_map.performClick();
+        if (pQyMc.appParams != null && pQyMc.appParams.bENABLE_MAP_TAB && tab_map != null) {
+            tab_map.performClick();
         }
     }
 
@@ -2583,6 +2742,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         }
         updateSplitDividersVisibility();
         notifyMapFloatingLayoutChanged();
+        refreshMapFragmentOverlayTextScale();
     }
 
     private void notifyMapFloatingAvFragmentLayoutChanged() {
@@ -2711,6 +2871,174 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
     }
 
+    /** 进入地图时输入口令；未输入则不发送、不显示他人位置。 */
+    private void showLocKeywordDialog() {
+        if (isFinishing()) {
+            return;
+        }
+        locKeywordDialogShowing = true;
+
+        View content = LayoutInflater.from(this).inflate(R.layout.dialog_map_loc_keyword, null, false);
+        content.setClipToOutline(true);
+        content.setOutlineProvider(android.view.ViewOutlineProvider.BACKGROUND);
+        EditText input = content.findViewById(R.id.edtMapLocKeyword);
+        TextView btnCancel = content.findViewById(R.id.btnMapLocKeywordCancel);
+        TextView btnConfirm = content.findViewById(R.id.btnMapLocKeywordConfirm);
+
+        AlertDialog dialog = new AlertDialog.Builder(this, R.style.MapStyledDialogTheme)
+                .setView(content)
+                .setCancelable(true)
+                .create();
+        dialog.setOnDismissListener(d -> locKeywordDialogShowing = false);
+        dialog.setOnShowListener(d -> {
+            Window w = dialog.getWindow();
+            if (w != null) {
+                w.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+                View decor = w.getDecorView();
+                if (decor != null) {
+                    decor.setBackgroundResource(android.R.color.transparent);
+                }
+                View panel = w.findViewById(android.R.id.content);
+                if (panel != null) {
+                    panel.setBackgroundResource(android.R.color.transparent);
+                }
+                android.view.ViewParent parent = content.getParent();
+                while (parent instanceof View) {
+                    View wrapper = (View) parent;
+                    wrapper.setBackgroundResource(android.R.color.transparent);
+                    wrapper.setPadding(0, 0, 0, 0);
+                    if (wrapper.getId() == android.R.id.content) {
+                        break;
+                    }
+                    parent = wrapper.getParent();
+                }
+                WindowManager.LayoutParams lp = w.getAttributes();
+                lp.width = (int) (getResources().getDisplayMetrics().widthPixels * 0.84f);
+                lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+                w.setAttributes(lp);
+            }
+        });
+        btnCancel.setOnClickListener(v -> {
+            clearMapLocKeywordAndRemoteLocations();
+            dialog.dismiss();
+        });
+        btnConfirm.setOnClickListener(v -> {
+            String kw = input.getText() != null ? input.getText().toString().trim() : "";
+            if (kw.isEmpty()) {
+                Toast.makeText(this, "未输入口令", Toast.LENGTH_SHORT).show();
+                clearMapLocKeywordAndRemoteLocations();
+                dialog.dismiss();
+                return;
+            }
+            MapLocKeyword.setUserKeyword(kw);
+            if (!MapLocStrCrypto.verifyRoundTrip(kw)) {
+                Toast.makeText(this, "口令校验失败，请重新输入", Toast.LENGTH_SHORT).show();
+                clearMapLocKeywordAndRemoteLocations();
+                dialog.dismiss();
+                return;
+            }
+            notifyMapLocKeywordReady();
+            dialog.dismiss();
+        });
+        dialog.show();
+    }
+
+    /** 更换口令：无需先关闭再开启，直接输入新口令即可（需两次一致）。 */
+    public void showChangeLocKeywordDialog() {
+        if (isFinishing()) {
+            return;
+        }
+        if (!MapLocSettings.isEncryptionEnabled()) {
+            Toast.makeText(this, "请先开启口令", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        View content = LayoutInflater.from(this).inflate(R.layout.dialog_map_loc_change_keyword, null, false);
+        content.setClipToOutline(true);
+        content.setOutlineProvider(android.view.ViewOutlineProvider.BACKGROUND);
+        EditText inputNew = content.findViewById(R.id.edtMapLocNewKeyword);
+        TextView btnCancel = content.findViewById(R.id.btnMapLocChangeKeywordCancel);
+        TextView btnConfirm = content.findViewById(R.id.btnMapLocChangeKeywordConfirm);
+
+        AlertDialog dialog = new AlertDialog.Builder(this, R.style.MapStyledDialogTheme)
+                .setView(content)
+                .setCancelable(true)
+                .create();
+        dialog.setOnShowListener(d -> {
+            Window w = dialog.getWindow();
+            if (w != null) {
+                w.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+                View decor = w.getDecorView();
+                if (decor != null) {
+                    decor.setBackgroundResource(android.R.color.transparent);
+                }
+                View panel = w.findViewById(android.R.id.content);
+                if (panel != null) {
+                    panel.setBackgroundResource(android.R.color.transparent);
+                }
+                android.view.ViewParent parent = content.getParent();
+                while (parent instanceof View) {
+                    View wrapper = (View) parent;
+                    wrapper.setBackgroundResource(android.R.color.transparent);
+                    wrapper.setPadding(0, 0, 0, 0);
+                    if (wrapper.getId() == android.R.id.content) {
+                        break;
+                    }
+                    parent = wrapper.getParent();
+                }
+                WindowManager.LayoutParams lp = w.getAttributes();
+                lp.width = (int) (getResources().getDisplayMetrics().widthPixels * 0.84f);
+                lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+                w.setAttributes(lp);
+            }
+        });
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        btnConfirm.setOnClickListener(v -> {
+            String kw = inputNew.getText() != null ? inputNew.getText().toString().trim() : "";
+            if (kw.isEmpty()) {
+                Toast.makeText(this, "未输入新口令", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            MapLocKeyword.setUserKeyword(kw);
+            if (!MapLocStrCrypto.verifyRoundTrip(kw)) {
+                Toast.makeText(this, "口令校验失败，请重新输入", Toast.LENGTH_SHORT).show();
+                clearMapLocKeywordAndRemoteLocations();
+                dialog.dismiss();
+                return;
+            }
+            // 旧口令解出的他人位置作废，改用新口令重新解密并重报本机位置。
+            clearMapRemoteLocations();
+            notifyMapLocKeywordReady();
+            Toast.makeText(this, "口令已更换", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+        dialog.show();
+    }
+
+    /** 供 myMapExt 回调：在地图上显示他人定位。 */
+    public void applyMapRemoteLocation(long userId, @NonNull String plainLocStr) {
+        if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {
+            return;
+        }
+        ((Fragment_map) mAdapter.mFragment_map).applyRemoteLocation(userId, plainLocStr);
+    }
+
+    /** 供 myMapExt 回调：在地图上显示他人同步注记。 */
+    public void applyMapRemoteMark(long userId, @NonNull String markStr) {
+        if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {
+            return;
+        }
+        ((Fragment_map) mAdapter.mFragment_map).applyRemoteMark(userId, markStr);
+    }
+
+    /** 加密开关切换等场景：清除地图上他人定位点。 */
+    public void clearMapRemoteLocations() {
+        if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {
+            return;
+        }
+        ((Fragment_map) mAdapter.mFragment_map).clearRemoteLocations();
+    }
+
     private void bindViews() {
         ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
 
@@ -2718,21 +3046,23 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         m_layout_total = findViewById(R.id.layout_total);
         //txt_topbar = findViewById(R.id.txt_topbar);
 
-        txt_map = findViewById(R.id.txt_map);
-        txt_msg = findViewById(R.id.txt_msg);
-        txt_contact = findViewById(R.id.txt_contact);
-        txt_me = findViewById(R.id.txt_me);
+        tab_map = findViewById(R.id.tab_map);
+        tab_msg = findViewById(R.id.tab_msg);
+        tab_contact = findViewById(R.id.tab_contact);
+        tab_me = findViewById(R.id.tab_me);
+        tab_map_indicator = findViewById(R.id.tab_map_indicator);
+        tab_msg_indicator = findViewById(R.id.tab_msg_indicator);
+        tab_contact_indicator = findViewById(R.id.tab_contact_indicator);
+        tab_me_indicator = findViewById(R.id.tab_me_indicator);
 
-        //
         if (pQyMc.appParams.bENABLE_MAP_TAB) {
-            txt_map.setOnClickListener(this);
+            tab_map.setOnClickListener(this);
         } else {
-            txt_map.setVisibility(View.GONE);
+            tab_map.setVisibility(View.GONE);
         }
-        //
-        txt_msg.setOnClickListener(this);
-        txt_contact.setOnClickListener(this);
-        txt_me.setOnClickListener(this);
+        tab_msg.setOnClickListener(this);
+        tab_contact.setOnClickListener(this);
+        tab_me.setOnClickListener(this);
 
         vPager = findViewById(R.id.vpager);
         vPager.setAdapter(mAdapter);
@@ -2743,35 +3073,56 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         vPager.addOnPageChangeListener(this);
         //
         if (pQyMc.appParams.bENABLE_MAP_TAB) {
-            txt_map.performClick();
+            tab_map.performClick();
         } else {
-            txt_msg.performClick();
+            tab_msg.performClick();
+        }
+    }
+
+    private void setTabSelected(View tab, View indicator, boolean selected) {
+        if (tab != null) {
+            tab.setSelected(selected);
+        }
+        if (indicator != null) {
+            indicator.setVisibility(selected ? View.VISIBLE : View.INVISIBLE);
         }
     }
 
     private void clearSelected() {
         ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
 
-        txt_msg.setSelected(false);
-        txt_contact.setSelected(false);
-        txt_me.setSelected(false);
-        //
+        setTabSelected(tab_msg, tab_msg_indicator, false);
+        setTabSelected(tab_contact, tab_contact_indicator, false);
+        setTabSelected(tab_me, tab_me_indicator, false);
         if (pQyMc.appParams.bENABLE_MAP_TAB) {
-            txt_map.setSelected(false);
+            setTabSelected(tab_map, tab_map_indicator, false);
+        }
+    }
+
+    private void applyTabSelection(int page) {
+        clearSelected();
+        if (g_pQyMc.appParams.bENABLE_MAP_TAB && page == PAGE_FOUR) {
+            setTabSelected(tab_map, tab_map_indicator, true);
+        } else if (page == PAGE_ONE) {
+            setTabSelected(tab_msg, tab_msg_indicator, true);
+        } else if (page == PAGE_TWO) {
+            setTabSelected(tab_contact, tab_contact_indicator, true);
+        } else if (page == PAGE_THREE) {
+            setTabSelected(tab_me, tab_me_indicator, true);
         }
     }
 
     public void onClick(View v) {
         ctxQyMc.CCtxQyMc pQyMc  = g_pQyMc;
 
-        if  (  pQyMc.appParams.bENABLE_MAP_TAB  &&  v.getId()==R.id.txt_map) {
+        if  (  pQyMc.appParams.bENABLE_MAP_TAB  &&  v.getId()==R.id.tab_map) {
             navigateToTab(PAGE_FOUR);
         }
-        else if (v.getId() == R.id.txt_msg) {
+        else if (v.getId() == R.id.tab_msg) {
             navigateToTab(PAGE_ONE);
-        } else if (v.getId() == R.id.txt_contact) {
+        } else if (v.getId() == R.id.tab_contact) {
             navigateToTab(PAGE_TWO);
-        } else if (v.getId() == R.id.txt_me) {
+        } else if (v.getId() == R.id.tab_me) {
             navigateToTab(PAGE_THREE);
         }
     }
@@ -2785,19 +3136,14 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         if (vPager == null) {
             return;
         }
-        clearSelected();
+        applyTabSelection(page);
         if (pQyMc.appParams.bENABLE_MAP_TAB && page == PAGE_FOUR) {
-
-            txt_map.setSelected(true);
             vPager.setCurrentItem(PAGE_FOUR, false);
         } else if (page == PAGE_ONE) {
-            txt_msg.setSelected(true);
             vPager.setCurrentItem(PAGE_ONE, false);
         } else if (page == PAGE_TWO) {
-            txt_contact.setSelected(true);
             vPager.setCurrentItem(PAGE_TWO, false);
         } else if (page == PAGE_THREE) {
-            txt_me.setSelected(true);
             vPager.setCurrentItem(PAGE_THREE, false);
         }
         if (m_floatingView_fg != null) {
@@ -2819,16 +3165,66 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        refreshMapFragmentOverlayTextScale();
-        if (m_floatingView_fg == null || m_floatingAvShell == null) return;
-        // 旋转时保留用户已选模式（分屏/浮窗/全屏），仅按新方向重排布局
+        // 竖屏浮窗、横屏分屏：旋转时按方向恢复默认视频布局，避免竖屏仍保持横屏分屏导致地图字号/布局异常
+        if (m_floatingView_fg != null && isOnMapTab()) {
+            floatingAvUserMode = getDefaultFloatingAvModeForOrientation();
+        }
+        notifyMapFragmentConfigurationChanged(newConfig);
+        scheduleMapFragmentOverlayRefreshAfterRotation(newConfig);
+        if (m_floatingView_fg == null || m_floatingAvShell == null) {
+            return;
+        }
         m_floatingAvShell.post(() -> {
             syncFloatingAvLayoutForCurrentTab();
             clampFloatingAvShellToSafeBounds();
             ensureFloatingAvShellFillParent();
+            notifyMapFloatingLayoutChanged();
             refreshMapFragmentOverlayTextScale();
         });
+        m_floatingAvShell.postDelayed(() -> {
+            notifyMapFloatingLayoutChanged();
+            refreshMapFragmentOverlayTextScale();
+        }, 280L);
         m_floatingAvShell.postDelayed(this::restartMapFloatingCameraAfterRotationSettled, 320L);
+    }
+
+    private void scheduleMapFragmentOverlayRefreshAfterRotation(@NonNull Configuration newConfig) {
+        refreshMapFragmentOverlayTextScale();
+        if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {
+            return;
+        }
+        Fragment_map mapFg = (Fragment_map) mAdapter.mFragment_map;
+        Runnable refresh = () -> {
+            if (mapFg.isAdded()) {
+                mapFg.scheduleMapOverlayTextRefresh(newConfig);
+            }
+        };
+        if (vPager != null) {
+            vPager.post(refresh);
+            vPager.postDelayed(refresh, 150);
+            vPager.postDelayed(refresh, 350);
+        } else {
+            refresh.run();
+        }
+    }
+
+    private void notifyMapFragmentConfigurationChanged(@NonNull Configuration newConfig) {
+        if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {
+            return;
+        }
+        Fragment_map mapFg = (Fragment_map) mAdapter.mFragment_map;
+        if (mapFg.isAdded()) {
+            mapFg.onHostConfigurationChanged(newConfig);
+        } else if (vPager != null) {
+            vPager.postDelayed(() -> {
+                if (mAdapter.mFragment_map instanceof Fragment_map) {
+                    Fragment_map fg = (Fragment_map) mAdapter.mFragment_map;
+                    if (fg.isAdded()) {
+                        fg.onHostConfigurationChanged(newConfig);
+                    }
+                }
+            }, 120);
+        }
     }
 
     private void restartMapFloatingCameraAfterRotationSettled() {
@@ -2848,6 +3244,11 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
         //
         isActive = true;
+
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        if (pQyMc != null && pQyMc.bLogon) {
+            requestPostLoginPermissionsIfNeeded();
+        }
 
         //
         gui_notify_chk.call();
@@ -2982,7 +3383,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
     @Override
     protected void onStop() {
-        int i = 1;
+        clearMapLocKeywordAndRemoteLocations();
         super.onStop();
         //
         //Log.d( "qy","MainActivity  OnStop kk   k");
@@ -2991,6 +3392,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     @Override
     protected void onDestroy() {
 
+        unregisterMapLocScreenOffReceiver();
         if  (  false  ) {
             Log.d("qy", "MainActivity  OnDestroy");
             showInfo_open.qyFuncs.showInfo_open("MainActivity  OnDestroy");
@@ -3024,20 +3426,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     public void onPageScrollStateChanged(int state) {
         //throw new NotImplementedException();
         if (state == 2) {
-            switch (vPager.getCurrentItem()) {
-                case PAGE_ONE:
-                    clearSelected();
-                    txt_msg.setSelected(true);
-                    break;
-                case PAGE_TWO:
-                    clearSelected();
-                    txt_contact.setSelected(true);
-                    break;
-                case PAGE_THREE:
-                    clearSelected();
-                    txt_me.setSelected(true);
-                    break;
-            }
+            applyTabSelection(vPager.getCurrentItem());
         }
     }
 
@@ -3047,6 +3436,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
     @Override
     public void onPageSelected(int position) {
+        handleMapTabPagerChange(position);
         if (m_floatingView_fg != null) {
             syncFloatingAvLayoutForCurrentTab();
             refreshMapFragmentOverlayTextScale();

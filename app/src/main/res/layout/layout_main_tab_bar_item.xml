@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="0dp"
+    android:layout_height="match_parent"
+    android:layout_weight="1"
+    android:background="?android:attr/selectableItemBackground"
+    android:duplicateParentState="true"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:paddingTop="4dp"
+    android:paddingBottom="2dp">
+
+    <ImageView
+        android:id="@+id/tab_icon"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:contentDescription="@null"
+        android:duplicateParentState="true"
+        android:scaleType="centerInside" />
+
+    <TextView
+        android:id="@+id/tab_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:duplicateParentState="true"
+        android:textColor="@drawable/tab_menu_text"
+        android:textSize="11sp" />
+
+    <View
+        android:id="@+id/tab_indicator"
+        android:layout_width="28dp"
+        android:layout_height="3dp"
+        android:layout_marginTop="3dp"
+        android:background="@color/tab_selected_gold"
+        android:visibility="invisible" />
+</LinearLayout>

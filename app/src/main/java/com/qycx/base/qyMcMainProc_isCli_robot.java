@@ -99,6 +99,7 @@ import static com.qycx.base.qyComm.Consts.CONST_qyRc_unknown;
 import static com.qycx.base.qyComm.qyFuncs.isRcOk;
 import static com.qycx.base.qyComm.qyFuncs.isUcFlgResp;
 import static com.qycx.base.qyComm.qyFuncs.isUcFlgRouteTalkData;
+import static com.qysd.base.mapFunc.doAnHgData;
 //
 //import static com.qycx.base.qyComm.qyFuncs.isUcFlgTalkData;
 //
@@ -1166,6 +1167,9 @@ public class qyMcMainProc_isCli_robot {
                 //
                 msgLen = msgInput_ntoh(pCtx, pMisCnt, pMsgInput);
                 if (msgLen < 0) {
+                    Log.e("at1111", "procMsgInput_other_req: ntoh failed usCode=" + pMsgInput.usCode
+                            + " ucFlg=" + pMsgInput.ucFlg + " len=" + pMsgInput.lenInBytes
+                            + " converted=" + pMsgInput.ucbConvrted);
                     showInfo_open.qyFuncs.showInfo_open("procMsgInput_other_req:ntoh failed");
                     return iErr;
                 }
@@ -1183,6 +1187,17 @@ public class qyMcMainProc_isCli_robot {
             }
             qnmCommProc_mis.MIS_MSG_routeTalkData pAddrTalkData = pMsgInput.data;
             qnmCommProc_mis.IM_CONTENTU pContent = pMsgInput.data.buf;
+
+            if (!isUcFlgRouteTalkData(pMsgInput.ucFlg)) {
+                if (pContent != null && pContent.uiType == CONST_imCommType_anHgData) {
+                    Log.d("at1111", "procMsgInput_other_req: anHgData usCode=" + pMsgInput.usCode);
+                    doAnHgData(pProcInfo, (qnmCommProc_mis.AnHg_req) pContent);
+                } else {
+                    Log.e("at1111", "procMsgInput_other_req: non-route type="
+                            + (pContent != null ? pContent.uiType : -1) + " usCode=" + pMsgInput.usCode);
+                }
+                return 0;
+            }
 
             /*
             if (0 != pAddrTalkData.route.debugInfo.tTime_start) {
@@ -1554,123 +1569,7 @@ public class qyMcMainProc_isCli_robot {
             return iErr;
         }
 
-        //
-        public static int procMsgReq_robot(qyShowInfoCommProc.Ctx_thread_tmpVar tmpVar, ctxQmc.CCtxQmc pProcInfo, qnmCommProc_mis.MIS_MSGU pMsgU, int lenInBytes_msg, ctxMcThread.CTX_MC_thread pCtx) {
-            int iErr = -1;
-            if (null == pMsgU || pMsgU.uiType != CONST_misMsgType_req) {
-                return -1;
-            }
-            qnmCommProc_mis.MIS_MSG_REQ pMsgReq = (qnmCommProc_mis.MIS_MSG_REQ) pMsgU;
-            ctxQyMc.CCtxQyMc pQyMc = pProcInfo.pQyMc;
 
-            int dataLen = 0;
-            int uiMsgLen = 81736; //offsetof(  MIS_MSG_REQ,  data  );
-            qnmCommProc_mis.IM_CONTENTU pContent = pMsgReq.data;
-//            pCtx.pMsgBuf_forInput.msgU = pMsgU;
-            /*
-            qnmCommProc_mis.MIS_MSG_REQ pMsg = new qnmCommProc_mis.MIS_MSG_REQ();// (qnmCommProc_mis.MIS_MSG_REQ) pCtx.pMsgBuf_forInput.msgU;
-            pMsg.buffer = ByteBuffer.allocate(bufSize_transferVideoData);
-
-             */
-
-
-            //
-            qmCommFunc_mis.MIS_CHANNEL pChannel = null;
-            int lenInBytes = 2444440;   // sizeof(  pMsg->data  );
-            switch (pMsgReq.usCode) {
-                case CONST_qyCmd_refreshImObjListReq:
-                    if ((dataLen = qyhtonImContentU(0,pMsgReq.data)) < 0)
-                        return iErr;
-                    break;
-                    /*
-                case CONST_qyCmd_sendVDevReq:
-                    pMsgReq.buffer = ByteBuffer.allocate(bufSize_transferVideoData);
-                    if (0 >(lenInBytes = qyhtonRouteTalkData(tmpVar,null, pMsgReq.data, 0, true, pMsgReq.ucFlg, pMsg.buffer, null, 0)))
-                        return iErr;
-                    pMsgReq.lenInBytes = lenInBytes;
-                    lenInBytes += 0;// (int)Marshal.OffsetOf<MIS_MSG_REQ>("data");
-
-                    dataLen = pMsgReq.lenInBytes; //  2007/12/22
-                    break;
-
-                     */
-                case CONST_qyCmd_getCfgs:
-                default:
-                    switch (pContent.uiType) {
-                        case 0:
-                            //
-                            break;
-                        case CONST_imCommType_getCfgsReq:
-//                            pMsgReq.buffer.position(0);
-                        case CONST_imCommType_retrieveToPaths:
-                        default:
-                            //
-                            if  (  pContent.uiType  ==  CONST_imCommType_getCfgsReq)  {
-                                Log.d("qy","getCfgsReq");
-                            }
-                            if  (  pContent.uiType==CONST_imCommType_confReq)  {
-                                Log.d("at","l122: confReq");
-                            }
-                            if  (  pContent.uiType==CONST_imCommType_anHgData)  {
-                                Log.d("at","l615: anHgData");
-                            }
-
-                            //
-                            pMsgReq.buffer.position(0);
-                            if (0 >(lenInBytes = qyhtonRouteTalkData(tmpVar,null, pMsgReq.data, 0, true, pMsgReq.ucFlg, pMsgReq.buffer,null, 0)))
-                                return iErr;
-                            pMsgReq.lenInBytes = lenInBytes;
-                            lenInBytes += 0;
-                            //
-                            String str;
-                            str="procMsgReq_mgr l129: ";
-                            str  +=  pMsgReq.usCode;
-                            str  +=  " content.type "  +  pContent.uiType;
-                            Log.d("at",str);
-
-                            //
-                            if  (  pContent.uiType ==  CONST_imCommType_procLocReq)  {
-                                Log.d("at","l140: procLocReq");
-                            }
-
-
-                            //
-                            break;
-                    }
-                    break;
-
-            }
-
-//            pMsgReq.lenInBytes = dataLen;
-            //
-            uiMsgLen += dataLen;
-
-
-            if (null == (pChannel = getChannelByType(pProcInfo.pMisCnt, CONST_channelType_talking)))
-                return iErr;
-
-            if (0 != postMsg2OutputQ_mc(pProcInfo.pMisCnt, pMsgReq, pChannel)) {
-                Log.e("postMsg2OutputQ_mc failed");
-                return iErr;
-            }
-
-            iErr = 0;
-
-            if (0 != iErr) {
-            }
-
-            return iErr;
-        }
-
-
-
-
-
-
-
-
-
-        //
         public static int sizeof_MIS_MSG_routeTalkData()
         {
             return 964848;//sizeof(MIS_MSG_routeTalkData);
@@ -1755,7 +1654,7 @@ public class qyMcMainProc_isCli_robot {
             }
             else
             {
-                if (null == (pMsgInput.data.buf = qyntohRouteTalkData(pMsgInput.ucFlg, pMsgInput.buffer, pMsgInput.lenInBytes, null,tHintBuf, cntof_tHintBuf))) {
+                if (null == (pMsg.data.buf = qyntohRouteTalkData(pMsgInput.ucFlg, pMsgInput.buffer, pMsgInput.lenInBytes, null, tHintBuf, cntof_tHintBuf))) {
                     Log.e("qyntohRouteTalkData failed. ");
                     return iErr;
                 }
@@ -2250,7 +2149,6 @@ public class qyMcMainProc_isCli_robot {
                 //if (dwRet == WAIT_FAILED) return iErr;
                 tmpFunc.qyFuncs.myWaitOne(pProcInfo.robotQ.hSemaTrigger, 3500);
                 qyShowInfoCommProc.Ctx_thread_tmpVar tmpVar = getCtxThreadTmpVar(CONST_iParamType_toSend,0);
-
                 //
                 bMsgArrive = false;
 
@@ -2285,14 +2183,13 @@ public class qyMcMainProc_isCli_robot {
 
                         }
                         break;
-
                         case CONST_misMsgType_req:
                             len = 2526176;//(int) sizeof(qnmCommProc_mis.MIS_MSGU);
 
                             if (procMsgReq_robot(tmpVar, pProcInfo, pMsg, len, ctx) != 0) break;
 
+
                             break;
-                        //
                         case CONST_misMsgType_talk:
                             Log.i("mcThreadProc_mis_robot: msg_talk ");
                             break;
@@ -2683,5 +2580,112 @@ public class qyMcMainProc_isCli_robot {
         }
 
 
+    }
+
+    public static int procMsgReq_robot(qyShowInfoCommProc.Ctx_thread_tmpVar tmpVar, ctxQmc.CCtxQmc pProcInfo, qnmCommProc_mis.MIS_MSGU pMsgU, int lenInBytes_msg, ctxMcThread.CTX_MC_thread pCtx) {
+        int iErr = -1;
+        if (null == pMsgU || pMsgU.uiType != CONST_misMsgType_req) {
+            return -1;
+        }
+        qnmCommProc_mis.MIS_MSG_REQ pMsgReq = (qnmCommProc_mis.MIS_MSG_REQ) pMsgU;
+        ctxQyMc.CCtxQyMc pQyMc = pProcInfo.pQyMc;
+
+        int dataLen = 0;
+        int uiMsgLen = 81736; //offsetof(  MIS_MSG_REQ,  data  );
+        qnmCommProc_mis.IM_CONTENTU pContent = pMsgReq.data;
+//            pCtx.pMsgBuf_forInput.msgU = pMsgU;
+            /*
+            qnmCommProc_mis.MIS_MSG_REQ pMsg = new qnmCommProc_mis.MIS_MSG_REQ();// (qnmCommProc_mis.MIS_MSG_REQ) pCtx.pMsgBuf_forInput.msgU;
+            pMsg.buffer = ByteBuffer.allocate(bufSize_transferVideoData);
+
+             */
+
+
+        //
+        qmCommFunc_mis.MIS_CHANNEL pChannel = null;
+        int lenInBytes = 2444440;   // sizeof(  pMsg->data  );
+        switch (pMsgReq.usCode) {
+            case CONST_qyCmd_refreshImObjListReq:
+                if ((dataLen = qyhtonImContentU(0,pMsgReq.data)) < 0)
+                    return iErr;
+                break;
+                    /*
+                case CONST_qyCmd_sendVDevReq:
+                    pMsgReq.buffer = ByteBuffer.allocate(bufSize_transferVideoData);
+                    if (0 >(lenInBytes = qyhtonRouteTalkData(tmpVar,null, pMsgReq.data, 0, true, pMsgReq.ucFlg, pMsg.buffer, null, 0)))
+                        return iErr;
+                    pMsgReq.lenInBytes = lenInBytes;
+                    lenInBytes += 0;// (int)Marshal.OffsetOf<MIS_MSG_REQ>("data");
+
+                    dataLen = pMsgReq.lenInBytes; //  2007/12/22
+                    break;
+
+                     */
+            case CONST_qyCmd_getCfgs:
+            default:
+                switch (pContent.uiType) {
+                    case 0:
+                        //
+                        break;
+                    case CONST_imCommType_getCfgsReq:
+//                            pMsgReq.buffer.position(0);
+                    case CONST_imCommType_retrieveToPaths:
+                    default:
+                        //
+                        if  (  pContent.uiType  ==  CONST_imCommType_getCfgsReq)  {
+                            Log.d("qy","getCfgsReq");
+                        }
+                        if  (  pContent.uiType==CONST_imCommType_confReq)  {
+                            Log.d("at","l122: confReq");
+                        }
+                        if  (  pContent.uiType==CONST_imCommType_anHgData)  {
+                            Log.d("at","l615: anHgData");
+                        }
+
+                        //
+                        pMsgReq.buffer.position(0);
+                        if (0 >(lenInBytes = qyhtonRouteTalkData(tmpVar,null, pMsgReq.data, 0, true, pMsgReq.ucFlg, pMsgReq.buffer,null, 0)))
+                            return iErr;
+                        pMsgReq.lenInBytes = lenInBytes;
+                        lenInBytes += 0;
+                        //
+                        String str;
+                        str="procMsgReq_mgr l129: ";
+                        str  +=  pMsgReq.usCode;
+                        str  +=  " content.type "  +  pContent.uiType;
+                        Log.d("at",str);
+
+                        //
+                        if  (  pContent.uiType ==  CONST_imCommType_procLocReq)  {
+                            Log.d("at","l140: procLocReq");
+                        }
+
+
+                        //
+                        break;
+                }
+                break;
+
+        }
+
+//            pMsgReq.lenInBytes = dataLen;
+        //
+        uiMsgLen += dataLen;
+
+
+        if (null == (pChannel = getChannelByType(pProcInfo.pMisCnt, CONST_channelType_talking)))
+            return iErr;
+
+        if (0 != postMsg2OutputQ_mc(pProcInfo.pMisCnt, pMsgReq, pChannel)) {
+            Log.e("postMsg2OutputQ_mc failed");
+            return iErr;
+        }
+
+        iErr = 0;
+
+        if (0 != iErr) {
+        }
+
+        return iErr;
     }
 }

@@ -305,6 +305,8 @@ public class avCallProc {
             return -1;
         }
 
+        audioRecorder_android.qyFuncs_Droid.setMicrophoneOn(true);
+
         //
         ctxQyMc.CCtxQyMc pQyMc =g_pQyMc;
         ctxQmc.CCtxQmc pProcInfo  =  pQyMc.get_pProcInfo();

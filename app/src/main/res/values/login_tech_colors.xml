@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="login_tech_bg_dark">#040B18</color>
+    <color name="login_tech_bg_bottom">#050D1A</color>
+    <color name="login_tech_bg_end">#0A1628</color>
+    <color name="login_tech_title">#00F0FF</color>
+    <color name="login_tech_subtitle">#8ECFE8</color>
+    <color name="login_tech_input_bg">#66081224</color>
+    <color name="login_tech_input_stroke">#5500D4FF</color>
+    <color name="login_tech_input_text">#E8F7FF</color>
+    <color name="login_tech_hint">#6699BBCC</color>
+    <color name="login_tech_accent">#00D4FF</color>
+    <color name="login_tech_accent_dark">#0099CC</color>
+    <color name="login_tech_link">#4DD4FF</color>
+    <color name="login_tech_footer">#6AA8C8</color>
+</resources>

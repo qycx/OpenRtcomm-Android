@@ -1,126 +1,117 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    app:cardBackgroundColor="@color/white"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="8dp"
-    app:cardUseCompatPadding="true">
+    android:background="@drawable/bg_map_dialog_card"
+    android:clipToOutline="true"
+    android:elevation="8dp"
+    android:orientation="vertical"
+    android:outlineProvider="background">
+
+    <LinearLayout
+        android:id="@+id/layoutActiveGrpDialogHeader"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_map_dialog_header"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <TextView
+            android:id="@+id/tvActiveGrpDialogTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="活动组成员"
+            android:textColor="@color/white"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvActiveGroupMembers"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:scrollbars="vertical" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/map_dialog_divider" />
+
+    <LinearLayout
+        android:id="@+id/layoutActiveGrpVideoActions"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btnActiveGrpGroupVideo"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:gravity="center"
+            android:text="组视频通话"
+            android:textColor="@color/map_dialog_action_green"
+            android:textSize="16sp" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/map_dialog_divider"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/btnActiveGrpViewCamera"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:gravity="center"
+            android:text="查看摄像头"
+            android:textColor="@color/map_dialog_action_green"
+            android:textSize="16sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/map_dialog_divider" />
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="48dp"
+        android:orientation="horizontal">
 
-        <!-- 迷彩军绿标题栏 -->
-        <LinearLayout
-            android:id="@+id/layoutActiveGrpDialogHeader"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="@color/map_dialog_header_camo"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp">
-
-            <TextView
-                android:id="@+id/tvActiveGrpDialogTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="活动组成员"
-                android:textColor="@color/white"
-                android:textSize="17sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvActiveGroupMembers"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clipToPadding="false"
-            android:overScrollMode="never"
-            android:scrollbars="vertical" />
+        <TextView
+            android:id="@+id/btnActiveGrpCancel"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:gravity="center"
+            android:text="取消"
+            android:textColor="@color/map_dialog_footer_cancel"
+            android:textSize="16sp" />
 
         <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
             android:background="@color/map_dialog_divider" />
 
-        <!-- 组视频（查看摄像头已隐藏） -->
-        <LinearLayout
-            android:id="@+id/layoutActiveGrpVideoActions"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/btnActiveGrpGroupVideo"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="?android:attr/selectableItemBackground"
-                android:gravity="center"
-                android:text="组视频通话"
-                android:textColor="@color/map_dialog_action_green"
-                android:textSize="16sp" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="match_parent"
-                android:background="@color/map_dialog_divider"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/btnActiveGrpViewCamera"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="?android:attr/selectableItemBackground"
-                android:gravity="center"
-                android:text="查看摄像头"
-                android:textColor="@color/map_dialog_action_green"
-                android:textSize="16sp"
-                android:visibility="gone" />
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/map_dialog_divider" />
-
-        <!-- 取消 | 确定 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/btnActiveGrpCancel"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="?android:attr/selectableItemBackground"
-                android:gravity="center"
-                android:text="取消"
-                android:textColor="@color/map_dialog_footer_cancel"
-                android:textSize="16sp" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="match_parent"
-                android:background="@color/map_dialog_divider" />
-
-            <TextView
-                android:id="@+id/btnActiveGrpConfirm"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="?android:attr/selectableItemBackground"
-                android:gravity="center"
-                android:text="确定"
-                android:textColor="@color/map_dialog_footer_confirm"
-                android:textSize="16sp" />
-        </LinearLayout>
+        <TextView
+            android:id="@+id/btnActiveGrpConfirm"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:gravity="center"
+            android:text="确定"
+            android:textColor="@color/map_dialog_footer_confirm"
+            android:textSize="16sp" />
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+</LinearLayout>

@@ -41,6 +41,7 @@ public class Consts {
     //
     public static String Str_use100k_ifP2p  =  "USE100k_KEY";
     public static String Str_use100k_bDj  =  "USE100k_bDj_KEY";
+    public static String Str_mapLocEncryptionEnabled = "map_loc_encryption_enabled";
 
 
 

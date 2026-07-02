@@ -37,6 +37,8 @@ import static com.qycx.base.tmpFunc.qyFuncs.myWaitOne;
 
 import static com.qycx.base.tmpFunc.qyFuncs.mywcslen;
 
+import static com.qysd.base.mapFunc.doAnHgData;
+
 import com.qycx.base.util.Log;
 
 import java.nio.ByteBuffer;
@@ -611,15 +613,28 @@ public class qyMcMainDaemon_isCli_mgr {
                     if (0 == pMsgInput.lenInBytes) {
                         return iErr;
                     }
-//
-//                    if (0 != qyntohRouteTalkData(pMsgInput.ucFlg,  pMsgInput.data, pMsgInput.lenInBytes, null, (qnmCommProc_mis.IM_CONTENTU) pMsg.data, tHintBuf.tHintBuf, cntof_tHintBuf)) {
-//                        return iErr;
-//                    }
-                    //if (tHintBuf[0]) qyShowInfo1(CONST_qyShowType_qwmComm, 0, "", "", 0, "", "", ("    %s"), tHintBuf);
-                    //
-//                    pContent = (qnmCommProc_mis.IM_CONTENTU) pMsg.data;
+                    if (null == (pMsgInput.data.buf = qyntohRouteTalkData(pMsgInput.ucFlg, pMsgInput.buffer, pMsgInput.lenInBytes, null, tHintBuf.tHintBuf, cntof_tHintBuf))) {
+                        Log.e("at1111", "procMsgInput_mgr_req: qyntohRouteTalkData failed usCode=" + pMsgInput.usCode);
+                        return iErr;
+                    }
+                    pContent = pMsgInput.data.buf;
                 }
                 pMsgInput.ucbConvrted = true;
+            }
+
+            if (!isUcFlgRouteTalkData(pMsgInput.ucFlg)) {
+                if (null == pContent) {
+                    pContent = pMsgInput.data.buf;
+                }
+                if (pContent != null && pContent.uiType == CONST_imCommType_anHgData) {
+                    Log.d("at1111", "procMsgInput_mgr_req: anHgData usCode=" + pMsgInput.usCode
+                            + " len=" + pMsgInput.lenInBytes);
+                    doAnHgData(pProcInfo, (qnmCommProc_mis.AnHg_req) pContent);
+                    return 0;
+                }
+                Log.e("at1111", "procMsgInput_mgr_req: non-route unhandled type="
+                        + (pContent != null ? pContent.uiType : -1) + " usCode=" + pMsgInput.usCode);
+                return iErr;
             }
 
             pAddrTalkData = MACRO_msgRouteTalkData(pMsgInput.ucFlg, pMsgInput.data);

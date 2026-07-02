@@ -28,8 +28,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -121,10 +121,10 @@ public class Fragment_dlgTalk_msgList extends Fragment implements View.OnTouchLi
     TextView m_txt_more;
     //
     EditText m_editText_input;
-    Button m_button_snd;
-    Button m_button_avCall;
-    Button m_button_avCall_HD;
-    Button m_button_file;
+    TextView m_button_snd;
+    TextView m_button_avCall;
+    TextView m_button_avCall_HD;
+    TextView m_button_file;
     //
     Activity_dlgTalk mhTalk;
     //

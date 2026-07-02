@@ -60,6 +60,22 @@
             android:textSize="12sp" />
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/tvMarkSyncProgress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="48dp"
+        android:background="#99000000"
+        android:paddingStart="8dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="4dp"
+        android:textColor="#FFFFFF"
+        android:textSize="11sp"
+        android:visibility="gone" />
+
     <FrameLayout
         android:id="@+id/layoutFloatingVideo"
         android:layout_width="160dp"
@@ -336,7 +352,7 @@
         android:padding="9dp"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_mark_note"
-        android:contentDescription="同步注记列表" />
+        android:contentDescription="同步注记列表，长按重新同步" />
 
     <FrameLayout
         android:id="@+id/layoutCompassPanel"

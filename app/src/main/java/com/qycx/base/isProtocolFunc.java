@@ -3233,6 +3233,19 @@ public class isProtocolFunc {
                     total_len  +=  len;
                 }
 
+                if (pReq.locData.iLaInM10000f != 0 || pReq.locData.iLoInM10000f != 0) {
+                    len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_iLaInM10000f, pReq.locData.iLaInM10000f, 0, ptr);
+                    if (len <= 0) {
+                        break;
+                    }
+                    total_len += len;
+                    len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_iLoInM10000f, pReq.locData.iLoInM10000f, 0, ptr);
+                    if (len <= 0) {
+                        break;
+                    }
+                    total_len += len;
+                }
+
 
                 //
                 len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_null, 0, 0, ptr);
@@ -4045,6 +4058,13 @@ public class isProtocolFunc {
                          }
                          break;
 
+                    case CONST_imCommType_anHgData:
+                        pContent = new qnmCommProc_mis.AnHg_req();
+                        if (0 > stream2Data(data, size, filterStream_is, tmpHandler_stream2AnHgData, null, pContent)) {
+                            return null;
+                        }
+                        break;
+
                     default: {
                         String str = "qyntohRouteTalkData failed: uiContentType " + uiContentType + " error";
                         Log.w(str);
@@ -4055,5 +4075,192 @@ public class isProtocolFunc {
                 return pContent;
             }
         }
+    }
+    public static int  anHgData2Stream(int  uiStreamId, qnmCommProc_mis.AnHg_req pReq, ByteBuffer ptr)
+    {
+        int				iErr = -1;
+        int				i = 0;
+        //char* ptr = buf;
+        int		len = -1;//*uiBufSize;
+        int total_len=0;
+
+        //if (!pReq)  return  -1;
+        //if (!buf)  return  -1;
+
+        if (0>(len=data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_start, uiStreamId, 0, ptr))) {
+            return -1;
+        }
+        total_len += len;
+
+
+        //
+            /*
+            if (0!=pReq.ucbResp) {
+                if (0>(len=data2Stream(CONST_qyDataType_char, CONST_qnmCfgId_ucbResp, pReq.ucbResp, 0, ptr)) )  {
+                    return -1;
+                }
+            }
+
+             */
+
+
+        //
+        if (0!=pReq.hg_cliDataLen) {
+            if (0>(len= qyFuncs.data2Stream(CONST_qyDataType_lData, CONST_qnmCfgId_hg_cliData, pReq.hg_cliData, pReq.hg_cliDataLen, ptr)) )  {
+                return  -1;
+            }
+            total_len += len;
+        }
+
+        //
+        if (0!=pReq.sHgCmd) {
+            if (0>(len= data2Stream(CONST_qyDataType_short, CONST_qnmCfgId_sHgCmd, pReq.sHgCmd, 0, ptr)) )  {
+                return -1;
+            }
+            total_len += len;
+        }
+
+        //
+        if (0>(len= data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_null, 0, 0, ptr)) ) {
+            return -1;
+        }
+        total_len += len;
+
+        iErr = 0;
+            /*
+            errLabel:
+            if (!iErr) {
+		 *uiBufSize = *uiBufSize - len;
+            }
+
+             */
+        return  total_len;
+    }
+
+    public static int data2Stream(short iDataType, short usCfgId, Object orgData, int orgDataSize, ByteBuffer buffer) {
+
+        //
+        if  (  M_isCommVer1())  {
+
+            return  atData2Stream(iDataType,usCfgId,orgData,orgDataSize,buffer);
+
+        }
+
+
+        //
+        int iErr = -1;
+        if (null == buffer || 0 == buffer.capacity() || 0 == buffer.remaining()) return -1;
+        int pos = buffer.position();
+        int len;
+        int  tmpLen  =  0;
+
+        if (null == orgData) {
+            switch (iDataType) {
+                case CONST_qyDataType_l32:
+                case CONST_qyDataType_char:
+                case CONST_qyDataType_short:
+                    break;
+                default:
+                    return -1;  //  非数值的值为地址，不能为空
+            }
+        }
+        if (iDataType == CONST_qyDataType_l64) {
+            if (orgDataSize != 0 && orgDataSize < 8) {       //  传入0也算了，早期代码都用0。2007/12/11
+                Log.e("data2Stream: l64需要传入数据地址，故建议输入数据长度应>=sizeof(  __int64  )");
+                return -1;
+            }
+        }
+        ByteBuffer buf = null;
+        buf  =  buffer;
+        switch (iDataType) {
+            case CONST_qyDataType_l32: {
+                //buf = ByteBuffer.allocate(Short.BYTES * 2 + Integer.BYTES);
+                buf.putShort(usCfgId);
+                buf.putShort(iDataType);
+                buf.putInt(orgData == null ? 0 : (int) orgData);
+                tmpLen  =  Short.BYTES * 2 + Integer.BYTES;
+            }
+            break;
+            case CONST_qyDataType_char: {
+                //buf = ByteBuffer.allocate(Short.BYTES * 2 + Byte.BYTES);
+                buf.putShort(usCfgId);
+                buf.putShort(iDataType);
+                buf.put(orgData == null ? 0 : (byte) orgData);
+                tmpLen=Short.BYTES * 2 + Byte.BYTES;
+            }
+            break;
+            case CONST_qyDataType_short: {
+                //buf = ByteBuffer.allocate(Short.BYTES * 3);
+                buf.putShort(usCfgId);
+                buf.putShort(iDataType);
+                buf.putShort(orgData == null ? 0 : (short) orgData);
+                tmpLen  =  Short.BYTES * 3;
+            }
+            break;
+            case CONST_qyDataType_data: {
+                if (orgDataSize > bufSize_cfgItemData) {
+                    Log.e("data2Stream: dataType_data: too big dataSize");
+                    return iErr;
+                }
+                //buf = ByteBuffer.allocate(6 + orgDataSize);
+                buf.putShort(usCfgId);
+                buf.putShort(iDataType);
+                buf.putShort((short) orgDataSize);
+                buf.put((byte[]) orgData, 0, orgDataSize);
+                tmpLen  =  6 + orgDataSize;
+            }
+            break;
+            case CONST_qyDataType_lData: {
+                if (orgDataSize > bufSize_cfgItemLData) {
+                    Log.e("data2Stream: dataType_lData: too big dataSize");
+                    return iErr;
+                }
+                //buf = ByteBuffer.allocate(Short.BYTES * 2 + Integer.BYTES + orgDataSize);
+                buf.putShort(usCfgId);
+                buf.putShort(iDataType);
+                buf.putInt(orgDataSize);
+                buf.put((byte[]) orgData, 0, orgDataSize);
+                tmpLen  =  Short.BYTES * 2 + Integer.BYTES + orgDataSize;
+            }
+            break;
+            case CONST_qyDataType_l64: {
+
+                //buf = ByteBuffer.allocate(Short.BYTES * 2 + Long.BYTES);
+                buf.putShort(usCfgId);
+                buf.putShort(iDataType);
+                buf.putLong((Long) orgData);
+                tmpLen  =  Short.BYTES * 2 + Long.BYTES;
+            }
+            break;
+            case CONST_qyDataType_str:
+            case CONST_qyDataType_utf8Str: {
+                byte[] data = ((String) orgData).getBytes(StandardCharsets.UTF_8);
+                //buf = ByteBuffer.allocate(Short.BYTES * 3 + data.length);
+                buf.putShort(usCfgId);
+                buf.putShort(iDataType);
+                buf.putShort((short) Math.min(CONST_cntof_cfgItemStr, orgDataSize));
+                buf.put(data);
+                tmpLen  =  Short.BYTES * 3 + data.length;
+            }
+            break;
+            default:
+                return iErr;
+        }
+            /*
+            if  (  buf.capacity()  !=  tmpLen )  {
+                Log.e("qy", "data2Stream failed, tmpLen err");
+            }
+
+             */
+        //len = buf.capacity();
+        len  =  tmpLen;
+        try {
+            //buffer.put(buf.array());
+        } catch (Exception e) {
+            Log.e(e.getLocalizedMessage());
+        }
+        //buf.clear();
+        //buf = null;
+        return len;
     }
 }

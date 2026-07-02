@@ -20,6 +20,8 @@
     <color name="transparent">#00FFFFFF</color>
     <color name="text_yellow">#FFC800</color>
     <color name="text_gray">#8D7A71</color>
+    <color name="tab_selected_gold">#E8A020</color>
+    <color name="tab_unselected_olive">#6B7B63</color>
 
     <color name="green">#00ff00</color>
 

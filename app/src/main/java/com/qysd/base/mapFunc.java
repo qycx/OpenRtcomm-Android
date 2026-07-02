@@ -5,6 +5,8 @@ import static com.qycx.base.Consts.CONST_channelType_robot;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_anHgData;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_locDataReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_procLocReq;
+import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferLocData;
+import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferMarkData;
 import static com.qycx.base.postMsg2MgrFunc.qyFuncs.postMsg2Mgr_mc;
 import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_hg;
 import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendVDevReq;
@@ -13,6 +15,7 @@ import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_req;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_procLocReqSubtype_getCfgs;
 import static com.qycx.base.qyMcMain_global.g.g_pQyMc;
 
+import com.qycx.anc.hgCommProc;
 import com.qycx.base.ctxQmc;
 import com.qycx.base.ctxQyMc;
 import com.qycx.base.qmCommFunc_mis;
@@ -22,7 +25,8 @@ import com.qycx.base.qy_getuiNextTranNo;
 import com.qycx.base.tmpFunc;
 import com.qycx.base.util.Log;
 
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 public class mapFunc {
 
@@ -84,6 +88,11 @@ public class mapFunc {
     //
     public static int ancSndLocation(Object p0, String locStr, long imGrp_related_ui64Id)
     {
+        return ancSndLocation(p0, locStr, imGrp_related_ui64Id, 0, 0);
+    }
+
+    public static int ancSndLocation(Object p0, String locStr, long imGrp_related_ui64Id, int laM10000, int loM10000)
+    {
         //
         int  iErr = -1;
         ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
@@ -114,6 +123,10 @@ public class mapFunc {
             content.idInfo_imGrp_related = imGrp_related_ui64Id;
             //safeStrnCpy(locStr, content.locData.locStr, mycountof(content.locData.locStr));
             content.locData.locStr=locStr;
+            if (laM10000 != 0 || loM10000 != 0) {
+                content.locData.iLaInM10000f = laM10000;
+                content.locData.iLoInM10000f = loM10000;
+            }
             lenInBytes = 10;//sizeof(content);
 
 
@@ -151,6 +164,95 @@ public class mapFunc {
         //
         return  iErr;
 
+    }
+
+    /**
+     * 将标注字符串经融合中心上报（对应 C++ sndTransferLocDataToHg）。
+     * markStr 写入 TransferLocDataMem.locStr，content 类型为 {@link CONST_imCommType_transferLocData}。
+     */
+    public static int ancSndMarkToHg(Object p0, String markStr, long imGrp_related_ui64Id) {
+        if (markStr == null || markStr.isEmpty() || imGrp_related_ui64Id <= 0) {
+            return -1;
+        }
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        if (pQyMc == null) {
+            return -1;
+        }
+        ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
+        if (pProcInfo == null) {
+            return -1;
+        }
+        qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo.pMisCnt;
+        if (pMisCnt == null || pMisCnt.idInfo.ui64Id == 0) {
+            return -1;
+        }
+        long msgrId = pMisCnt.idInfo.ui64Id;
+        String hgCliData = hgCommProc.buildTransferLocDataHgCliData(
+                msgrId,
+                CONST_imCommType_transferMarkData,
+                imGrp_related_ui64Id,
+                new long[]{msgrId},
+                new String[]{markStr});
+        if (hgCliData == null || hgCliData.isEmpty()) {
+            Log.d("at", "ancSndMarkToHg failed: hgCliData empty");
+            return -1;
+        }
+        byte[] payloadBytes = hgCliData.getBytes();
+        if (payloadBytes.length >= com.qycx.anc.hgCommProc.Consts.MAX_hg_cliDataLen) {
+            Log.d("at", "ancSndMarkToHg failed: hgCliData too long, len=" + payloadBytes.length);
+            return -1;
+        }
+        qnmCommProc_mis.AnHg_req req = new qnmCommProc_mis.AnHg_req();
+        req.uiType = CONST_imCommType_anHgData;
+        req.sHgCmd = CONST_hgCmd_ulAnHgData;
+        System.arraycopy(payloadBytes, 0, req.hg_cliData, 0, payloadBytes.length);
+        req.hg_cliDataLen = payloadBytes.length;
+
+        long tStartTran = tmpFunc.qyFuncs.mytime();
+        int uiTranNo = qy_getuiNextTranNo.qyFuncs.getuiNextTranNo.call();
+        int len = 0;
+        //postMsg2Mgr_mc(null,pMisCnt, route, CONST_misMsgType_outputTask, ucFlg, CONST_qyCmd_sendVDevReq, tStartTran, uiTranNo, 0, content, lenInBytes, idInfo_peer.ui64Id, idInfo_dst.ui64Id, channelType, null, true)
+        if (0 != postMsg2Mgr_mc(null, pMisCnt, null, CONST_misMsgType_req, (byte) 0,
+                CONST_qyCmd_hg, tStartTran, uiTranNo, 0, req, len, 0, imGrp_related_ui64Id,
+                CONST_channelType_robot, null, false)) {
+            return -1;
+        }
+        return 0;
+    }
+
+    /** 对应 PC {@code m_pQmcExt->doAnHgData}：解析融合中心下发的 hg_cliData 并分发给地图扩展。 */
+    public static int doAnHgData(ctxQmc.CCtxQmc pProcInfo, qnmCommProc_mis.AnHg_req req) {
+        if (pProcInfo == null || req == null || req.hg_cliDataLen <= 0) {
+            return -1;
+        }
+        MapExtTmpl pMapExt = pProcInfo.m_pMapExt;
+        if (pMapExt == null) {
+            return -1;
+        }
+        hgCommProc.ParsedHgCliData parsed = hgCommProc.parseHgCliData(req.hg_cliData, req.hg_cliDataLen);
+        if (parsed == null || parsed.grpId <= 0) {
+            Log.d("at", "doAnHgData failed: parseHgCliData");
+            return -1;
+        }
+        MapExtTmpl.Param_onRecv_marks param = new MapExtTmpl.Param_onRecv_marks();
+        param.imGrp_ui64Id = parsed.grpId;
+        param.outerMsgrId = parsed.outerMsgrId;
+        param.m_marks = new ArrayList<>();
+        for (hgCommProc.ParsedHgCliData.Mem mem : parsed.mems) {
+            if (mem == null || mem.locStr == null || mem.locStr.isEmpty()) {
+                continue;
+            }
+            MapExtTmpl.AncMark mark = new MapExtTmpl.AncMark();
+            mark.ui64Id = mem.userId > 0 ? mem.userId : parsed.msgrId;
+            mark.markStr = mem.locStr;
+            param.m_marks.add(mark);
+        }
+        if (param.m_marks.isEmpty()) {
+            return -1;
+        }
+        Log.d("at1111", "doAnHgData grp=" + parsed.grpId + " outerMsgr=" + parsed.outerMsgrId
+                + " sender=" + parsed.msgrId + " marks=" + param.m_marks.size());
+        return pMapExt.onRecv_marks(param);
     }
 
 
@@ -225,69 +327,6 @@ public class mapFunc {
     }
 
      */
-
-
-    //
-    /**
-     * 将标注字符串经融合中心上报（对应 C++ sndTransferLocDataToHg）。
-     * markStr 写入 TransferLocDataMem.locStr，content 类型为 {@link CONST_imCommType_transferLocData}。
-     */
-    public static int test_ancSndMarkToHg(Object p0, String markStr, long imGrp_related_ui64Id) {
-        if (markStr == null || markStr.isEmpty() || imGrp_related_ui64Id <= 0) {
-            return -1;
-        }
-        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
-        if (pQyMc == null) {
-            return -1;
-        }
-        ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
-        if (pProcInfo == null) {
-            return -1;
-        }
-        qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo.pMisCnt;
-        if (pMisCnt == null || pMisCnt.idInfo.ui64Id == 0) {
-            return -1;
-        }
-        long msgrId = pMisCnt.idInfo.ui64Id;
-        /*
-        String hgCliData = hgCommProc.buildTransferLocDataHgCliData(
-                msgrId,
-                CONST_imCommType_transferLocData,
-                imGrp_related_ui64Id,
-                new long[]{msgrId},
-                new String[]{markStr});
-        if (hgCliData == null || hgCliData.isEmpty()) {
-            Log.d("at", "ancSndMarkToHg failed: hgCliData empty");
-            return -1;
-        }
-        byte[] payloadBytes = hgCliData.getBytes();
-        if (payloadBytes.length >= com.qycx.anc.hgCommProc.Consts.MAX_hg_cliDataLen) {
-            Log.d("at", "ancSndMarkToHg failed: hgCliData too long, len=" + payloadBytes.length);
-            return -1;
-        }
-
-         */
-        String hgCliData = "[obj=80 len=12]123456789012";
-        byte []payloadBytes=hgCliData.getBytes(StandardCharsets.UTF_8);
-
-        qnmCommProc_mis.AnHg_req req = new qnmCommProc_mis.AnHg_req();
-        req.uiType = CONST_imCommType_anHgData;
-        req.sHgCmd = CONST_hgCmd_ulAnHgData;
-        System.arraycopy(payloadBytes, 0, req.hg_cliData, 0, payloadBytes.length);
-        req.hg_cliDataLen = payloadBytes.length;
-
-        long tStartTran = tmpFunc.qyFuncs.mytime();
-        int uiTranNo = qy_getuiNextTranNo.qyFuncs.getuiNextTranNo.call();
-        int len = 0;
-        //postMsg2Mgr_mc(null,pMisCnt, route, CONST_misMsgType_outputTask, ucFlg, CONST_qyCmd_sendVDevReq, tStartTran, uiTranNo, 0, content, lenInBytes, idInfo_peer.ui64Id, idInfo_dst.ui64Id, channelType, null, true)
-        if (0 != postMsg2Mgr_mc(null, pMisCnt, null, CONST_misMsgType_req, (byte) 0,
-                CONST_qyCmd_hg, tStartTran, uiTranNo, 0, req, len, 0, 0,
-                CONST_channelType_robot, null, false)) {
-            return -1;
-        }
-        return 0;
-    }
-
 
 
 

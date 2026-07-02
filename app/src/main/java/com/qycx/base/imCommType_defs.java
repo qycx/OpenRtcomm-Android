@@ -51,12 +51,7 @@ public static class Consts
     public final static int CONST_imCommType_getCfgsReq = (CONST_imCommType_base + 110);       //  2011/01/30
 
     public final static int CONST_imCommType_qisCaReq	=							(  CONST_imCommType_base  +  120  );
-
-    public final static int  CONST_imCommType_anHgData  =	(  CONST_imCommType_base  +  122  );		//  qisCaReq的buf太小，不利于传输大一点的数据. hgData专门用来传输图片等大一点的数据.
-
-
-
-    //  
+    public final static int CONST_imCommType_anHgData    =  (  CONST_imCommType_base  +  122  );       //  融合中心 AnHgData
     //  
     public final static int CONST_imCommType_retrieveImGrpListReq = (CONST_imCommType_base + 200);
     public final static int CONST_imCommType_retrieveImGrpListResp = (CONST_imCommType_base + 201);        //  2007/08/27
@@ -124,6 +119,7 @@ public static class Consts
     public final static int CONST_imCommType_locDataReq = (CONST_imCommType_base + 602);       //  2012/04/20
     public final static int CONST_imCommType_transferLocData = (CONST_imCommType_base + 603);           //  2012/04/20
 
+    public final static int CONST_imCommType_transferMarkData = (CONST_imCommType_base + 604);
     //  2012/08/05
     public final static int CONST_imCommType_ptzControlReq = (CONST_imCommType_base + 710);
     public final static int CONST_imCommType_ptzControlCmd = (CONST_imCommType_base + 711);
