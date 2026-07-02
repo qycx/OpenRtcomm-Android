@@ -123,6 +123,16 @@ public class Fragment_me extends Fragment {
 
         view.findViewById(R.id.rowChangePassword).setOnClickListener(v -> showChangePasswordDialog());
 
+        view.findViewById(R.id.rowChangeLocKeyword).setOnClickListener(v -> {
+            if (!MapLocSettings.isEncryptionEnabled()) {
+                ToastUtils.showToast("请先开启口令");
+                return;
+            }
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).showChangeLocKeywordDialog();
+            }
+        });
+
         layoutAdvancedHeader.setOnClickListener(v -> toggleAdvancedSettings());
 
         tv_usrName.setText("");

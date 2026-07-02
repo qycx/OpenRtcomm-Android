@@ -187,6 +187,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -269,6 +270,8 @@ public class Fragment_map extends Fragment {
     private static final long MARK_SYNC_RESP_SLOT_DELAY_MS = 2_000L;
     private static final int MARK_SYNC_SNAPSHOT_PART_TARGET_CHARS = 700;
     private static final long MARK_SYNC_SNAPSHOT_PART_SEND_INTERVAL_MS = 200L;
+    private static final long MARK_SYNC_SNAPSHOT_RECV_TIMEOUT_BASE_MS = 3_000L;
+    private static final long MARK_SYNC_SNAPSHOT_RECV_TIMEOUT_EXTRA_PER_PART_MS = 250L;
     private static final String TAG_MAP_SYNC_FLOW = "MAP_SYNC_FLOW";
     private static final String TAG_MAP_SYNC_SIZE = "MAP_SYNC_SIZE";
     private static final String TAG_OFFLINE = "Fragment_map.offline";
@@ -1433,6 +1436,7 @@ public class Fragment_map extends Fragment {
     private FrameLayout layoutFloatingVideoLegacy;
     private FrameLayout layoutFloatingFragmentHost;
     private TextView tvGroupStats;
+    private TextView tvMarkSyncProgress;
     private View viewActiveGrpMeetingLamp;
     private TextView tvActiveGrpMeetingEntry;
     private TextView remoteMarkNoticeView;
@@ -1674,7 +1678,18 @@ public class Fragment_map extends Fragment {
     @Nullable
     private List<CachedLink> pendingMarkSyncLinkBatch;
     private int pendingMarkSyncLinkBatchIndex;
+    private int markSyncPendingApplyChangeGen = -1;
+    private long markSyncPendingApplyGroupId;
+    private boolean markSyncApplyPendingAfterBulk;
+    /** 本轮同步是否已展示过一次进度；重复快照静默处理，避免提示重复。 */
+    private boolean markSyncProgressShownThisRound;
+    private final Map<Long, MarkSyncInboundBatchState> markSyncInboundBatchByGroup = new HashMap<>();
+    private long markSyncInboundTimeoutGroupId;
+    /** 请求阶段超时：补发耗尽仍无 snapshot 时隐藏「正在同步注记…」。 */
+    private long markSyncRequestTimeoutGroupId;
     private final Runnable debouncedApplyMarkSyncCacheRunnable = this::applyMarkSyncCacheToMapNow;
+    private final Runnable markSyncInboundBatchTimeoutRunnable = this::onMarkSyncInboundBatchTimeout;
+    private final Runnable markSyncRequestTimeoutRunnable = this::onMarkSyncRequestTimeout;
     private long activeGroupMemberCacheTs;
     private long lastGroupStatsRefreshTs;
     private long selfUserId;
@@ -2085,6 +2100,22 @@ public class Fragment_map extends Fragment {
         final List<Long> deletedLinkTs = new ArrayList<>();
     }
 
+    /** 多分片 snapshot 接收进度；收齐后再 apply。 */
+    private static final class MarkSyncInboundBatchState {
+        long batchId;
+        int totalParts;
+        int changeGen;
+        final BitSet mergedParts = new BitSet();
+
+        int getMergedCount() {
+            return mergedParts.cardinality();
+        }
+
+        boolean isComplete() {
+            return totalParts > 0 && getMergedCount() >= totalParts;
+        }
+    }
+
     private static final class NavRouteProgress {
         final int segmentIndex;
         final LatLng point;
@@ -2400,6 +2431,7 @@ public class Fragment_map extends Fragment {
         layoutCompassRotatingLayer = view.findViewById(R.id.layoutCompassRotatingLayer);
         layoutFloatingVideoLegacy = view.findViewById(R.id.layoutFloatingVideo);
         tvGroupStats = view.findViewById(R.id.tvGroupStats);
+        tvMarkSyncProgress = view.findViewById(R.id.tvMarkSyncProgress);
         viewActiveGrpMeetingLamp = view.findViewById(R.id.viewActiveGrpMeetingLamp);
         tvActiveGrpMeetingEntry = view.findViewById(R.id.tvActiveGrpMeetingEntry);
         tvCurrentCoord = view.findViewById(R.id.tvCurrentCoord);
@@ -5308,6 +5340,7 @@ public class Fragment_map extends Fragment {
         compassTopRotatingLayer = null;
         layoutFloatingVideoLegacy = null;
         tvGroupStats = null;
+        tvMarkSyncProgress = null;
         viewActiveGrpMeetingLamp = null;
         tvActiveGrpMeetingEntry = null;
         activeGroupMeetingId = 0;
@@ -5723,14 +5756,11 @@ public class Fragment_map extends Fragment {
                     main.requestMapLocKeywordIfNeeded();
                 }
             }
+            // 只发 1 次请求；丢包由 scheduleMarkSyncRequestRetry 条件补发，避免进度重复两遍。
             locationHandler.post(() -> {
                 if (changeGen != activeGroupChangeGeneration || !isAdded()) return;
                 tryRequestMarkSyncSnapshot(true);
             });
-            locationHandler.postDelayed(() -> {
-                if (changeGen != activeGroupChangeGeneration || !isAdded()) return;
-                tryRequestMarkSyncSnapshot(true);
-            }, 2000L);
             flushSelfLocationToGroupNow();
             if (manualSwitch && isAdded()) {
                 Toast.makeText(requireContext(), "已切换活动组：" + getSelectedActiveGroupDisplayName(), Toast.LENGTH_SHORT).show();
@@ -9082,6 +9112,7 @@ public class Fragment_map extends Fragment {
         lastMarkSyncReqTsByGroup.clear();
         markSyncReqAttemptByGroup.clear();
         markSyncGroupsWithSnapshot.clear();
+        resetMarkSyncInboundState();
     }
 
     private void tryRequestMarkSyncSnapshot() {
@@ -9101,6 +9132,11 @@ public class Fragment_map extends Fragment {
             if (!force && last != null && now - last < MARK_SYNC_REQ_MIN_INTERVAL_MS) continue;
             markSyncGroupsWithSnapshot.remove(groupId);
             markSyncReqAttemptByGroup.put(groupId, 0);
+            if (groupId == getSelectedActiveGroupId()) {
+                markSyncProgressShownThisRound = false;
+                showMarkSyncReceiveProgressUi(groupId, null);
+                scheduleMarkSyncRequestTimeout(groupId);
+            }
             if (sendMarkSyncRequest(groupId, now)) {
                 scheduleMarkSyncRequestRetry(groupId);
             }
@@ -9133,9 +9169,8 @@ public class Fragment_map extends Fragment {
         }
         Toast.makeText(requireContext(), "正在重新同步标注信息…", Toast.LENGTH_SHORT).show();
         trySyncBattleMarksAndCompassFromHub();
+        // 只发 1 次请求；丢包由 scheduleMarkSyncRequestRetry 条件补发（收到快照即不再补发）。
         tryRequestMarkSyncSnapshot(true);
-        locationHandler.postDelayed(() -> tryRequestMarkSyncSnapshot(true), 2000L);
-        locationHandler.postDelayed(() -> tryRequestMarkSyncSnapshot(true), 6000L);
         locationHandler.postDelayed(this::tryRestoreLocalMarkLinksIfNeeded, 6500L);
     }
 
@@ -9463,7 +9498,10 @@ public class Fragment_map extends Fragment {
             if (senderUserId != 0 && senderUserId != fromId) return;
             if (!isSelfMemberOfGroup(groupId)) return;
             if (senderUserId != 0 && !loadGroupMemberIds(groupId).contains(senderUserId)) return;
-            mergeMarkSyncSnapshotPayload(arr[7]);
+            if (groupId != getSelectedActiveGroupId()) return;
+            markSyncInboundBatchByGroup.remove(groupId);
+            cancelMarkSyncRequestTimeout(groupId);
+            mergeMarkSyncSnapshotPayload(groupId, arr[7]);
             markSyncGroupsWithSnapshot.add(groupId);
             Log.d(TAG_MAP_SYNC_SIZE, "snapshot recv from=" + (senderUserId != 0 ? senderUserId : fromId)
                     + " group=" + groupId
@@ -9472,7 +9510,6 @@ public class Fragment_map extends Fragment {
             if (senderUserId > 0) {
                 markUserActiveOnline(senderUserId);
             }
-            flushMarkConnectionLinesNow();
             refreshGroupStatsByActiveGroups();
         } catch (Exception ignored) {
         }
@@ -9492,8 +9529,15 @@ public class Fragment_map extends Fragment {
             if (senderUserId != 0 && senderUserId != fromId) return;
             if (!isSelfMemberOfGroup(groupId)) return;
             if (senderUserId != 0 && !loadGroupMemberIds(groupId).contains(senderUserId)) return;
-            mergeMarkSyncSnapshotPayload(arr[8]);
-            markSyncGroupsWithSnapshot.add(groupId);
+            if (groupId != getSelectedActiveGroupId()) return;
+            if (totalParts <= 0 || partIndex < 0 || partIndex >= totalParts) return;
+            long inboundBatchId;
+            try {
+                inboundBatchId = Long.parseLong(batchId);
+            } catch (Exception ignored) {
+                return;
+            }
+            mergeMarkSyncSnapshotPartPayload(groupId, inboundBatchId, partIndex, totalParts, arr[8]);
             Log.d(TAG_MAP_SYNC_SIZE, "snapshot part recv from=" + (senderUserId != 0 ? senderUserId : fromId)
                     + " group=" + groupId
                     + " batch=" + batchId
@@ -9503,28 +9547,216 @@ public class Fragment_map extends Fragment {
             if (senderUserId > 0) {
                 markUserActiveOnline(senderUserId);
             }
-            flushMarkConnectionLinesNow();
             refreshGroupStatsByActiveGroups();
         } catch (Exception ignored) {
         }
     }
 
-    private void mergeMarkSyncSnapshotPayload(@NonNull String payload) {
-        if (!markSyncCacheEnabled || TextUtils.isEmpty(payload)) return;
+    private boolean isMarkSyncApplyContextValid(int changeGen, long groupId) {
+        return changeGen == activeGroupChangeGeneration
+                && groupId > 0
+                && hasSelectedActiveGroup()
+                && groupId == getSelectedActiveGroupId();
+    }
+
+    private void mergeMarkSyncSnapshotPayload(long groupId, @NonNull String payload) {
+        if (!markSyncCacheEnabled || TextUtils.isEmpty(payload) || groupId <= 0) return;
+        if (!isMarkSyncApplyContextValid(activeGroupChangeGeneration, groupId)) return;
+        final int changeGen = activeGroupChangeGeneration;
+        final long expectedGroupId = groupId;
         new Thread(() -> {
             MarkSyncPayloadParseResult parsed = parseMarkSyncSnapshotPayload(payload);
             if (parsed == null) return;
             locationHandler.post(() -> {
                 if (!markSyncCacheEnabled || !isAdded()) return;
+                if (!isMarkSyncApplyContextValid(changeGen, expectedGroupId)) return;
                 mergeMarkSyncParseResultIntoCache(parsed);
-                scheduleApplyMarkSyncCacheToMapDebounced();
+                scheduleApplyMarkSyncCacheToMapDebounced(changeGen, expectedGroupId);
             });
         }, MARK_SYNC_LOADER_THREAD).start();
     }
 
+    private void mergeMarkSyncSnapshotPartPayload(long groupId,
+                                                  long inboundBatchId,
+                                                  int partIndex,
+                                                  int totalParts,
+                                                  @NonNull String payload) {
+        if (!markSyncCacheEnabled || TextUtils.isEmpty(payload) || groupId <= 0) return;
+        if (!isMarkSyncApplyContextValid(activeGroupChangeGeneration, groupId)) return;
+        if (totalParts <= 0 || partIndex < 0 || partIndex >= totalParts) return;
+        final int changeGen = activeGroupChangeGeneration;
+        final long expectedGroupId = groupId;
+        new Thread(() -> {
+            MarkSyncPayloadParseResult parsed = parseMarkSyncSnapshotPayload(payload);
+            if (parsed == null) return;
+            locationHandler.post(() -> {
+                if (!markSyncCacheEnabled || !isAdded()) return;
+                if (!isMarkSyncApplyContextValid(changeGen, expectedGroupId)) return;
+                onMarkSyncSnapshotPartMerged(expectedGroupId, inboundBatchId, partIndex, totalParts,
+                        changeGen, parsed);
+            });
+        }, MARK_SYNC_LOADER_THREAD).start();
+    }
+
+    private void onMarkSyncSnapshotPartMerged(long groupId,
+                                              long inboundBatchId,
+                                              int partIndex,
+                                              int totalParts,
+                                              int changeGen,
+                                              @NonNull MarkSyncPayloadParseResult parsed) {
+        MarkSyncInboundBatchState batch = markSyncInboundBatchByGroup.get(groupId);
+        if (batch == null || batch.batchId != inboundBatchId) {
+            batch = new MarkSyncInboundBatchState();
+            batch.batchId = inboundBatchId;
+            batch.changeGen = changeGen;
+            markSyncInboundBatchByGroup.put(groupId, batch);
+        }
+        batch.totalParts = totalParts;
+        batch.changeGen = changeGen;
+        if (partIndex < 0 || partIndex >= batch.totalParts || batch.mergedParts.get(partIndex)) {
+            return;
+        }
+        mergeMarkSyncParseResultIntoCache(parsed);
+        batch.mergedParts.set(partIndex);
+        cancelMarkSyncRequestTimeout(groupId);
+        markSyncGroupsWithSnapshot.add(groupId);
+        showMarkSyncReceiveProgressUi(groupId, batch);
+        scheduleMarkSyncInboundBatchTimeout(groupId, batch);
+        if (batch.isComplete()) {
+            completeMarkSyncInboundBatch(groupId, batch);
+        }
+    }
+
+    private void completeMarkSyncInboundBatch(long groupId, @NonNull MarkSyncInboundBatchState batch) {
+        markSyncInboundBatchByGroup.remove(groupId);
+        if (markSyncInboundTimeoutGroupId == groupId) {
+            locationHandler.removeCallbacks(markSyncInboundBatchTimeoutRunnable);
+            markSyncInboundTimeoutGroupId = 0L;
+        }
+        if (!isMarkSyncApplyContextValid(batch.changeGen, groupId)) {
+            hideMarkSyncProgressIfIdle();
+            return;
+        }
+        showMarkSyncApplyProgressUi(0, syncedMarkCache.size());
+        scheduleApplyMarkSyncCacheToMapDebounced(batch.changeGen, groupId);
+    }
+
+    private void onMarkSyncInboundBatchTimeout() {
+        long groupId = markSyncInboundTimeoutGroupId;
+        markSyncInboundTimeoutGroupId = 0L;
+        if (groupId <= 0) return;
+        MarkSyncInboundBatchState batch = markSyncInboundBatchByGroup.get(groupId);
+        if (batch == null || batch.getMergedCount() <= 0) {
+            hideMarkSyncProgressIfIdle();
+            return;
+        }
+        Log.w(TAG_MAP_SYNC_FLOW, "snapshot part timeout group=" + groupId
+                + " got=" + batch.getMergedCount() + "/" + batch.totalParts);
+        completeMarkSyncInboundBatch(groupId, batch);
+    }
+
+    private void scheduleMarkSyncInboundBatchTimeout(long groupId, @NonNull MarkSyncInboundBatchState batch) {
+        markSyncInboundTimeoutGroupId = groupId;
+        locationHandler.removeCallbacks(markSyncInboundBatchTimeoutRunnable);
+        long delay = MARK_SYNC_SNAPSHOT_RECV_TIMEOUT_BASE_MS
+                + (long) batch.totalParts * MARK_SYNC_SNAPSHOT_RECV_TIMEOUT_EXTRA_PER_PART_MS;
+        locationHandler.postDelayed(markSyncInboundBatchTimeoutRunnable, delay);
+    }
+
+    /** 与 {@link #scheduleMarkSyncRequestRetry} 补发次数对齐：3s × (1 + {@link #MARK_SYNC_REQ_MAX_RETRIES})。 */
+    private static long markSyncRequestTimeoutDelayMs() {
+        return MARK_SYNC_REQ_RETRY_DELAY_MS * (MARK_SYNC_REQ_MAX_RETRIES + 1L);
+    }
+
+    private void scheduleMarkSyncRequestTimeout(long groupId) {
+        if (groupId <= 0 || groupId != getSelectedActiveGroupId()) return;
+        markSyncRequestTimeoutGroupId = groupId;
+        locationHandler.removeCallbacks(markSyncRequestTimeoutRunnable);
+        locationHandler.postDelayed(markSyncRequestTimeoutRunnable, markSyncRequestTimeoutDelayMs());
+    }
+
+    private void cancelMarkSyncRequestTimeout(long groupId) {
+        if (groupId > 0 && markSyncRequestTimeoutGroupId == groupId) {
+            markSyncRequestTimeoutGroupId = 0L;
+            locationHandler.removeCallbacks(markSyncRequestTimeoutRunnable);
+        }
+    }
+
+    private void cancelMarkSyncRequestTimeout() {
+        markSyncRequestTimeoutGroupId = 0L;
+        locationHandler.removeCallbacks(markSyncRequestTimeoutRunnable);
+    }
+
+    private void onMarkSyncRequestTimeout() {
+        long groupId = markSyncRequestTimeoutGroupId;
+        markSyncRequestTimeoutGroupId = 0L;
+        if (groupId <= 0 || !isAdded()) return;
+        if (groupId != getSelectedActiveGroupId()) return;
+        if (markSyncGroupsWithSnapshot.contains(groupId)) return;
+        MarkSyncInboundBatchState batch = markSyncInboundBatchByGroup.get(groupId);
+        if (batch != null && batch.getMergedCount() > 0) return;
+        if (battleMarkBulkApplyInProgress || markSyncApplyPendingAfterBulk) return;
+        Log.w(TAG_MAP_SYNC_FLOW, "snapshot req timeout group=" + groupId
+                + " afterMs=" + markSyncRequestTimeoutDelayMs());
+        hideMarkSyncProgress();
+    }
+
+    private void resetMarkSyncInboundState() {
+        markSyncInboundBatchByGroup.clear();
+        markSyncInboundTimeoutGroupId = 0L;
+        markSyncApplyPendingAfterBulk = false;
+        markSyncProgressShownThisRound = false;
+        locationHandler.removeCallbacks(markSyncInboundBatchTimeoutRunnable);
+        cancelMarkSyncRequestTimeout();
+        hideMarkSyncProgress();
+    }
+
+    private void showMarkSyncReceiveProgressUi(long groupId, @Nullable MarkSyncInboundBatchState batch) {
+        if (!isAdded() || tvMarkSyncProgress == null || groupId != getSelectedActiveGroupId()) return;
+        if (markSyncProgressShownThisRound) return;
+        if (batch == null || batch.totalParts <= 0) {
+            tvMarkSyncProgress.setText("正在同步注记…");
+        } else {
+            tvMarkSyncProgress.setText(String.format(Locale.CHINA, "接收注记 %d/%d",
+                    batch.getMergedCount(), batch.totalParts));
+        }
+        tvMarkSyncProgress.setVisibility(View.VISIBLE);
+    }
+
+    private void showMarkSyncApplyProgressUi(int loaded, int total) {
+        if (!isAdded() || tvMarkSyncProgress == null) return;
+        if (markSyncProgressShownThisRound) return;
+        if (total <= 0) {
+            tvMarkSyncProgress.setText("正在加载注记…");
+        } else {
+            tvMarkSyncProgress.setText(String.format(Locale.CHINA, "加载注记 %d/%d",
+                    Math.min(loaded, total), total));
+        }
+        tvMarkSyncProgress.setVisibility(View.VISIBLE);
+    }
+
+    private void hideMarkSyncProgress() {
+        if (tvMarkSyncProgress != null) {
+            tvMarkSyncProgress.setVisibility(View.GONE);
+        }
+    }
+
+    private void hideMarkSyncProgressIfIdle() {
+        if (!markSyncInboundBatchByGroup.isEmpty()) return;
+        if (battleMarkBulkApplyInProgress || markSyncApplyPendingAfterBulk) return;
+        hideMarkSyncProgress();
+    }
+
     /** 等多段 snapshot 都 merge 进 cache 后再统一上图，避免只加载首段。 */
-    private void scheduleApplyMarkSyncCacheToMapDebounced() {
+    private void scheduleApplyMarkSyncCacheToMapDebounced(int changeGen, long groupId) {
         if (!markSyncCacheEnabled || !isAdded()) return;
+        if (!isMarkSyncApplyContextValid(changeGen, groupId)) return;
+        markSyncPendingApplyChangeGen = changeGen;
+        markSyncPendingApplyGroupId = groupId;
+        if (battleMarkBulkApplyInProgress) {
+            markSyncApplyPendingAfterBulk = true;
+            return;
+        }
         locationHandler.removeCallbacks(debouncedApplyMarkSyncCacheRunnable);
         locationHandler.postDelayed(debouncedApplyMarkSyncCacheRunnable, MARK_SYNC_APPLY_DEBOUNCE_MS);
     }
@@ -9613,6 +9845,9 @@ public class Fragment_map extends Fragment {
     private void cancelPendingMarkSyncApply() {
         activeMarkSyncBatchId++;
         locationHandler.removeCallbacks(debouncedApplyMarkSyncCacheRunnable);
+        markSyncPendingApplyChangeGen = -1;
+        markSyncPendingApplyGroupId = 0L;
+        markSyncApplyPendingAfterBulk = false;
         pendingMarkSyncMarkBatch = null;
         pendingMarkSyncMarkBatchIndex = 0;
         pendingMarkSyncLinkBatch = null;
@@ -9698,19 +9933,28 @@ public class Fragment_map extends Fragment {
     }
 
     private void applyMarkSyncCacheToMap() {
-        scheduleApplyMarkSyncCacheToMapDebounced();
+        if (!hasSelectedActiveGroup()) return;
+        scheduleApplyMarkSyncCacheToMapDebounced(activeGroupChangeGeneration, getSelectedActiveGroupId());
     }
 
     private void applyMarkSyncCacheToMapNow() {
         if (!markSyncCacheEnabled || !isAdded() || mapView == null) return;
+        if (!isMarkSyncApplyContextValid(markSyncPendingApplyChangeGen, markSyncPendingApplyGroupId)) {
+            return;
+        }
+        if (battleMarkBulkApplyInProgress) {
+            markSyncApplyPendingAfterBulk = true;
+            return;
+        }
         final int batchId = ++activeMarkSyncBatchId;
+        battleMarkBulkApplyInProgress = true;
+        suppressLocalMarkLinkPersistence = true;
+        showMarkSyncApplyProgressUi(0, syncedMarkCache.size());
         applyMarkSyncCacheDeletePass();
         pendingMarkSyncMarkBatch = new ArrayList<>(syncedMarkCache.values());
         pendingMarkSyncMarkBatchIndex = 0;
         pendingMarkSyncLinkBatch = new ArrayList<>(syncedLinkCache.values());
         pendingMarkSyncLinkBatchIndex = 0;
-        battleMarkBulkApplyInProgress = true;
-        suppressLocalMarkLinkPersistence = true;
         if (pendingMarkSyncMarkBatch.isEmpty()) {
             scheduleMarkSyncCacheLinkBatchStep(batchId);
         } else {
@@ -9766,6 +10010,7 @@ public class Fragment_map extends Fragment {
             }
         }
         pendingMarkSyncMarkBatchIndex = end;
+        showMarkSyncApplyProgressUi(end, batch.size());
         if (end < batch.size()) {
             scheduleMarkSyncCacheMarkBatchStep(batchId);
         } else {
@@ -9800,9 +10045,8 @@ public class Fragment_map extends Fragment {
     }
 
     private void finishMarkSyncCacheApply(int batchId) {
-        if (!isMarkSyncBatchStepActive(batchId) || !isAdded() || mapView == null) {
-            battleMarkBulkApplyInProgress = false;
-            suppressLocalMarkLinkPersistence = false;
+        if (!isAdded() || mapView == null) return;
+        if (!isMarkSyncBatchStepActive(batchId)) {
             return;
         }
         for (Map.Entry<String, DeleteTombstone> entry : deletedLinkCache.entrySet()) {
@@ -9821,6 +10065,15 @@ public class Fragment_map extends Fragment {
         flushMarkConnectionLinesNow();
         pendingMarkSyncMarkBatch = null;
         pendingMarkSyncLinkBatch = null;
+        markSyncProgressShownThisRound = true;
+        hideMarkSyncProgressIfIdle();
+        if (markSyncApplyPendingAfterBulk) {
+            markSyncApplyPendingAfterBulk = false;
+            if (hasSelectedActiveGroup()) {
+                scheduleApplyMarkSyncCacheToMapDebounced(activeGroupChangeGeneration,
+                        getSelectedActiveGroupId());
+            }
+        }
     }
 
     @Nullable
@@ -10068,16 +10321,20 @@ public class Fragment_map extends Fragment {
         BattleMark mark = battleMarksOnMap.remove(id);
         removeLinksForMark(id);
         if (mark == null) {
-            updateMapLibreBattleMarks();
-            flushMarkConnectionLinesNow();
+            if (!battleMarkBulkApplyInProgress) {
+                updateMapLibreBattleMarks();
+                flushMarkConnectionLinesNow();
+            }
             return;
         }
         if (TextUtils.equals(editingBattleMarkId, id)) {
             editingBattleMarkId = null;
         }
         removeBattleMarkView(mark);
-        updateMapLibreBattleMarks();
-        flushMarkConnectionLinesNow();
+        if (!battleMarkBulkApplyInProgress) {
+            updateMapLibreBattleMarks();
+            flushMarkConnectionLinesNow();
+        }
     }
 
     private void removeBattleMark(@NonNull String id) {

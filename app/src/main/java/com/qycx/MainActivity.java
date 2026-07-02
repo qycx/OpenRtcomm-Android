@@ -2949,6 +2949,78 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         dialog.show();
     }
 
+    /** 更换口令：无需先关闭再开启，直接输入新口令即可（需两次一致）。 */
+    public void showChangeLocKeywordDialog() {
+        if (isFinishing()) {
+            return;
+        }
+        if (!MapLocSettings.isEncryptionEnabled()) {
+            Toast.makeText(this, "请先开启口令", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        View content = LayoutInflater.from(this).inflate(R.layout.dialog_map_loc_change_keyword, null, false);
+        content.setClipToOutline(true);
+        content.setOutlineProvider(android.view.ViewOutlineProvider.BACKGROUND);
+        EditText inputNew = content.findViewById(R.id.edtMapLocNewKeyword);
+        TextView btnCancel = content.findViewById(R.id.btnMapLocChangeKeywordCancel);
+        TextView btnConfirm = content.findViewById(R.id.btnMapLocChangeKeywordConfirm);
+
+        AlertDialog dialog = new AlertDialog.Builder(this, R.style.MapStyledDialogTheme)
+                .setView(content)
+                .setCancelable(true)
+                .create();
+        dialog.setOnShowListener(d -> {
+            Window w = dialog.getWindow();
+            if (w != null) {
+                w.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+                View decor = w.getDecorView();
+                if (decor != null) {
+                    decor.setBackgroundResource(android.R.color.transparent);
+                }
+                View panel = w.findViewById(android.R.id.content);
+                if (panel != null) {
+                    panel.setBackgroundResource(android.R.color.transparent);
+                }
+                android.view.ViewParent parent = content.getParent();
+                while (parent instanceof View) {
+                    View wrapper = (View) parent;
+                    wrapper.setBackgroundResource(android.R.color.transparent);
+                    wrapper.setPadding(0, 0, 0, 0);
+                    if (wrapper.getId() == android.R.id.content) {
+                        break;
+                    }
+                    parent = wrapper.getParent();
+                }
+                WindowManager.LayoutParams lp = w.getAttributes();
+                lp.width = (int) (getResources().getDisplayMetrics().widthPixels * 0.84f);
+                lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+                w.setAttributes(lp);
+            }
+        });
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        btnConfirm.setOnClickListener(v -> {
+            String kw = inputNew.getText() != null ? inputNew.getText().toString().trim() : "";
+            if (kw.isEmpty()) {
+                Toast.makeText(this, "未输入新口令", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            MapLocKeyword.setUserKeyword(kw);
+            if (!MapLocStrCrypto.verifyRoundTrip(kw)) {
+                Toast.makeText(this, "口令校验失败，请重新输入", Toast.LENGTH_SHORT).show();
+                clearMapLocKeywordAndRemoteLocations();
+                dialog.dismiss();
+                return;
+            }
+            // 旧口令解出的他人位置作废，改用新口令重新解密并重报本机位置。
+            clearMapRemoteLocations();
+            notifyMapLocKeywordReady();
+            Toast.makeText(this, "口令已更换", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+        dialog.show();
+    }
+
     /** 供 myMapExt 回调：在地图上显示他人定位。 */
     public void applyMapRemoteLocation(long userId, @NonNull String plainLocStr) {
         if (mAdapter == null || !(mAdapter.mFragment_map instanceof Fragment_map)) {
