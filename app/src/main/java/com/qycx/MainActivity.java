@@ -29,12 +29,14 @@ import static com.qycx.base.tmpFunc.qyFuncs.myGetCurrentProcessId;
 import static com.qycx.base.tmpFunc.qyFuncs.myGetTickCount;
 import static com.qycx.base.tmpProc.qyFuncs.bTaskActive;
 
+import android.Manifest;
+
 import static org.aviran.cookiebar2.CookieBarDismissListener.DismissType.DURATION_COMPLETE;
 import static org.aviran.cookiebar2.CookieBarDismissListener.DismissType.USER_ACTION_CLICK;
 import static org.aviran.cookiebar2.CookieBarDismissListener.DismissType.USER_DISMISS;
 
-import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -47,8 +49,8 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.BitmapFactory;
-import android.os.Bundle;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.DisplayMetrics;
@@ -62,9 +64,11 @@ import android.view.Gravity;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -116,10 +120,6 @@ import com.qycx.base.util.javatuples.Pair;
 import com.qysd.base.MapLocKeyword;
 import com.qysd.base.MapLocSettings;
 import com.qysd.base.MapLocStrCrypto;
-
-import android.app.AlertDialog;
-import android.widget.EditText;
-import android.widget.Toast;
 
 import org.aviran.cookiebar2.*;
 
@@ -1373,6 +1373,12 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             showInfo_open.qyFuncs.showInfo_open("For test: bUse100k set to true");
         }
 
+        //
+        if  (  false ) {
+            //
+            //pProcInfo.bStay_toAvCall = true;
+            //showInfo_open.qyFuncs.showInfo_open("test: bStay_toAv set to true");
+        }
 
         //
         if  (  pQyMc.appParams.bDbg)  {

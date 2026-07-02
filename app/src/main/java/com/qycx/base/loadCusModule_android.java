@@ -110,7 +110,7 @@ public class loadCusModule_android {
             pModule.pf_qdcDecompressAudioRun = cusModule_mediaCodec.qyFuncs_Droid.qdcDecompressAudioRun_mediaCodec;                  //  2016/12/05
 
             //
-            if  (  false  )  {
+            if  (  pQyMc.appParams.bSupport_lyra  )  {
                 //
                 index = newCusModuleIndex();
                 if (index < 0) return -1;

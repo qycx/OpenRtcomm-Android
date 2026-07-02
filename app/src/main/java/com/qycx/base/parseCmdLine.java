@@ -13,12 +13,17 @@ public class parseCmdLine {
         bVal  =  BuildConfig.DEBUG;     //  没用
 
         //
-        if  (  false  ) {
+        if  (  true  )  {
+            pParams.bSupport_lyra = false;
+        }
+
+        //
+        if  (  true  ) {
             pParams.bENABLE_MAP_TAB=true;
 
             //
             pParams.bStay_toAvCall = true;
-            showInfo_open.qyFuncs.showInfo_open("test: bStay_toAv set to true");
+            showInfo_open.qyFuncs.showInfo_open("Note: bStay_toAv set to true");
         }
 
         //

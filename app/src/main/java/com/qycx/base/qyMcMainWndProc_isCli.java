@@ -305,7 +305,6 @@ public class qyMcMainWndProc_isCli {
                                 qnmCommProc_mis.IM_CONTENTU pContent = input.data.buf;
 
 
-
                                 //  2014/05/05
                                 boolean bMsgProcessed = false;
                                 switch (pContent.uiType) {

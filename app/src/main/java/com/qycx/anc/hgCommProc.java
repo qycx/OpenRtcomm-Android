@@ -20,7 +20,6 @@ public class hgCommProc {
 
         //
         public static short CONST_hgCmd_xt			=							3050;		//  心跳
-        public static short CONST_hgCmd_ulAnHgData	=							3021;		//  上传数据到 hg（file 通道）
 
 
         //

@@ -427,7 +427,9 @@ public class qnmCommProc {
         public final static short CONST_qnmCfgId_ca_random = (CONST_qnmCfgId_base_common + 4503);
         public final static short CONST_qnmCfgId_caGwCfg = (CONST_qnmCfgId_base_common + 4504);
 
-        public final static short CONST_qnmCfgId_hg_cliData	= (  CONST_qnmCfgId_base_common  +  4505  );
+        //
+        public final static short CONST_qnmCfgId_hg_cliData	= (  CONST_qnmCfgId_base_common  +  4505  );				//
+
         //
         public final static short CONST_qnmCfgId_usEnlargeType = (CONST_qnmCfgId_base_common + 4600);                //
         public final static short CONST_qnmCfgId_iChannel = (CONST_qnmCfgId_base_common + 4601);
@@ -578,7 +580,9 @@ public class qnmCommProc {
 
         //
         public final static short CONST_qyCmd_ca  =  (  CONST_qyCmd_base  +  225  );	//
-        public final static short CONST_qyCmd_hg  =  (  CONST_qyCmd_base  +  226  );    //  融合中心
+
+        //
+        public final static short CONST_qyCmd_hg  =		(  CONST_qyCmd_base  +  226  );	//
 
         //
         public final static short CONST_qyCmd_talkTo = (CONST_qyCmd_base + 300); //  ???2007/04/09

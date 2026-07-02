@@ -109,7 +109,7 @@ public class qyMcMainCusModule {
             guiShare.GuiShare.pf_loadCusModule_android.call();
 
             //
-            if  (  false  )  {
+            if  (  pQyMc.appParams.bSupport_lyra  )  {
                 TmpLyra.sayHello();
                 //
                 //TmpLyra.qdc_init();

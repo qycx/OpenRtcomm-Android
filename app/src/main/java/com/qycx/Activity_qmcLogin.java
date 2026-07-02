@@ -3,14 +3,14 @@ package com.qycx;
 
 import static com.qycx.base.qyMcMain_global.g.g_pQyMc;
 
-import android.animation.ValueAnimator;
-import android.graphics.Matrix;
-import android.graphics.drawable.Drawable;
 import android.Manifest;
+import android.animation.ValueAnimator;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Matrix;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,8 +22,8 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.Window;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -232,15 +232,15 @@ public class Activity_qmcLogin extends qmcBaseActivity implements View.OnClickLi
 
         //
         if  (  true  ) {
-            servInitVal = "103.85.174.150";
-            usrNameInitVal = "yuwm";
+            servInitVal = "192.168.1.177";
+            usrNameInitVal = "yuwm03";
             pwdInitVal = "123456";
         }
 
 
         //
-        if  (  true  ) {
-            servInitVal = "111.26.176.178";
+        if  (  false  ) {
+            servInitVal = "111.26.176.179";
             usrNameInitVal = "yanfa01";
             pwdInitVal = "123456";
         }
