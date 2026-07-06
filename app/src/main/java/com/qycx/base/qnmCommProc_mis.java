@@ -5105,7 +5105,7 @@ public class qnmCommProc_mis {
             //
             if (!guiShare.GuiShare.pf_bQySockOpen.call(pSock)) {
                 if (guiShare.GuiShare.pf_qyConnect.call(servIp, usPort, pSockParam, pSock) != 0) {
-                    String str = String.format("qnmOpenSession_mis: connect %s failed", servIp);
+                    String str = String.format("qnmOpenSession_mis: connect %s: %d failed", servIp, usPort );
                     Log.e(str);
                     showInfo_open.qyFuncs.showInfo_open(0, null, str);
                     return null;

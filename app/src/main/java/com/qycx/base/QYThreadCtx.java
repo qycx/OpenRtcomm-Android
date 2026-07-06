@@ -1,7 +1,7 @@
 package com.qycx.base;
 
 import static com.qycx.base.Consts.CONST_channelType_media;
-import static com.qycx.base.Consts.CONST_channelType_realTimeMedia;
+import static com.qycx.base.Consts.CONST_channelType_rtMedia;
 import static com.qycx.base.tmpFunc.qyFuncs.myGetCurrentThreadId;
 import static com.qycx.base.tmpFunc.qyFuncs.myGetTickCount;
 
@@ -98,7 +98,7 @@ public class QYThreadCtx {
                             }
                         }
                         switch (iChannelType) {
-                            case  CONST_channelType_realTimeMedia:
+                            case  CONST_channelType_rtMedia:
                                   if  (  var.m_ctxThreadtoSend.a==null) {
                                       try (qySyncObj.CQySyncObj syncObj = new qySyncObj.CQySyncObj()) {
                                           if (0 != syncObj.sync("", pQyMc.hMutex_syncCtxThreadTmpVar, "")) {

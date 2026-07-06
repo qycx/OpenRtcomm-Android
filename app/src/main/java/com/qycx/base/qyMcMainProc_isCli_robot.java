@@ -4,7 +4,7 @@
 package com.qycx.base;
 
 import static com.qycx.base.Consts.CONST_channelType_media;
-import static com.qycx.base.Consts.CONST_channelType_realTimeMedia;
+import static com.qycx.base.Consts.CONST_channelType_rtMedia;
 import static com.qycx.base.Consts.CONST_channelType_robot;
 import static com.qycx.base.Consts.CONST_channelType_talking;
 import static com.qycx.base.Consts.CONST_iParamType_toSend;
@@ -1155,7 +1155,7 @@ public class qyMcMainProc_isCli_robot {
             //
             if (!pMsgInput.ucbConvrted) {
 
-                if (pChannel.uiType == CONST_channelType_realTimeMedia) {
+                if (pChannel.uiType == CONST_channelType_rtMedia) {
                     int ii = 0;
                 }
                 if  (  pChannel.uiType==CONST_channelType_media) {

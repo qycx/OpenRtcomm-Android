@@ -1,7 +1,7 @@
 package com.qycx.base;
 
 import static com.qycx.base.Consts.CONST_channelType_media;
-import static com.qycx.base.Consts.CONST_channelType_realTimeMedia;
+import static com.qycx.base.Consts.CONST_channelType_rtMedia;
 import static com.qycx.base.Consts.CONST_channelType_robot;
 import static com.qycx.base.Consts.CONST_channelType_rtOp;
 import static com.qycx.base.genericQueue.qyFuncs.emptyGenericQ;
@@ -135,7 +135,7 @@ public class postMsg2MgrFunc {
                     }
                     break;
                 }
-                case CONST_channelType_realTimeMedia: {
+                case CONST_channelType_rtMedia: {
                     if (0 > (tmpiRet = q2PostMsgAndTrigger(pMsg, pProcInfo.realTimeMediaQ2,"postMsg2MgrFunc_mc.133"))) {
                         iErr = tmpiRet;
                         return iErr;
@@ -245,7 +245,7 @@ public class postMsg2MgrFunc {
                     //
                     break;
                 }
-                case CONST_channelType_realTimeMedia: {
+                case CONST_channelType_rtMedia: {
                     if (0 > (tmpiRet = q2PostMsgAndTrigger(data, pProcInfo.realTimeMediaQ2,"postReceiveMsg2Mgr.241"))) {
                         iErr = tmpiRet;
                         return iErr;
@@ -672,7 +672,7 @@ public class postMsg2MgrFunc {
                         } else {
                             switch (pChannel.uiType) {
                                 case CONST_channelType_media:
-                                case CONST_channelType_realTimeMedia:
+                                case CONST_channelType_rtMedia:
                                     emptyGenericQ(pQ_toPostMsg);
                                     showInfo_open.qyFuncs.showInfo_open( ("procMsgTask2Output_mc: emptyQ now"));
                                     break;

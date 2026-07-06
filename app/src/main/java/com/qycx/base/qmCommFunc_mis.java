@@ -2,7 +2,7 @@
 package com.qycx.base;
 
 import static com.qycx.base.Consts.CONST_channelType_media;
-import static com.qycx.base.Consts.CONST_channelType_realTimeMedia;
+import static com.qycx.base.Consts.CONST_channelType_rtMedia;
 import static com.qycx.base.Consts.CONST_channelType_robot;
 import static com.qycx.base.Consts.CONST_channelType_rtOp;
 import static com.qycx.base.Consts.CONST_channelType_talking;
@@ -196,7 +196,7 @@ public class qmCommFunc_mis {
                 case CONST_channelType_media:
                     return count * 6 * 1024;  //视频一个包平均是 5321， max:104192 totalsize:31129951 time:5850average:5321
                     ///return (int) (4000000 * 2.5 / 8);//  2.5 secends mp3
-                case CONST_channelType_realTimeMedia:
+                case CONST_channelType_rtMedia:
                     return count * 1024;      //音频一个包平均是是445 max:2530 totalsize:1853912 time:4180average:443
                 case CONST_channelType_rtOp:
                     //    return  1024 * 5;
@@ -214,7 +214,7 @@ public class qmCommFunc_mis {
                     //break;
                 case CONST_channelType_media:
                     return bufSize_transferVideoData;//  2.5 secends mp3
-                case CONST_channelType_realTimeMedia:
+                case CONST_channelType_rtMedia:
                     return bufSize_transferAudioData;  // 1.5 seconds
                 case CONST_channelType_rtOp:
                     //    return  1024 * 5;

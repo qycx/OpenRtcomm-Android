@@ -5,7 +5,7 @@ import static com.qycx.anc.Consts.CONST_old_msgHead_n_len;
 import static com.qycx.anc.Consts.__USE_old_msgHead_n__;
 import static com.qycx.base.Consts.AUDIO_UPLOAD;
 import static com.qycx.base.Consts.CONST_channelType_media;
-import static com.qycx.base.Consts.CONST_channelType_realTimeMedia;
+import static com.qycx.base.Consts.CONST_channelType_rtMedia;
 import static com.qycx.base.Consts.CONST_channelType_talking;
 import static com.qycx.base.Consts.CONST_qyRet_qFull;
 import static com.qycx.base.Consts.IO_TAG;
@@ -130,7 +130,7 @@ public class mcThread_io {
                         bChkTimeoutInSToSwitch = true;
                         type = "video";
                         break;
-                    case CONST_channelType_realTimeMedia:
+                    case CONST_channelType_rtMedia:
                         usTimeoutInMsToSwitch = pProcInfo.cfg.policy.usTimeoutInMsToSwitch_rt;
                         bChkTimeoutInSToSwitch = true;
                         type = "audio";
@@ -454,7 +454,7 @@ public class mcThread_io {
 
 
                                         int size = pChannel.getOutQ2Size();
-                                        if(pChannel.uiType == CONST_channelType_realTimeMedia ){ //如果是音频 zzq
+                                        if(pChannel.uiType == CONST_channelType_rtMedia ){ //如果是音频 zzq
                                             //Log.d(AUDIO_UPLOAD ,"<stage4> pChannel size is " + size + " thread " + Thread.currentThread().getId() + " size: " +nSend );
                                             //EventBus.getDefault().post(new AudioOutBufSizeEvent(size, 3, Thread.currentThread().getId()));
                                         }else if(pChannel.uiType == CONST_channelType_media) { //如果是视频 zzq
@@ -465,7 +465,7 @@ public class mcThread_io {
                                             if(pChannel.uiType == CONST_channelType_media) { //如果是视频 zzq
                                                 Log.d(VIDEO_UPLOAD, "<stage5> qySendMsg failed" +Thread.currentThread().getName() + Thread.currentThread().getId());
                                             }
-                                            else if(pChannel.uiType == CONST_channelType_realTimeMedia) { //如果是视频 zzq
+                                            else if(pChannel.uiType == CONST_channelType_rtMedia) { //如果是视频 zzq
                                                 Log.d(AUDIO_UPLOAD, "<stage5> qySendMsg failed" + Thread.currentThread().getName( )+ Thread.currentThread().getId());
                                             }
                                             else {
@@ -589,7 +589,7 @@ public class mcThread_io {
                         bChkTimeoutInSToSwitch = true;
                         type = "video";
                         break;
-                    case CONST_channelType_realTimeMedia:
+                    case CONST_channelType_rtMedia:
                         usTimeoutInMsToSwitch = pProcInfo.cfg.policy.usTimeoutInMsToSwitch_rt;
                         bChkTimeoutInSToSwitch = true;
                         type = "audio";
@@ -863,7 +863,7 @@ public class mcThread_io {
                             }
 
                             //
-                            if  (  pChannel.uiType==CONST_channelType_realTimeMedia)  {
+                            if  (  pChannel.uiType==CONST_channelType_rtMedia)  {
                                 //Log.d("anc","snd: rtMedia");
                             }
 
@@ -1123,7 +1123,7 @@ public class mcThread_io {
                                         int  offset  =  0;
                                         //
                                         int size = pChannel.getOutQ2Size();
-                                        if(pChannel.uiType == CONST_channelType_realTimeMedia ){ //如果是音频 zzq
+                                        if(pChannel.uiType == CONST_channelType_rtMedia ){ //如果是音频 zzq
                                             //Log.d(AUDIO_UPLOAD ,"<stage4> pChannel size is " + size + " thread " + Thread.currentThread().getId() + " size: " +nSend );
                                             //EventBus.getDefault().post(new AudioOutBufSizeEvent(size, 3, Thread.currentThread().getId()));
                                             //
@@ -1182,7 +1182,7 @@ public class mcThread_io {
                                             if(pChannel.uiType == CONST_channelType_media) { //如果是视频 zzq
                                                 Log.d(VIDEO_UPLOAD, "<stage5> qySendMsg failed" +Thread.currentThread().getName() + Thread.currentThread().getId());
                                             }
-                                            else if(pChannel.uiType == CONST_channelType_realTimeMedia) { //如果是视频 zzq
+                                            else if(pChannel.uiType == CONST_channelType_rtMedia) { //如果是视频 zzq
                                                 Log.d(AUDIO_UPLOAD, "<stage5> qySendMsg failed" + Thread.currentThread().getName( )+ Thread.currentThread().getId());
                                             }
                                             else {
@@ -1292,7 +1292,7 @@ public class mcThread_io {
                 this.pChannel = channel;
             }
             private void threadLog(String str){
-                if(pChannel.uiType == CONST_channelType_realTimeMedia){
+                if(pChannel.uiType == CONST_channelType_rtMedia){
                     Log.d(AUDIO_UPLOAD, "threadLog is "+  str);
                 }
             }
@@ -1439,7 +1439,7 @@ public class mcThread_io {
                     String thr_type;
                     if (pChannel.uiType == CONST_channelType_media) {
                         thr_type = "video";
-                    } else if (pChannel.uiType == CONST_channelType_realTimeMedia) {
+                    } else if (pChannel.uiType == CONST_channelType_rtMedia) {
                         thr_type = "audio";
                     } else if (pChannel.uiType == CONST_channelType_talking) {
                         thr_type = "talk";
@@ -1463,7 +1463,7 @@ public class mcThread_io {
                     //bDbg = true;
                     pChannel.inCache_buf  =  new byte[bufSize_transferVideoData];
                 }
-                else  if  (  pChannel.uiType  ==  CONST_channelType_realTimeMedia)  {
+                else  if  (  pChannel.uiType  ==  CONST_channelType_rtMedia)  {
                     pChannel.inCache_buf  =  new byte[bufSize_transferAudioData];
                 }
                 else  {
@@ -1571,7 +1571,7 @@ public class mcThread_io {
                             showInfo_open.qyFuncs.showInfo_open(str);
                         }
                     }
-                    else if ( pChannel.uiType==CONST_channelType_realTimeMedia)  {
+                    else if ( pChannel.uiType==CONST_channelType_rtMedia)  {
                         //
                         if  (  false )  {
                             str = "audio_R ...: tn " + msgHead.uiTranNo  +  " len "  +  msgHead.uiLen;
@@ -1694,7 +1694,7 @@ public class mcThread_io {
                         //qyShowInfo1(CONST_qyShowType_qwmComm, pProcInfo.str_who_showInfo, null, where_showInfo, " msgHead.uiTranNo " + msgHead.uiTranNo);
                         //Log.d("tn_msgInput","video_R: msgHead.tn "  +  msgHead.uiTranNo);
                         //
-                    }else if (pChannel.uiType == CONST_channelType_realTimeMedia)
+                    }else if (pChannel.uiType == CONST_channelType_rtMedia)
                     {
                         //Log.d(Consts.AUDIO_DOWNLOAD,"0 receive audio data");
                     }
@@ -1718,7 +1718,7 @@ public class mcThread_io {
                         if (tmpiRet == CONST_qyRet_qFull) {
                             switch (pChannel.uiType) {
                                 case CONST_channelType_media:
-                                case CONST_channelType_realTimeMedia:
+                                case CONST_channelType_rtMedia:
                                     Log.d("postMsg2Mgr_mc returns qFull, skipped.");
                                     showInfo_open.qyFuncs.showInfo_open(("postMsg2Mgr_mc returns qFull, skipped."));
                                     continue;

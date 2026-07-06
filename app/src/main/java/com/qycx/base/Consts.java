@@ -122,7 +122,7 @@ public class Consts
     public final static int CONST_channelType_robot = 2;                    //  文件通道
     public final static int CONST_channelType_webSending = 3;               //  2007/12/12, wemQm  网页消息通道
     public final static int CONST_channelType_media = 4;                    //  2008/03/15        视频通道
-    public final static int CONST_channelType_realTimeMedia = 5;                   //  2008/04/17  音频通道
+    public final static int CONST_channelType_rtMedia = 5;                   //  2008/04/17  音频通道
     public final static int CONST_channelType_rtOp = 6;					//  2016/12/26     远程协助通道
 
     //

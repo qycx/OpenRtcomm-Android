@@ -19,7 +19,7 @@ public class isFunc {
                         new qyTypes.QY_DMITEM(CONST_channelType_robot, ("Robot")),
                         new qyTypes.QY_DMITEM(CONST_channelType_webSending, ("WebTalk")),
                         new qyTypes.QY_DMITEM(CONST_channelType_media, ("Video")),
-                        new qyTypes.QY_DMITEM(CONST_channelType_realTimeMedia, ("Audio")),
+                        new qyTypes.QY_DMITEM(CONST_channelType_rtMedia, ("Audio")),
                         new qyTypes.QY_DMITEM(CONST_channelType_rtOp, ("Op")),
                         new qyTypes.QY_DMITEM(-1),
                 };

@@ -170,7 +170,7 @@ public class findOrgMsgAndProcess_is {
                              //   EventBus.getDefault().post(new AudioOutBufSizeEvent(pTask.mixer.getSize(),1, Thread.currentThread().getId()));
                                 //Log.d(AUDIO_UPLOAD, " <stage2>  tmpHandler_findOrgMsgAndProcess_mis_procTaskAudioData pTask.mixer.pOutputQ2 size is " + pTask.mixer.getSize());
 
-                                qmCommFunc_mis.MIS_CHANNEL pChannel = getChannelByType(pMisCnt, CONST_channelType_realTimeMedia);
+                                qmCommFunc_mis.MIS_CHANNEL pChannel = getChannelByType(pMisCnt, CONST_channelType_rtMedia);
                                 qnmCommProc_mis.TRANSFER_AUDIO_DATA tad = (qnmCommProc_mis.TRANSFER_AUDIO_DATA) pMsgTask.data.buf;
                                 //
                                 if(false){
@@ -215,7 +215,7 @@ public class findOrgMsgAndProcess_is {
                                 if (null != pChannel) {
 
                                     //
-                                    chkToApplyForChannel(pProcInfo, pChannel, CONST_channelType_realTimeMedia);
+                                    chkToApplyForChannel(pProcInfo, pChannel, CONST_channelType_rtMedia);
 
                                     //
                                     if  (  pChannel.m_b_useQ2_toOutput) {
@@ -358,14 +358,14 @@ public class findOrgMsgAndProcess_is {
                                 q2PostMsg(pMsgTask, pTask.mixer.pOutputQ2,"find_procTaskAudioData.317");
 
                                 //
-                                qmCommFunc_mis.MIS_CHANNEL pChannel = getChannelByType(pMisCnt, CONST_channelType_realTimeMedia);
+                                qmCommFunc_mis.MIS_CHANNEL pChannel = getChannelByType(pMisCnt, CONST_channelType_rtMedia);
                                 if (null != pChannel) {
                                     if(pChannel.hThread_io == null)
                                     {
                                         startChannel(pProcInfo,pMisCnt,pChannel,"start audio Channel");
                                     }
                                     //
-                                    chkToApplyForChannel(pProcInfo, pChannel, CONST_channelType_realTimeMedia);
+                                    chkToApplyForChannel(pProcInfo, pChannel, CONST_channelType_rtMedia);
 
                                     //
                                     if  (  pChannel.m_b_useQ2_toOutput) {
@@ -571,7 +571,7 @@ public class findOrgMsgAndProcess_is {
                         //  Log.e(  (  "audio data sent by myself"  )  );
 //                        byte[] buf = pMsgInput.toByteArray();
                         //q2PostMsg(buf, buf.length, pTask.mixer.pOutputQ2);
-                        qmCommFunc_mis.MIS_CHANNEL pChannel = getChannelByType(pMisCnt, CONST_channelType_realTimeMedia);
+                        qmCommFunc_mis.MIS_CHANNEL pChannel = getChannelByType(pMisCnt, CONST_channelType_rtMedia);
                         if (pChannel != null) {
                             if  (  pChannel.m_b_useQ2_toOutput) {
                                 q2PostMsgAndTrigger(null, pChannel.outputQ21, "find_procInputAudioData.523");
@@ -771,7 +771,7 @@ public class findOrgMsgAndProcess_is {
                         //  Log.e(  (  "audio data sent by myself"  )  );
 
 //                        q2PostMsg(pMsgInput,  pTask.mixer.pOutputQ2);
-                        qmCommFunc_mis.MIS_CHANNEL pChannel = getChannelByType(pMisCnt, CONST_channelType_realTimeMedia);
+                        qmCommFunc_mis.MIS_CHANNEL pChannel = getChannelByType(pMisCnt, CONST_channelType_rtMedia);
                         if (null != pChannel) {
                             if  (  pChannel.m_b_useQ2_toOutput) {
                                 q2PostMsgAndTrigger(null, pChannel.outputQ21, "find_procInputAudioData.691");

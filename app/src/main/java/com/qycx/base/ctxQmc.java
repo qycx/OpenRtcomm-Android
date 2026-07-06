@@ -1684,7 +1684,7 @@ public class ctxQmc {
                 pMisCnt.channels[0].uiType = CONST_channelType_talking;
                 pMisCnt.channels[1].uiType = CONST_channelType_robot;
                 pMisCnt.channels[2].uiType = CONST_channelType_media;
-                pMisCnt.channels[3].uiType = CONST_channelType_realTimeMedia;
+                pMisCnt.channels[3].uiType = CONST_channelType_rtMedia;
                 pMisCnt.channels[4].uiType = CONST_channelType_rtOp;
 
                 pMisCnt.cfg.iObjQType = CONST_objQType_misClient;

@@ -18,7 +18,7 @@ public class parseCmdLine {
         }
 
         //
-        if  (  true  ) {
+        if  (  false  ) {
             pParams.bENABLE_MAP_TAB=true;
 
             //
@@ -39,6 +39,15 @@ public class parseCmdLine {
             if  (  false ) {
                 pParams.bTest_ancSndMarkToHg = true;
                 Log.d("qy","Note: parseCmdLine_qyMc: set bTest_andSndMarkToHg to true");
+            }
+            //
+            if  (  true  )  {
+                pParams.bDbg_traceRt_a_rec=true;
+                Log.d("at","Note: parseCmdLine_qyMc: set bDbg_traceRt_a_rec to true");
+                //
+                pParams.bDbg_traceRt_a_play=true;
+                Log.d("at","Note: parseCmdLine_qyMc: set bDbg_traceRt_a_play to true");
+
             }
 
 

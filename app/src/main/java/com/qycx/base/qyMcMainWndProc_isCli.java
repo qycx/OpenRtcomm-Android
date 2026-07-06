@@ -1,7 +1,7 @@
 package com.qycx.base;
 
 import static com.qycx.base.Consts.CONST_channelType_media;
-import static com.qycx.base.Consts.CONST_channelType_realTimeMedia;
+import static com.qycx.base.Consts.CONST_channelType_rtMedia;
 import static com.qycx.base.Consts.CONST_channelType_talking;
 import static com.qycx.base.QYThreadCtx.getCtxThreadTmpVar;
 import static com.qycx.base.ctxCaller.Consts.CONST_ctxCallerType_thread;
@@ -900,7 +900,7 @@ public class qyMcMainWndProc_isCli {
             if (!bChannelOk(channel,false)) {
                 str += (" v not ok");
             }
-            channel = getChannelByType(pMisCnt, CONST_channelType_realTimeMedia);
+            channel = getChannelByType(pMisCnt, CONST_channelType_rtMedia);
             if (!bChannelOk(channel,false)) {
                 str += (" a not ok");
             }

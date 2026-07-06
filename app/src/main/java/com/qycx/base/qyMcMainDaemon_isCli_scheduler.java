@@ -2,7 +2,7 @@
 package com.qycx.base;
 
 import static com.qycx.base.Consts.CONST_channelType_media;
-import static com.qycx.base.Consts.CONST_channelType_realTimeMedia;
+import static com.qycx.base.Consts.CONST_channelType_rtMedia;
 import static com.qycx.base.Consts.CONST_channelType_robot;
 import static com.qycx.base.Consts.CONST_channelType_talking;
 import static com.qycx.base.genericQueue.qyFuncs.isQEmpty;
@@ -1209,7 +1209,7 @@ public class qyMcMainDaemon_isCli_scheduler {
                 //
                 //
                 if  (  false  )  {
-                    if  (  pChannel.uiType==CONST_channelType_realTimeMedia
+                    if  (  pChannel.uiType==CONST_channelType_rtMedia
                             ||  pChannel.uiType==CONST_channelType_media)
                     {
                         String str;
@@ -1241,7 +1241,7 @@ public class qyMcMainDaemon_isCli_scheduler {
                         pProcInfo.status.netStat.uiInSpeedInKbps_v = pChannel.status.netStat.uiInSpeedInKbps;
                         pProcInfo.status.netStat.uiOutSpeedInKbps_v = pChannel.status.netStat.uiOutSpeedInKbps;
                         break;
-                    case CONST_channelType_realTimeMedia:
+                    case CONST_channelType_rtMedia:
                         pProcInfo.status.netStat.uiInSpeedInKbps_a = pChannel.status.netStat.uiInSpeedInKbps;
                         pProcInfo.status.netStat.uiOutSpeedInKbps_a = pChannel.status.netStat.uiOutSpeedInKbps;
                         break;

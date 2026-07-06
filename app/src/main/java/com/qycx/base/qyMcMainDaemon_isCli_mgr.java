@@ -972,7 +972,7 @@ public class qyMcMainDaemon_isCli_mgr {
                 case CONST_imCommType_transferAvReplyInfo: {
                     qnmCommProc_mis.TRANSFER_AV_replyInfo pReq = null;
                     //
-                    if (pChannel.uiType == CONST_channelType_realTimeMedia) {   //  realTimeMedia
+                    if (pChannel.uiType == CONST_channelType_rtMedia) {   //  realTimeMedia
                         //qyShowInfo1(CONST_qyShowType_qwmComm, 0, "", pProcInfo->who_showInfo, NULL, "", "", ("Error: %s ÊÕµ½ %I64u µÄ %s"), qyGetDesByType1(CONST_channelTypeTable, pChannel->uiType), pMsgInput->data.route.idInfo_from.ui64Id, qyGetDesByType1(getResTable(0,pQyMc->cusRes, CONST_resId_qyCommTypeTable), pContent.uiType));
                         return iErr;
                     }

@@ -384,7 +384,7 @@ public class ctxQyMc {
                 }
 
                 //
-                pQyMc.statusServInitVal  =  "192.168.1.106";
+                pQyMc.statusServInitVal  =  "192.168.1.15";
 
                 //
      //           String statusServer = sp.getString("statusServer", "10.0.10.84");

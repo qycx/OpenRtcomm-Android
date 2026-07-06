@@ -4,7 +4,7 @@ package com.qycx.base;
 
 import static com.qycx.base.Consts.AUDIO_DOWNLOAD;
 import static com.qycx.base.Consts.AUDIO_UPLOAD;
-import static com.qycx.base.Consts.CONST_channelType_realTimeMedia;
+import static com.qycx.base.Consts.CONST_channelType_rtMedia;
 import static com.qycx.base.Consts.VIDEO_DOWNLOAD;
 import static com.qycx.base.Consts.VIDEO_UPLOAD;
 import static com.qycx.base.genericQueue.qyFuncs.qGetMsg;
@@ -42,7 +42,7 @@ public class qyMcMainProc_isCli_realTimeMedia {
             qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo.pMisCnt;
 
             qyq2.QY_Q2 pTriggerQ = pProcInfo.realTimeMediaQ2;
-            int uiChannelType = CONST_channelType_realTimeMedia;
+            int uiChannelType = CONST_channelType_rtMedia;
 
             boolean bDbg = false;
             String str;

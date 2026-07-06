@@ -1,6 +1,6 @@
 package com.qycx.base;
 
-import static com.qycx.base.Consts.CONST_channelType_realTimeMedia;
+import static com.qycx.base.Consts.CONST_channelType_rtMedia;
 import static com.qycx.base.Consts.CONST_iParamType_encA;
 import static com.qycx.base.Consts.CONST_iParamType_playa;
 import static com.qycx.base.Consts.CONST_iParamType_encA;
@@ -343,7 +343,7 @@ public class qyMcMainMediaProc_encAudio {
             byte ucFlg = CONST_commFlg_routeTalkData;    //  0;
             int lenInBytes = 0;
             //
-            int uiChannelType = CONST_channelType_realTimeMedia;
+            int uiChannelType = CONST_channelType_rtMedia;
             boolean ucbNeedShowFrameInfo = false;
             int i;
             //  2010/09/04
@@ -491,6 +491,7 @@ public class qyMcMainMediaProc_encAudio {
                             if (null != pSharedObj && pSharedObj.var.iDiffInMs_tStartAudio != pCompressAudio.u_qoi.myQoi.common.var.iDiffInMs_tStartAudio)
                                 pSharedObj.var.iDiffInMs_tStartAudio = pCompressAudio.u_qoi.myQoi.common.var.iDiffInMs_tStartAudio;
 
+                            //
                             pReq.buf.position(0);
                             for (i = 0; i < CONST_maxTransferAvDataMems; i++) {
                                 //  2009/05/20
@@ -500,7 +501,7 @@ public class qyMcMainMediaProc_encAudio {
                                 }
                                 qnmCommProc_mis.TRANSFER_AUDIO_dataMemHead pMem = getMem.qyFuncs.getMem(pReq.mems, bufSize, i);
 
-//                            pReq.buf.position(pReq.uiLen);
+                                //  pReq.buf.position(pReq.uiLen);
                                 //这里获得压缩后的output数据
                                 //pf_qdcGetOutputByIndex在初始化的时候被赋值为qdcGetOutputByIndex_ffmpeg
                                 //内部调用TmpFfmpeg.dec_getOutputByIndex（Native方法）
@@ -538,15 +539,45 @@ public class qyMcMainMediaProc_encAudio {
                                 }
                                 else{
 
+                                    /*
                                     pMem.uiLen = bufSize_transferAudioData - pReq.uiLen;
                                     if (0 != pModule.pf_qdcGetOutputByIndex.call(pCompressAudio.u_qoi.myQoi.common, i, pReq.buf, pMem)) {
                                         break;
                                     }
 
+                                     */
+                                    // 临时Buffer从头开始写
+                                    pCompressAudio.bb_forEncOutput.clear();
+
+                                    // 告诉native最多可以写多少数据
+                                    pMem.uiLen = pCompressAudio.bb_forEncOutput.capacity();
+
+                                    if (0 != pModule.pf_qdcGetOutputByIndex.call(
+                                            pCompressAudio.u_qoi.myQoi.common,
+                                            i,
+                                            pCompressAudio.bb_forEncOutput,
+                                            pMem))
+                                    {
+                                        break;
+                                    }
+
+                                    // 检查目标buffer空间
+                                    if (pReq.buf.capacity() - pReq.uiLen < pMem.uiLen) {
+                                        Log.d("anc", "toShareAudio failed: no enough room");
+                                        break;
+                                    }
+
+                                    // 将临时Buffer中的数据拷贝到发送Buffer
+                                    pCompressAudio.bb_forEncOutput.position(0);
+                                    pCompressAudio.bb_forEncOutput.limit(pMem.uiLen);
+
+                                    pReq.buf.position(pReq.uiLen);
+                                    pReq.buf.put(pCompressAudio.bb_forEncOutput);
+
 
                                 }
 
-                                    //
+                                //
                                 pMem.uiSampleTimeInMs  =  iSampleTimeInMs;
 
                                 //
@@ -661,7 +692,8 @@ public class qyMcMainMediaProc_encAudio {
 
                     //
                     if (true) {
-                        if  (  false  ||  pProcInfo1.cfg.debugStatusInfo.b_print_test) {
+                        //
+                        if  (  pQyMc.appParams.bDbg_traceRt_a_rec  ) {
                             for (i = 0; i < pReq.usCnt; i++) {
                                 showInfo_open.qyFuncs.showInfo_open(0, "", "toShareAudio: mem"  + i  +  " pts " + pReq.mems[i].uiPts  +  " len "  +  pReq.mems[i].uiLen);
                             }
@@ -740,11 +772,11 @@ public class qyMcMainMediaProc_encAudio {
                                         }
 
                                         //
-                                        qmCommFunc_mis.MIS_CHANNEL pChannel  =  getChannelByType(pMisCnt,CONST_channelType_realTimeMedia);
+                                        qmCommFunc_mis.MIS_CHANNEL pChannel  =  getChannelByType(pMisCnt,CONST_channelType_rtMedia);
                                         if (null != pChannel) {
 
                                             //
-                                            chkToApplyForChannel(pProcInfo1, pChannel, CONST_channelType_realTimeMedia);
+                                            chkToApplyForChannel(pProcInfo1, pChannel, CONST_channelType_rtMedia);
 
                                             //
                                             if  (  pChannel.m_b_useQ2_toOutput) {

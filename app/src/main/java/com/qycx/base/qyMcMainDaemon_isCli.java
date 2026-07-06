@@ -4,7 +4,7 @@
 package com.qycx.base;
 
 import static com.qycx.base.Consts.CONST_channelType_media;
-import static com.qycx.base.Consts.CONST_channelType_realTimeMedia;
+import static com.qycx.base.Consts.CONST_channelType_rtMedia;
 import static com.qycx.base.Consts.CONST_channelType_robot;
 import static com.qycx.base.Consts.CONST_channelType_rtOp;
 import static com.qycx.base.Consts.CONST_channelType_talking;
@@ -918,7 +918,7 @@ public class qyMcMainDaemon_isCli {
                     bTalkReady = true;
                 if (bChannelOk(getChannelByType(pMisCnt, CONST_channelType_media),false))
                     bMediaReady = true;
-                if (bChannelOk(getChannelByType(pMisCnt, CONST_channelType_realTimeMedia),false))
+                if (bChannelOk(getChannelByType(pMisCnt, CONST_channelType_rtMedia),false))
                     bRtMediaReady = true;
                 if (bChannelOk(getChannelByType(pMisCnt, CONST_channelType_robot),false))
                     bRobotReady = true;
@@ -964,6 +964,8 @@ public class qyMcMainDaemon_isCli {
             return bRet;
         }
 
+
+        //
         public static int postMsg2OutputQ_mc(qmCommFunc_mis.MIS_CNT pMisCnt, qnmCommProc_mis.MIS_MSGU pMsg, int msgLen, qmCommFunc_mis.MIS_CHANNEL pChannel) {
             int iErr = -1;
 
@@ -992,7 +994,7 @@ public class qyMcMainDaemon_isCli {
                         //
                         switch (pChannel.uiType) {
                             case CONST_channelType_media:
-                            case CONST_channelType_realTimeMedia:
+                            case CONST_channelType_rtMedia:
                                 emptyQ2(pChannel.outputQ21);
                                 break;
                             default:
@@ -1016,6 +1018,13 @@ public class qyMcMainDaemon_isCli {
                   if  (  head.uiTranNo  ==  543)  {
                       Log.d("qy", "debug here");
                   }
+                  if  (  pChannel.uiType==CONST_channelType_rtMedia)  {
+                      //Log.d("at","kkkk");
+                  }
+
+
+                  //
+                  //
                   //
                 pChannel.outputQBuf2.q2PostMsgAndTrigger(head,pMsg.buffer.array(),0,head.dataLen,"postMsg2OutputQ_mc.899");
             }
@@ -1051,7 +1060,7 @@ public class qyMcMainDaemon_isCli {
                     } else {
                         switch (pChannel.uiType) {
                             case CONST_channelType_media:
-                            case CONST_channelType_realTimeMedia:
+                            case CONST_channelType_rtMedia:
                                 emptyQ2(pChannel.outputQ21);
                                 break;
                             default:

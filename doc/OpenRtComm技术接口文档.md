@@ -29,7 +29,7 @@
 
 #define CONST_channelType_media 4 //  视频信息通道，数据量超大，实时性要求极高
 
-#define CONST_channelType_realTimeMedia 5 //  音频信息通道，数据量大，实时性要求极高
+#define CONST_channelType_rtMedia 5 //  音频信息通道，数据量大，实时性要求极高
 ```
 
 ### 2.3 按打包后通信分类（把上面内容打包到通信结构中了）：
@@ -126,7 +126,7 @@ pChannel->uiType,  pMsgBuf,  FALSE  )  )  ) 
 
         switch  (  pChannel->uiType  )  {
             case  CONST_channelType_media:
-            case  CONST_channelType_realTimeMedia:
+            case  CONST_channelType_rtMedia:
     qyShowInfo1(  CONST_qyShowType_qwmComm,  0,  (  ""  ),  
 pProcInfo->who_showInfo,  0,  where_showInfo,  _T(  ""  ),  _T(  
 "postMsg2Mgr_mc returns qFull, skipped."  )  );    
@@ -156,7 +156,7 @@ DWORD WINAPI mcThreadProc_mis_toSend( LPVOID lpParameter )函数完成的数据�
 怎么取得audio数据（realTimeMedia）？
 
 ```
-  if  (  pChannel->uiType  ==  CONST_channelType_realTimeMedia  )  {
+  if  (  pChannel->uiType  ==  CONST_channelType_rtMedia  )  {
   tmpiRet  =  pProcInfo->processQ_media.qTraverse(tmpHandler_toSendMedia,
     &commonParam0,  &commonParam1  );
 ```
@@ -196,7 +196,7 @@ QMC_TASK_INFO， 是放在processQ_meida 队列外面的；别的程序可以从
 ##### 第2）如何区分 音频数据还是视频数据。
 
 ```
-pChannel->uiType  ==  CONST_channelType_realTimeMedia; //这是音频数据；
+pChannel->uiType  ==  CONST_channelType_rtMedia; //这是音频数据；
 pChannel->uiType  ==  CONST_channelType_media;         //这是视频数据；
 ```
 

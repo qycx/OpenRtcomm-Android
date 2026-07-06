@@ -5,6 +5,7 @@ package com.qycx.base;
 
 import static com.qycx.base.qmcSharedObj.Consts.MAX_sharedObjUsrs;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 
@@ -306,6 +307,11 @@ public class qmcSharedObj {
 
         //
         public byte[] buff_forEncOutput=new byte[128000];
+
+        //
+        // 初始化时创建一次
+        public ByteBuffer bb_forEncOutput = ByteBuffer.allocateDirect(128000);
+
 
         //
         public qnmCommProc_mis.TRANSFER_AUDIO_DATA pReqCache = new qnmCommProc_mis.TRANSFER_AUDIO_DATA();                                                 //  2008/05/25

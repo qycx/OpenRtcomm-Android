@@ -42,7 +42,7 @@ import java.nio.ByteBuffer;
 public class qyShowInfoCommProc {
 
     public static class Consts {
-        public final static int DEFAULT_qyPort_showInfo = 8763;//8765;
+        public final static int DEFAULT_qyPort_showInfo = 8762;//8765;
     }
 
     public interface PF_qyShowInfo0 { int call(long pShowStructParam, long pReserved);

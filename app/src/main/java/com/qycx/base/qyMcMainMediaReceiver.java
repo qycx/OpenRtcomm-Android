@@ -284,6 +284,14 @@ public class qyMcMainMediaReceiver {
             }
 
             //
+            if  (  pQyMc.appParams.bDbg_traceRt_a_play)  {
+                String str;
+                str = "playAudio"  +  " pts "  +  uiPts  +  " len "  +  inputLen;
+                showInfo_open.qyFuncs.showInfo_open(0,0,"",str);
+            }
+
+
+            //
             byte []tmp_buf = pInput;
             TmpJniUtil.playAudioData(iSampleTimeInMs,uiPts,tmp_buf,inputLen,iIndex_player);
 

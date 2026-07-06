@@ -62,6 +62,8 @@ public class mcThread_toSend {
 
             qnmCommProc_mis.MIS_MSG_TASK pMsgTask_o = (qnmCommProc_mis.MIS_MSG_TASK) pTranInfo.pMsg_o;
 
+
+            //
             int lenInBytes = 0;
 
             if (null == pProcInfo || null == pMisCnt || null == pChannel || null == pMsgTask_o) {
@@ -70,14 +72,22 @@ public class mcThread_toSend {
                 showInfo_open.qyFuncs.showInfo_open(0, null,str);
                 return -1;
             }
+            //
+            ctxQyMc.CCtxQyMc  pQyMc = pProcInfo.pQyMc;
+            if  (  pQyMc==null)  {
+                Log.e("at","th_toSend: pQyMc is null");
+                return  -1;
+            }
 
-            if (pChannel.uiType == CONST_channelType_realTimeMedia) {
+            //
+            if (pChannel.uiType == CONST_channelType_rtMedia) {
                 //Log.d(AUDIO_UPLOAD, "<stage2.9> tmpHandler_toSend enter" + Thread.currentThread().getName());
             }
             if (pChannel.uiType == CONST_channelType_media) {
                 //Log.d(VIDEO_UPLOAD, "<stage2.9> tmpHandler_toSend enter" + Thread.currentThread().getName());
             }
 
+            //
             switch (((qnmCommProc_mis.MIS_MSGU) pMsgElemParam).uiType) {
                 case CONST_misMsgType_task:
                 case CONST_misMsgType_outputTask: {
@@ -139,18 +149,50 @@ public class mcThread_toSend {
                     }
 
                     //
-                    if  (  false) {
-                        if (pChannel.uiType == CONST_channelType_realTimeMedia && pMsgElem.data.buf.uiType == CONST_imCommType_transferAudioData) {
+                    if  (  true ) {
 
-                            qnmCommProc_mis.TRANSFER_AUDIO_DATA tad = (qnmCommProc_mis.TRANSFER_AUDIO_DATA) pMsgElem.data.buf;
-                            byte[] b = tad.buf.array();
-                            String fn = "toSend.mp3";
-                            //GuiShare.pf_dumpData1.call(0, 0, 0, 0, false, false, fn);
-                            guiShare.GuiShare.pf_dumpData1.call(b, (int) tad.uiLen, 0, 0, true, false, fn);
+                        //
+                        if (pChannel.uiType == CONST_channelType_rtMedia && pMsgElem.data.buf.uiType == CONST_imCommType_transferAudioData) {
+
+                            //
+                            if  ( pQyMc.appParams.bDbg_traceRt_a_rec ) {
+
+                                qnmCommProc_mis.TRANSFER_AUDIO_DATA tad = (qnmCommProc_mis.TRANSFER_AUDIO_DATA) pMsgElem.data.buf;
+                                //
+                                String str;
+                                str = "th_toSend: tn " + pMsgTask_o.uiTranNo + " tad";
+                                //
+                                if (tad.usCnt == 0) {
+                                    Log.d("at", "err: tad.cnt is 0");
+                                } else {
+                                    int i;
+                                    for (i = 0; i < tad.usCnt; i++) {
+                                        str += " pts " + tad.mems[i].uiPts;
+                                    }
+                                }
+                                //
+                                str += " oQBuf2_local_a.nQNodes " + pProcInfo.pOutputQBuf2_local_a.size();
+                                //
+                                showInfo_open.qyFuncs.showInfo_open(0, 0, "", str);
+
+                                //
+                                if (false) {
+                                    byte[] b = tad.buf.array();
+                                    String fn = "toSend.mp3";
+                                    //GuiShare.pf_dumpData1.call(0, 0, 0, 0, false, false, fn);
+                                    guiShare.GuiShare.pf_dumpData1.call(b, (int) tad.uiLen, 0, 0, true, false, fn);
+                                }
+
+                            }
 
                         }
                     }
 
+
+
+
+
+                    //
                     //pMsgTask_o.buffer = ByteBuffer.allocate(bufSize_transferVideoData);
                     if (0 > (lenInBytes = qyhtonRouteTalkData(tmpVar, pMsgElem.data.route, pMsgElem.data.buf, 0, true, pMsgElem.ucFlg, pMsgTask_o.buffer, null, 0))) {
                         Log.e("tmpHandler_toSend failed: htonRouteTalkData failed");
@@ -164,7 +206,7 @@ public class mcThread_toSend {
                         //
                         Log.d("anc","for test....");
                         //
-                        if (pChannel.uiType == CONST_channelType_realTimeMedia && pMsgElem.data.buf.uiType == CONST_ancCommType_transferAudioData) {
+                        if (pChannel.uiType == CONST_channelType_rtMedia && pMsgElem.data.buf.uiType == CONST_ancCommType_transferAudioData) {
                             //
                             //pMsgTask_o.uiTranNo  =  933;
                             Log.d("anc","for test. set tn to 933");
@@ -173,7 +215,7 @@ public class mcThread_toSend {
                         //qnmCommProc_mis.MSG_ROUTE tmp_route=new qnmCommProc_mis.MSG_ROUTE();
                         //qnmCommProc_mis.IM_CONTENTU tmp_pContent  =  qyntohRouteTalkData(pMsgTask_o.ucFlg,pMsgTask_o.buffer,pMsgTask_o.lenInBytes,tmp_route,"",0);
                         //
-                        if (pChannel.uiType == CONST_channelType_realTimeMedia && pMsgElem.data.buf.uiType == CONST_ancCommType_transferAudioData) {
+                        if (pChannel.uiType == CONST_channelType_rtMedia && pMsgElem.data.buf.uiType == CONST_ancCommType_transferAudioData) {
                             //
                             Log.d("anc","mmmmm");
                         }
@@ -967,7 +1009,7 @@ public class mcThread_toSend {
 
             qyDefs.COMMON_PARAM commonParam0 = new qyDefs.COMMON_PARAM();
             int tmpiRet = -1;
-            if (pChannel.uiType == CONST_channelType_realTimeMedia) {
+            if (pChannel.uiType == CONST_channelType_rtMedia) {
                 //Log.d(AUDIO_UPLOAD, "<stage2.4> enter tmpHandler_toSendMedia > uiType:" + pMsgMixer.uiType + " name:" + Thread.currentThread().getName());
             }
             if (pChannel.uiType == CONST_channelType_media) {
@@ -992,7 +1034,7 @@ public class mcThread_toSend {
                         qnmCommProc_mis.MIS_MSG_TASK pMsgElem = (qnmCommProc_mis.MIS_MSG_TASK) pMsgElemParam;
                         qnmCommProc_mis.IM_CONTENTU pContentElem = pMsgElem.data.buf;
                         {
-                            if (pChannel.uiType == CONST_channelType_realTimeMedia) {
+                            if (pChannel.uiType == CONST_channelType_rtMedia) {
                                 qnmCommProc_mis.AV_TRAN_INFO pAvTranInfo = null;
                                 qnmCommProc_mis.AV_TRAN_INFO tmp_avTranInfo;
                                 taskAv.PROC_TASK_AV pTask = null;
@@ -1379,13 +1421,13 @@ public class mcThread_toSend {
                 if (null == pChannel) {
                     return;
                 }
-                if(pChannel.uiType == CONST_channelType_realTimeMedia){
+                if(pChannel.uiType == CONST_channelType_rtMedia){
                 }
 
                 if(pChannel.uiType == CONST_channelType_media){
                     Log.d(VIDEO_UPLOAD, "<stage0> mcThreadProc_mis_toSend enter.");
                 }
-                if(pChannel.uiType == CONST_channelType_realTimeMedia){
+                if(pChannel.uiType == CONST_channelType_rtMedia){
                     Log.d(AUDIO_UPLOAD, "<stage0> mcThreadProc_mis_toSend enter.");
                 }
 
@@ -1422,7 +1464,7 @@ public class mcThread_toSend {
                 showInfo_open.qyFuncs.showInfo_open(0, where_showInfo, ("starts"));
                 pMsg_o = new qnmCommProc_mis.MIS_MSG_TASK();
                 switch (pChannel.uiType) {
-                    case CONST_channelType_realTimeMedia:
+                    case CONST_channelType_rtMedia:
                         pMsgMixer = new qnmCommProc_mis.MIS_MSG_TASK();
                         //pMsgMixer.uiType = CONST_misMsgType_task;
                         qnmCommProc_mis.TRANSFER_AUDIO_DATA transferAudioData = new qnmCommProc_mis.TRANSFER_AUDIO_DATA();
@@ -1493,7 +1535,7 @@ public class mcThread_toSend {
                     myWaitOne(pChannel.toSendQ2.hEvent0, 3500);
 
                     //
-                    if(pChannel.uiType == CONST_channelType_realTimeMedia){
+                    if(pChannel.uiType == CONST_channelType_rtMedia){
                         //Log.d(AUDIO_UPLOAD, "<stage2.5> mcThreadProc_mis_toSend run. uiType:" + pMsgMixer.uiType);
                         test.testCls_Droid.testBreak();
                     }
@@ -1533,7 +1575,7 @@ public class mcThread_toSend {
 
                     //
                     if (q2NodesToPostMsg > 40) { //这个地方属于硬编码,实际上是有问题的！
-                        if(pChannel.uiType == CONST_channelType_realTimeMedia) {
+                        if(pChannel.uiType == CONST_channelType_rtMedia) {
                             Log.e(AUDIO_UPLOAD, "<stage2.52>: hardcore q2NodesToPostMsg size is-> " + q2NodesToPostMsg);
                         }
                         else if(pChannel.uiType == CONST_channelType_media) {
@@ -1571,7 +1613,7 @@ public class mcThread_toSend {
                     MACRO_makeCommonParam3(pProcInfo, pMisCnt, pChannel, commonParam0);
                     MACRO_makeCommonParam3(tranInfo, pMsgMixer, tmpVar, commonParam1);
 
-                    if (pChannel.uiType == CONST_channelType_realTimeMedia) {
+                    if (pChannel.uiType == CONST_channelType_rtMedia) {
                         //
                         //showInfo_open.qyFuncs.showInfo_open(0, where_showInfo, "before traverse");
                         //
@@ -1695,7 +1737,7 @@ public class mcThread_toSend {
                 }
 
                 //
-                if(pChannel.uiType == CONST_channelType_realTimeMedia){
+                if(pChannel.uiType == CONST_channelType_rtMedia){
                     Log.d("anc", "audio: mcThreadProc_mis_toSend exit.");
                 }
 

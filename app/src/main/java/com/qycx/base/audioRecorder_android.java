@@ -2,7 +2,7 @@ package com.qycx.base;
 
 import static com.qycx.base.Consts.AUDIO_UPLOAD;
 import static com.qycx.base.Consts.CONST_channelType_media;
-import static com.qycx.base.Consts.CONST_channelType_realTimeMedia;
+import static com.qycx.base.Consts.CONST_channelType_rtMedia;
 import static com.qycx.base.ctxQmcTmpl.Consts.CONST_fn_dump_pcm_enc;
 import static com.qycx.base.policyIsClientFunc.qyFuncs_Droid.MACRO_getuiBytesRecorded_perBlockAlign;
 import static com.qycx.base.qmCommonFunc_mis.Consts.CONST_uiMaxQNodes_outputQ_toMix_audio;

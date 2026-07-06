@@ -52,7 +52,7 @@ public class qnmMainFunc_isCli {
                 Log.d("channelLog err",log);
                 return;
             }
-            if (pChannel.uiType != CONST_channelType_media && pChannel.uiType != CONST_channelType_realTimeMedia) {
+            if (pChannel.uiType != CONST_channelType_media && pChannel.uiType != CONST_channelType_rtMedia) {
                 return;
             }
 
@@ -266,7 +266,7 @@ public class qnmMainFunc_isCli {
                     pQ2 = pProcInfo.mediaQ2;
                     break;
 
-                case CONST_channelType_realTimeMedia:
+                case CONST_channelType_rtMedia:
                     bChannelReady = pProcInfo.av.audio.bChannelReady;
                     pQ2 = pProcInfo.realTimeMediaQ2;
                     break;

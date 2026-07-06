@@ -6,7 +6,7 @@ package com.qycx.base;
 import static com.qycx.base.Consts.AUDIO_DOWNLOAD;
 import static com.qycx.base.Consts.AUDIO_UPLOAD;
 import static com.qycx.base.Consts.CONST_channelType_media;
-import static com.qycx.base.Consts.CONST_channelType_realTimeMedia;
+import static com.qycx.base.Consts.CONST_channelType_rtMedia;
 import static com.qycx.base.Consts.CONST_channelType_rtOp;
 import static com.qycx.base.Consts.VIDEO_DOWNLOAD;
 import static com.qycx.base.Consts.VIDEO_UPLOAD;
@@ -94,7 +94,7 @@ public class qisChannel {
                 //
                 switch (pChannel.uiType) {                   //  2008/05/14. 对实时数据来说，最重要是当前数据。为了避免未发出的数据积累，先在这里清除了。
                     case CONST_channelType_media:
-                    case CONST_channelType_realTimeMedia:
+                    case CONST_channelType_rtMedia:
                     case CONST_channelType_rtOp:
                         emptyQ2(pChannel.toSendQ2);
                         if  (  pChannel.m_b_useQ2_toOutput) {

@@ -414,11 +414,11 @@ public class qyMcMainMediaProc_decVideo_rtsp {
                 //
 //                ppInput = encData;
                 //  2015/01/28
-                if (0 != param.uiSampleTimeInMs) {
+                if (0 == param.uiSampleTimeInMs) {
                     param.uiSampleTimeInMs = pMem.uiSampleTimeInMs;
                 }
                 //  2015/02/09
-                if (0 != param.uiPts) {
+                if (0 == param.uiPts) {
                     param.uiPts = pMem.uiPts;
                 }
 

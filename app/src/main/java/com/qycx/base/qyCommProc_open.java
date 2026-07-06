@@ -394,7 +394,10 @@ public class qyCommProc_open {
     }
 
     public static class DecReadSampleDataParams {
+        //
         public long presentationTimeUs;
+        //
+        public int uiPts;
     }
 
     public static class dec_parseEncVPkt_i_useVideoQ2_params {

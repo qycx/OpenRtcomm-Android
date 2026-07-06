@@ -298,7 +298,11 @@ public class decObj_a_mediaCodec extends DecMediaCodecCommon {
             }
 
             chunkSize = (int) readNextFrameFucParams.nBytesRead;
+            //
             decReadSampleDataParams.presentationTimeUs = readNextFrameFucParams.uiSampleTimeInMs * 1000L;
+            //
+            decReadSampleDataParams.uiPts  =  readNextFrameFucParams.uiPts;
+
         }
 
         return chunkSize;
@@ -318,7 +322,7 @@ public class decObj_a_mediaCodec extends DecMediaCodecCommon {
     }
 
     //
-    static int dec_putPcmData(decObj_a_mediaCodec dm, byte[] pcm, int iSampleTimeInMs) {
+    static int dec_putPcmData(decObj_a_mediaCodec dm, byte[] pcm, int uiPts, int iSampleTimeInMs) {
         //
         //Log.d(Consts.AUDIO_DOWNLOAD,"4.85 dec_putPcmData enter");
         //
@@ -339,6 +343,8 @@ public class decObj_a_mediaCodec extends DecMediaCodecCommon {
 
         pPkt_dec.head.idInfo.ui64Id = pTransform.audio.idInfo.ui64Id;
         pPkt_dec.head.uiTranNo_openAvDev = pTransform.audio.ta.uiTranNo_openAvDev;
+        //
+        pPkt_dec.head.uiPts=uiPts;
 
         //
         int nAvgBytes = 16000 * 2 * 1;
@@ -412,6 +418,7 @@ public class decObj_a_mediaCodec extends DecMediaCodecCommon {
         int decodeCount = 0;
         long frameSaveTime = 0;
 
+        //
         boolean outputDone = false;
         boolean inputDone = false;
         while (!outputDone) {
@@ -423,6 +430,9 @@ public class decObj_a_mediaCodec extends DecMediaCodecCommon {
                 com.qycx.base.util.Log.e("inputDone, break");
                 break;
             }
+
+            //
+            int uiPts;  uiPts = 0;
 
             // Feed more data to the decoder.
             if (!inputDone) {
@@ -437,6 +447,8 @@ public class decObj_a_mediaCodec extends DecMediaCodecCommon {
 //                    long presentationTimeUs = 0;
                     qyCommProc_open.DecReadSampleDataParams decReadSampleDataParams = new qyCommProc_open.DecReadSampleDataParams();
                     chunkSize = dec_ReadSampleData(dm, inputBuf, 0, decReadSampleDataParams);
+                    //
+                    uiPts =  decReadSampleDataParams.uiPts;
                     //
                     //Log.d(Consts.AUDIO_DOWNLOAD,"4.7 audio decoding...");
                     if (chunkSize < 0) {
@@ -511,7 +523,7 @@ public class decObj_a_mediaCodec extends DecMediaCodecCommon {
                             Log.d("anc","dec_a_mediaCodec: index "  +  decoderStatus  +  ": iSampleTimeInMs "  +  iSampleInMs);
                         }
                         //
-                        dec_putPcmData(dm, chunkPcm, iSampleInMs);
+                        dec_putPcmData(dm, chunkPcm, uiPts,iSampleInMs);
                     }
                     // As soon as we call releaseOutputBuffer, the buffer will be forwarded
                     // to SurfaceTexture to convert to a texture.  The API doesn't guarantee
