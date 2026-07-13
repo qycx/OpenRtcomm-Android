@@ -21,7 +21,7 @@
             android:id="@+id/tvMapLocKeywordDialogTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="口令"
+            android:text="地图口令"
             android:textColor="@color/white"
             android:textSize="17sp"
             android:textStyle="bold" />
@@ -32,7 +32,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:color/transparent"
-        android:hint="请输入口令"
+        android:hint="请输入地图口令"
         android:inputType="textPassword"
         android:minHeight="52dp"
         android:paddingStart="16dp"

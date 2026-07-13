@@ -1889,6 +1889,8 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         if (!isAdded() || bottomMenu == null || topMenu == null) {
             return;
         }
+        // 分屏/全屏与浮窗之间切换时，中控按钮在标题栏与右侧菜单之间迁移
+        confMem_list_btn_update();
         updateAvTopMenuOverlayVisibility();
         if (useMenuAlwaysDocked()) {
             applyDockedMenuBars();
@@ -3541,6 +3543,22 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         return  0;
     }
 
+    /** 浮窗/分屏/全屏时中控按钮移到浮窗外壳标题栏左侧，由 MainActivity 承载。 */
+    private MainActivity getTitleBarConfMemHost() {
+        Activity activity = getActivity();
+        if (activity instanceof MainActivity
+                && ((MainActivity) activity).useTitleBarConfMemBtn()) {
+            return (MainActivity) activity;
+        }
+        return null;
+    }
+
+    /** 标题栏中控按钮点击入口，功能与右侧菜单中控按钮一致。 */
+    public void onTitleBarConfMemBtnClick() {
+        Log.d("anc","titleBar confMem btn clicked");
+        toggleConfMemList();
+    }
+
     //
     int confMem_list_btn_update()
     {
@@ -3548,23 +3566,44 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         ctxQmc.CCtxQmc pProcInfo  =  (ctxQmc.CCtxQmc )pQyMc.get_pProcInfo();
         qmCommFunc_mis.MIS_CNT pMisCnt  =  pProcInfo.pMisCnt;
 
+        MainActivity titleBarHost = getTitleBarConfMemHost();
+
         CIsTalker talker = findIsTalker(pProcInfo.pMisCnt,talker_ui64Id);
-        if  (  talker == null )  return -1;
+        if  (  talker == null )  {
+            if  (  titleBarHost != null )  {
+                titleBarHost.setTitleBarConfMemBtnVisible(false);
+            }
+            return -1;
+        }
         dlgTalkProc.DLG_TALK_var m_var = talker.m_var;
 
         //
-        if  (  !m_var.av.taskInfo.bTaskExists)  return  -1;
-
-        //  对非应急指挥，或者非主持人。confMem_list_btn暂时隐藏
-        if  (  !dlgTalk_bConfCompere(m_var.addr.idInfo.ui64Id,pMisCnt.idInfo.ui64Id)
-                ||  m_var.av.taskInfo.usConfType!=CONST_usConfType_emergencyCommand  )
-        {
-            m_confMem_list_btn.setVisibility(View.GONE);
+        if  (  !m_var.av.taskInfo.bTaskExists)  {
+            if  (  titleBarHost != null )  {
+                titleBarHost.setTitleBarConfMemBtnVisible(false);
+            }
             return  -1;
         }
 
-        //  有列表了也不显示
-        if  (  m_isListVisible) {
+        //  对非应急指挥，或者非主持人。confMem_list_btn暂时隐藏
+        //  有列表时也不显示
+        boolean bShow  =  dlgTalk_bConfCompere(m_var.addr.idInfo.ui64Id,pMisCnt.idInfo.ui64Id)
+                &&  m_var.av.taskInfo.usConfType==CONST_usConfType_emergencyCommand
+                &&  !m_isListVisible;
+
+        //  浮窗/分屏/全屏：中控放到标题栏左侧，右侧菜单里的原按钮隐藏
+        if  (  titleBarHost != null )  {
+            m_confMem_list_btn.setVisibility(View.GONE);
+            titleBarHost.setTitleBarConfMemBtnVisible(bShow);
+            return  bShow  ?  0  :  -1;
+        }
+        Activity activity = getActivity();
+        if  (  activity instanceof MainActivity )  {
+            ((MainActivity) activity).setTitleBarConfMemBtnVisible(false);
+        }
+
+        //
+        if  (  !bShow )  {
             m_confMem_list_btn.setVisibility(View.GONE);
             return  -1;
         }

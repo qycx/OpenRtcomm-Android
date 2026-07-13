@@ -125,7 +125,7 @@ public class Fragment_me extends Fragment {
 
         view.findViewById(R.id.rowChangeLocKeyword).setOnClickListener(v -> {
             if (!MapLocSettings.isEncryptionEnabled()) {
-                ToastUtils.showToast("请先开启口令");
+                ToastUtils.showToast("请先开启地图口令");
                 return;
             }
             if (getActivity() instanceof MainActivity) {
@@ -195,7 +195,7 @@ public class Fragment_me extends Fragment {
                     main.requestMapLocKeywordIfNeeded();
                 }
             }
-            ToastUtils.showToast(isChecked ? "口令已开启" : "口令已关闭");
+            ToastUtils.showToast(isChecked ? "地图口令已开启" : "地图口令已关闭");
         });
 
         updateActiveGroupDisplay();

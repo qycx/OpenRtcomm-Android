@@ -18,7 +18,7 @@ public class parseCmdLine {
         }
 
         //
-        if  (  false  ) {
+        if  (  true  ) {
             pParams.bENABLE_MAP_TAB=true;
 
             //

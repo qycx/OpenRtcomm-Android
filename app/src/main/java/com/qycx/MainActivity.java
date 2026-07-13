@@ -1662,6 +1662,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     private TextView m_btnFloatingAvFloat;
     private TextView m_btnFloatingAvSplit;
     private TextView m_btnFloatingAvFull;
+    private TextView m_btnFloatingAvConfMem;
     //
     private float fv_lastX, fv_lastY;
     private float fv_downX, fv_downY;
@@ -2016,6 +2017,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         m_btnFloatingAvFloat = findViewById(R.id.btn_floating_av_float);
         m_btnFloatingAvSplit = findViewById(R.id.btn_floating_av_split);
         m_btnFloatingAvFull = findViewById(R.id.btn_floating_av_full);
+        m_btnFloatingAvConfMem = findViewById(R.id.btn_floating_av_confmem);
         TextView btnClose = findViewById(R.id.btn_floating_av_close);
         if (m_floatingAvShell != null) {
             m_floatingAvShell.setVisibility(View.GONE);
@@ -2044,8 +2046,31 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         if (btnClose != null) {
             btnClose.setOnClickListener(v -> closeFloatingView());
         }
+        if (m_btnFloatingAvConfMem != null) {
+            m_btnFloatingAvConfMem.setOnClickListener(v -> {
+                if (m_floatingView_fg instanceof Fragment_dlgTalk_av2) {
+                    Fragment_dlgTalk_av2 fg = (Fragment_dlgTalk_av2) m_floatingView_fg;
+                    if (fg.isAdded()) {
+                        fg.onTitleBarConfMemBtnClick();
+                    }
+                }
+            });
+        }
         initLandscapeSplitDivider();
         initPortraitSplitDivider();
+    }
+
+    /** 浮窗/分屏/全屏时中控按钮放在标题栏左侧；是否可见由 Fragment 按主持人/会议类型等条件驱动。 */
+    public boolean useTitleBarConfMemBtn() {
+        return m_floatingView_fg != null;
+    }
+
+    public void setTitleBarConfMemBtnVisible(boolean visible) {
+        if (m_btnFloatingAvConfMem == null) {
+            return;
+        }
+        m_btnFloatingAvConfMem.setVisibility(
+                visible && useTitleBarConfMemBtn() ? View.VISIBLE : View.GONE);
     }
 
     private int clampPortraitSplitVideoHeightPx(int embeddedContentH, int requestedH) {
@@ -2719,6 +2744,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     private void restoreMainContentAfterFloatingAv() {
         floatingAvUserMode = FLOATING_AV_MODE_FLOAT;
         floatingAvDisplayMode = FLOATING_AV_MODE_FLOAT;
+        setTitleBarConfMemBtnVisible(false);
         clearFloatingAvShellSystemInsets();
         setMainTabBarVisible(true);
         if (m_floatingAvShell != null && vPager != null) {
@@ -2856,6 +2882,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         if (m_btnFloatingAvFloat != null) m_btnFloatingAvFloat.setOnTouchListener(dragTouchListener);
         if (m_btnFloatingAvSplit != null) m_btnFloatingAvSplit.setOnTouchListener(dragTouchListener);
         if (m_btnFloatingAvFull != null) m_btnFloatingAvFull.setOnTouchListener(dragTouchListener);
+        if (m_btnFloatingAvConfMem != null) m_btnFloatingAvConfMem.setOnTouchListener(dragTouchListener);
         View btnClose = findViewById(R.id.btn_floating_av_close);
         if (btnClose != null) btnClose.setOnTouchListener(dragTouchListener);
     }
@@ -2931,14 +2958,14 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         btnConfirm.setOnClickListener(v -> {
             String kw = input.getText() != null ? input.getText().toString().trim() : "";
             if (kw.isEmpty()) {
-                Toast.makeText(this, "未输入口令", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "未输入地图口令", Toast.LENGTH_SHORT).show();
                 clearMapLocKeywordAndRemoteLocations();
                 dialog.dismiss();
                 return;
             }
             MapLocKeyword.setUserKeyword(kw);
             if (!MapLocStrCrypto.verifyRoundTrip(kw)) {
-                Toast.makeText(this, "口令校验失败，请重新输入", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "地图口令校验失败，请重新输入", Toast.LENGTH_SHORT).show();
                 clearMapLocKeywordAndRemoteLocations();
                 dialog.dismiss();
                 return;
@@ -2955,7 +2982,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             return;
         }
         if (!MapLocSettings.isEncryptionEnabled()) {
-            Toast.makeText(this, "请先开启口令", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请先开启地图口令", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -3002,12 +3029,12 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         btnConfirm.setOnClickListener(v -> {
             String kw = inputNew.getText() != null ? inputNew.getText().toString().trim() : "";
             if (kw.isEmpty()) {
-                Toast.makeText(this, "未输入新口令", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "未输入新地图口令", Toast.LENGTH_SHORT).show();
                 return;
             }
             MapLocKeyword.setUserKeyword(kw);
             if (!MapLocStrCrypto.verifyRoundTrip(kw)) {
-                Toast.makeText(this, "口令校验失败，请重新输入", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "地图口令校验失败，请重新输入", Toast.LENGTH_SHORT).show();
                 clearMapLocKeywordAndRemoteLocations();
                 dialog.dismiss();
                 return;
@@ -3015,7 +3042,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             // 旧口令解出的他人位置作废，改用新口令重新解密并重报本机位置。
             clearMapRemoteLocations();
             notifyMapLocKeywordReady();
-            Toast.makeText(this, "口令已更换", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "地图口令已修改", Toast.LENGTH_SHORT).show();
             dialog.dismiss();
         });
         dialog.show();

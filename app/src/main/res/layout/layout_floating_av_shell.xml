@@ -27,6 +27,19 @@
             android:paddingStart="8dp"
             android:paddingEnd="6dp">
 
+            <!-- 浮窗/分屏/全屏时的“中控”按钮，功能与视频区右侧菜单里的中控一致 -->
+            <TextView
+                android:id="@+id/btn_floating_av_confmem"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:text="中控"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
             <!-- 左侧空白区可拖动，不占文字 -->
             <View
                 android:layout_width="0dp"

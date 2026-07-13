@@ -3,7 +3,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F7F7F7"
-    android:clipChildren="false"
     android:orientation="vertical">
 
     <include layout="@layout/layout_main_tab_topbar" />
@@ -12,7 +11,6 @@
         android:id="@+id/list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:clipChildren="false"
         android:clipToPadding="false"
         android:paddingTop="4dp"
         android:paddingBottom="12dp" />

@@ -247,7 +247,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="口令"
+                        android:text="地图口令"
                         android:textColor="#111111"
                         android:textSize="15sp" />
 
@@ -277,7 +277,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="更换口令"
+                        android:text="修改地图口令"
                         android:textColor="#111111"
                         android:textSize="15sp" />
 
