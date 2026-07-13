@@ -47,7 +47,7 @@ import java.util.List;
 
 public class Fragment_msgList extends Fragment {
     //    private static final String TAG = Fragment_msgList.class.getSimpleName();
-    List<TableItem.TableItem_msg> mTableItems = new ArrayList<TableItem.TableItem_msg>();
+    public List<TableItem.TableItem_msg> mTableItems = new ArrayList<TableItem.TableItem_msg>();
     RecyclerView listView;
     Adapter_msgList msgAdapter;
     TextView tv_topMenu;

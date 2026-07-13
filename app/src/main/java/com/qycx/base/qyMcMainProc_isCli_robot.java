@@ -137,7 +137,7 @@ import static com.qycx.base.tmpFunc.qyFuncs._T;
 import static com.qycx.base.tmpFunc.qyFuncs.byte2bool;
 import static com.qycx.base.tmpFunc.qyFuncs.myGetTickCount;
 import static com.qycx.base.tmpProc.qyFuncs.clearShiftKeys;
-import static com.qysd.base.mapFunc.doAnHgData;
+import static com.south.map.mapFunc.doAnHgData;
 
 import com.qycx.base.util.Log;
 

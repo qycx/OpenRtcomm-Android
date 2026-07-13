@@ -55,7 +55,7 @@ import com.qycx.base.tmpFunc;
 import com.qycx.base.util.Log;
 import com.qycx.base.util.ToastUtils;
 import com.qycx.base.qyShowInfoCommProc;
-import com.qysd.base.MapLocSettings;
+import com.south.map.loc.MapLocSettings;
 
 public class Fragment_me extends Fragment {
     boolean m_bInited;

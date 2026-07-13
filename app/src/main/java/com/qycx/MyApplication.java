@@ -1,6 +1,6 @@
 package com.qycx;
 
-import ext.myMapExt;
+import com.south.map.myMapExt;
 import ext.myTest;
 import me.jessyan.autosize.*;
 import me.jessyan.autosize.utils.ScreenUtils;
@@ -34,8 +34,8 @@ import com.qycx.base.ctxQyMc;
 import com.qycx.base.network.NetworkConnectChangedReceiver;
 import com.qycx.base.qyMcMain_global;
 import com.qycx.base.util.Log;
-import com.qysd.base.MapExtTmpl;
-import com.qysd.base.MapLocSettings;
+import com.south.map.MapExtTmpl;
+import com.south.map.loc.MapLocSettings;
 import com.tencent.bugly.crashreport.CrashReport;
 
 import java.io.File;

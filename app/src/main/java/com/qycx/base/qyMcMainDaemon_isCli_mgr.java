@@ -36,7 +36,7 @@ import static com.qycx.base.showTaskStatusFunc.qyFuncs.showTaskStatus;
 import static com.qycx.base.tmpFunc.qyFuncs.myWaitOne;
 
 import static com.qycx.base.tmpFunc.qyFuncs.mywcslen;
-import static com.qysd.base.mapFunc.doAnHgData;
+import static com.south.map.mapFunc.doAnHgData;
 
 import com.qycx.base.util.Log;
 

@@ -90,7 +90,7 @@ public class qyMcLogon {
                 com.qycx.MainActivity main = (com.qycx.MainActivity) hMain;
                 main.runOnUiThread(main::clearMapLocKeywordAndRemoteLocations);
             } else {
-                com.qysd.base.MapLocKeyword.clearOnLogoff();
+                com.south.map.loc.MapLocKeyword.clearOnLogoff();
             }
 
             //

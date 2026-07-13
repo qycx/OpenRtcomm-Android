@@ -60,7 +60,7 @@ import com.qycx.Activity_dlgTalk;
 import com.qycx.MainActivity;
 import com.qycx.MyApplication;
 import com.qycx.base.util.Log;
-import com.qysd.base.MapExtTmpl;
+import com.south.map.MapExtTmpl;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

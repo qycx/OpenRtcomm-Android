@@ -20,7 +20,7 @@ import java.util.Set;
 /**
  * 活动组（IM 群 id）统一入口。
  * <p>
- * 地图通过 {@link Fragment_map#getTaskGrp()} 间接调用 {@link #getTaskGrp()}。
+ * 地图通过 {@link com.south.map.ui.Fragment_map#getTaskGrp()} 间接调用 {@link #getTaskGrp()}。
  * 当前版本只返回用户选择的一个活动组；未选择时返回空数组，不再使用固定群兜底。
  * </p>
  */

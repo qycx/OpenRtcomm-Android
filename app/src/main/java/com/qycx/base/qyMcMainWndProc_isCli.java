@@ -88,7 +88,7 @@ import com.qycx.MainActivity;
 import com.qycx.base.util.Log;
 import com.qycx.base.util.ToastUtils;
 import com.qycx.tmpjavalibrary.TmpJniUtil;
-import com.qysd.base.MapExtTmpl;
+import com.south.map.MapExtTmpl;
 
 public class qyMcMainWndProc_isCli {
 

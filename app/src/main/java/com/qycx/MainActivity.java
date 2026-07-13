@@ -1,5 +1,7 @@
 package com.qycx;
 
+import com.south.map.ui.Fragment_map;
+
 import static com.qycx.anc.Consts.Str_use100k_bDj;
 import static com.qycx.anc.Consts.Str_use100k_ifP2p;
 import static com.qycx.anc.atFuncs.sendToRefreshRecentFriends;
@@ -117,9 +119,9 @@ import com.qycx.base.test;
 import com.qycx.base.tmpFunc;
 import com.qycx.base.util.Log;
 import com.qycx.base.util.javatuples.Pair;
-import com.qysd.base.MapLocKeyword;
-import com.qysd.base.MapLocSettings;
-import com.qysd.base.MapLocStrCrypto;
+import com.south.map.loc.MapLocKeyword;
+import com.south.map.loc.MapLocSettings;
+import com.south.map.loc.MapLocStrCrypto;
 
 import org.aviran.cookiebar2.*;
 
