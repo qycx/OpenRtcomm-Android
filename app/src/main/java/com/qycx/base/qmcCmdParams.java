@@ -85,6 +85,8 @@ public class qmcCmdParams {
         public boolean bDbg_traceRt_a_rec;
         public boolean bDbg_traceRt_a_play;
 
+        //
+        public boolean bDbg_floatingView;
 
 
     }

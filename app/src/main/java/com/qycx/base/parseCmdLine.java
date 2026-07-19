@@ -49,6 +49,12 @@ public class parseCmdLine {
                 Log.d("at","Note: parseCmdLine_qyMc: set bDbg_traceRt_a_play to true");
 
             }
+            //
+            if  (  true  )  {
+                pParams.bDbg_floatingView=true;
+                Log.d("at","Note: parseCmdLine_qyMc: set bDbg_floatingView to true");
+
+            }
 
 
         }

@@ -168,6 +168,9 @@ import com.qycx.base.qmcTaskInfo;
 import com.qycx.base.TableItem;
 import com.qycx.base.CIsTalker;
 import static com.qycx.base.qmcProc.doChkTalkDraw;
+import static com.qycx.base.qyMcMain_global.g.g_pQyMc;
+import static com.qycx.base.showInfo_open.qyFuncs.showInfo_open;
+
 import com.qycx.base.TalkAvStarter;
 import com.qycx.base.tmpFunc;
 import com.qycx.base.tmpResource;
@@ -5470,7 +5473,7 @@ public class Fragment_map extends Fragment {
     }
 
     private void sendSelfLocationToGroupPayload(long now) {
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         if (pProcInfo == null || pProcInfo.m_pMapExt == null) return;
@@ -5487,7 +5490,7 @@ public class Fragment_map extends Fragment {
     /** 经融合中心向活动组同步作战标注/连线（add/del 载荷格式不变）。 */
     private void sendMarkPayloadToActiveGroups(@NonNull String payload) {
         if (TextUtils.isEmpty(payload)) return;
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         if (pProcInfo == null || pProcInfo.m_pMapExt == null) return;
@@ -5588,7 +5591,7 @@ public class Fragment_map extends Fragment {
 
     private void ensureSelfUserId() {
         if (selfUserId != 0) return;
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         if (pProcInfo == null || pProcInfo.pMisCnt == null) return;
@@ -5636,7 +5639,7 @@ public class Fragment_map extends Fragment {
 
     private void appendPeersFromMsgList(Set<Long> out) {
         if (!isAdded()) return;
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return;
         MainActivity mainActivity = (MainActivity) pQyMc.gui.hMainWnd;
         if (mainActivity == null) return;
@@ -5654,7 +5657,7 @@ public class Fragment_map extends Fragment {
 
     private void appendPeersFromImObjList(Set<Long> out) {
         if (!isAdded()) return;
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return;
         ensureSelfUserId();
         MainActivity mainActivity = (MainActivity) pQyMc.gui.hMainWnd;
@@ -5847,7 +5850,7 @@ public class Fragment_map extends Fragment {
     private Set<Long> loadGroupMemberIds(long grpId) {
         Set<Long> members = new HashSet<>();
         if (grpId <= 0) return members;
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return members;
         try {
             myDb.CMyDb db = (myDb.CMyDb) pQyMc.gui.pDb;
@@ -5860,7 +5863,7 @@ public class Fragment_map extends Fragment {
 
     private boolean isUserOnline(long userId) {
         if (userId <= 0) return false;
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return false;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo != null ? pProcInfo.pMisCnt : null;
@@ -5990,7 +5993,7 @@ public class Fragment_map extends Fragment {
     @Nullable
     private ActiveGroupMeetingState findActiveGroupMeetingStateInternal(boolean forEnter) {
         Set<Long> activeGrpIds = loadActiveGroupIdsFromTaskGrp();
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return null;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo != null ? pProcInfo.pMisCnt : null;
@@ -6084,7 +6087,7 @@ public class Fragment_map extends Fragment {
     }
 
     private void sendGroupConfReqFromMap(long groupId, short avLevel) {
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         if (pProcInfo == null) return;
@@ -6096,7 +6099,7 @@ public class Fragment_map extends Fragment {
 
     /** M0：确保地图组会议走 MainActivity 内嵌 av2 悬浮窗。 */
     private void ensureMapFloatingAvEnabled() {
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         if (pProcInfo != null && pProcInfo.cfg != null) {
@@ -6107,7 +6110,7 @@ public class Fragment_map extends Fragment {
     /** 注册 CIsTalker，不打开 Activity_dlgTalk（bStay_toAvCall）。 */
     private void registerTalkerSilent(long talkerId) {
         if (talkerId <= 0) return;
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return;
         isCliHelpPublic.PARAM_talkToMessenger param = new isCliHelpPublic.PARAM_talkToMessenger();
         dlgTalkProc_help.qyFuncs_Droid.talkToMessenger(pQyMc, talkerId, true, false, true, param);
@@ -6120,7 +6123,7 @@ public class Fragment_map extends Fragment {
     /** 通过 CIsTalker 标记待入会，不依赖 Activity_dlgTalk。 */
     private void markGroupTalkAvReady(long groupId) {
         if (groupId <= 0) return;
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         if (pProcInfo == null || pProcInfo.pMisCnt == null) return;
@@ -6134,7 +6137,7 @@ public class Fragment_map extends Fragment {
     private int findLiveGroupAvTaskIndexForGroup(long groupId) {
         if (groupId <= 0) return -1;
         Set<Long> activeGrpIds = loadActiveGroupIdsFromTaskGrp();
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return -1;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         if (pProcInfo == null || pProcInfo.cfg == null) return -1;
@@ -6173,7 +6176,7 @@ public class Fragment_map extends Fragment {
 
     private boolean isLiveGroupAvTaskIndex(int indexTaskInfo) {
         if (indexTaskInfo < 0) return false;
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return false;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         if (pProcInfo == null) return false;
@@ -6193,7 +6196,7 @@ public class Fragment_map extends Fragment {
 
     /** 打开悬浮窗前同步 talker AV 入口参数；已有 task 由 index_taskInfo 承接，不能清空 taskInfo。 */
     private void syncMapTalkerAvBeforeFloating(long groupId, int cmd, int indexTask) {
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null || pQyMc.get_pProcInfo() == null || pQyMc.get_pProcInfo().pMisCnt == null) {
             return;
         }
@@ -6225,7 +6228,7 @@ public class Fragment_map extends Fragment {
             }
             return;
         }
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null || pQyMc.get_pProcInfo() == null || pQyMc.get_pProcInfo().pMisCnt == null) {
             return;
         }
@@ -6256,7 +6259,7 @@ public class Fragment_map extends Fragment {
             return false;
         }
         audioRecorder_android.qyFuncs_Droid.setMicrophoneOn(true);
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null || !(pQyMc.gui.hMainWnd instanceof MainActivity)) {
             return false;
         }
@@ -6347,7 +6350,12 @@ public class Fragment_map extends Fragment {
                 : 0;
     }
 
+    //
     private void enterActiveGroupMeetingIfAny() {
+        //
+        Log.d("at","enterActiviGroupMeetingIfAny called");
+
+        //
         if (!hasSelectedActiveGroup()) {
             Toast.makeText(requireContext(), "请先选择活动组", Toast.LENGTH_SHORT).show();
             showActiveGroupPickDialog(false);
@@ -6390,7 +6398,7 @@ public class Fragment_map extends Fragment {
         activeGroupMeetingRecoveryGroupId = displayState.groupId;
         activeGroupMeetingRecoveryStartedMs = now;
         Toast.makeText(requireContext(), "正在恢复会议", Toast.LENGTH_SHORT).show();
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return;
         registerGroupTalkerSilent(displayState.groupId);
         if (locationHandler != null) {
@@ -6417,6 +6425,7 @@ public class Fragment_map extends Fragment {
             locationHandler.postDelayed(() -> tryRecoverActiveGroupMeetingAfterRegister(groupId, attempt + 1), 220L);
             return;
         }
+        //
         sendGroupConfReqFromMap(groupId, (short) qyWmComm.Consts.CONST_do_1080P_AV_Call);
         Log.d("MAP_AV_DBG", "recoverActiveGroupMeeting sendConfReq, group=" + groupId);
         if (locationHandler != null) {
@@ -6426,7 +6435,7 @@ public class Fragment_map extends Fragment {
 
     private boolean tryRecoverActiveGroupMeetingByTaskId(@NonNull ActiveGroupMeetingState displayState) {
         if (displayState.taskId <= 0) return false;
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return false;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         if (pProcInfo == null) return false;
@@ -6462,7 +6471,7 @@ public class Fragment_map extends Fragment {
     /** 地图组会议：静默 accept 通知，不弹 CookieBar、不打开联系人会话页。 */
     private void mapSilentAcceptNotifyMeetingIfNeeded(long groupId) {
         if (groupId <= 0 || mapGroupNotifyAcceptedGroupId == groupId) return;
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null || !(pQyMc.gui.hMainWnd instanceof MainActivity)) return;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         if (pProcInfo == null || pProcInfo.pMisCnt == null) return;
@@ -6810,7 +6819,7 @@ public class Fragment_map extends Fragment {
 
     private void startPeerVideoCall(long peerId) {
         if (peerId <= 0 || !isAdded()) return;
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null || !(pQyMc.gui.hMainWnd instanceof MainActivity)) {
             Toast.makeText(requireContext(), "无法发起视频通话", Toast.LENGTH_SHORT).show();
             return;
@@ -6833,7 +6842,7 @@ public class Fragment_map extends Fragment {
 
     private void tryStartPeerVideoFloating(@NonNull MainActivity main, long peerId, int level, int attempt) {
         if (!isAdded()) return;
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         ctxQmc.CCtxQmc pProcInfo = pQyMc != null ? pQyMc.get_pProcInfo() : null;
         qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo != null ? pProcInfo.pMisCnt : null;
         if (pMisCnt == null) return;
@@ -6861,6 +6870,12 @@ public class Fragment_map extends Fragment {
 
     /** 对活动组发起组会议（与具体成员无关）。 */
     private void startGroupVideoCall() {
+        //
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        if  (  pQyMc.appParams.bDbg_floatingView  )  {
+            showInfo_open(0,0,"fv","startGroupVideoCall called");
+        }
+        //
         if (!hasSelectedActiveGroup()) {
             Toast.makeText(requireContext(), "请先选择活动组", Toast.LENGTH_SHORT).show();
             showActiveGroupPickDialog(false);
@@ -6884,7 +6899,7 @@ public class Fragment_map extends Fragment {
     }
 
     private void clearMapGroupConfSuppressAvNotifyUi(long groupId) {
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null || !(pQyMc.gui.hMainWnd instanceof MainActivity)) return;
         MainActivity main = (MainActivity) pQyMc.gui.hMainWnd;
         if (main.suppressAvNotifyUiForGroupId == groupId) {
@@ -6896,7 +6911,7 @@ public class Fragment_map extends Fragment {
     private void startMapGroupConferenceAndEnterFloating(long groupId) {
         mapGroupNotifyAcceptedGroupId = 0;
         audioRecorder_android.qyFuncs_Droid.setMicrophoneOn(true);
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc != null && pQyMc.gui.hMainWnd instanceof MainActivity) {
             MainActivity main = (MainActivity) pQyMc.gui.hMainWnd;
             setMapGroupConfSuppressAvNotifyUi(main, groupId);
@@ -6904,11 +6919,16 @@ public class Fragment_map extends Fragment {
             TalkAvStarter.removeTaskAvForPeer(groupId);
             registerGroupTalkerSilent(groupId);
         }
+        //
         sendGroupConfReqFromMap(groupId, (short) qyWmComm.Consts.CONST_do_1080P_AV_Call);
         Log.d("MAP_AV_DBG", "startMapGroupConference sendConfReq, group=" + groupId);
-        if (locationHandler != null) {
-            locationHandler.postDelayed(() -> waitGroupConferenceTaskAndEnter(groupId, 0), 300);
+        //
+        if  (  false  ) {
+            if (locationHandler != null) {
+                locationHandler.postDelayed(() -> waitGroupConferenceTaskAndEnter(groupId, 0), 300);
+            }
         }
+
     }
 
     private void waitGroupConferenceTaskAndEnter(long groupId, int attempt) {
@@ -6944,6 +6964,8 @@ public class Fragment_map extends Fragment {
         Log.d("MAP_AV_DBG", "groupVideoAutoEnter timeout waiting task, group=" + groupId);
     }
 
+
+    //
     private List<Long> loadActiveGroupMembersSorted() {
         ensureSelfUserId();
         Set<Long> activeGrpIds = loadActiveGroupIdsFromTaskGrp();
@@ -7201,7 +7223,7 @@ public class Fragment_map extends Fragment {
     }
 
     private int sendHtmlToPeer(long peerId, String text) {
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return -1;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         if (pProcInfo == null || pProcInfo.pMisCnt == null) return -1;
@@ -9200,7 +9222,7 @@ public class Fragment_map extends Fragment {
         if (!markSyncCacheEnabled || groupId <= 0) return false;
         ensureSelfUserId();
         if (selfUserId <= 0) return false;
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return false;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         if (pProcInfo == null || pProcInfo.m_pMapExt == null) return false;
@@ -10811,7 +10833,7 @@ public class Fragment_map extends Fragment {
     @Nullable
     private String getLoginServerHostFromGlobal() {
         try {
-            ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+            ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
             ctxQmc.CCtxQmc pProcInfo = pQyMc != null ? pQyMc.get_pProcInfo() : null;
             qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo != null ? pProcInfo.pMisCnt : null;
             if (pMisCnt != null && pMisCnt.server != null) {
@@ -11475,7 +11497,7 @@ public class Fragment_map extends Fragment {
 
     private String getUserDisplayName(long userId) {
         if (userId <= 0) return "未知";
-        ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return "用户" + userId;
         myDb.QM_dbFuncs pDbFuncs = pQyMc.p_g_dbFuncs;
         if (pDbFuncs == null || pQyMc.gui == null || pQyMc.gui.pDb == null) return "用户" + userId;

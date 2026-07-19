@@ -131,9 +131,17 @@ public class qyMcMainDaemon_isCli_mgr {
                             lenInBytes += 0;
                             //
                             String str;
-                            str="procMsgReq_mgr l129: ";
+                            str="procMsgReq_mgr l134: ";
                             str  +=  pMsgReq.usCode;
+                            //
+                            if  (pMsgReq.usCode==CONST_qyCmd_ca)  {
+                                str  +=  " cmd_ca";
+                            }
+                            //
                             str  +=  " content.type "  +  pContent.uiType;
+                            if  (  pContent.uiType  == CONST_imCommType_qisCaReq )  {
+                                str  +=  " qisCaReq";
+                            }
                             Log.d("at",str);
 
                             //

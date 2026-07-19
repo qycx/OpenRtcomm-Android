@@ -1638,7 +1638,7 @@ public class qyMcMainProc_isCli_robot {
                             lenInBytes += 0;
                             //
                             String str;
-                            str="procMsgReq_mgr l129: ";
+                            str="procMsgReq_robot l1641: ";
                             str  +=  pMsgReq.usCode;
                             str  +=  " content.type "  +  pContent.uiType;
                             Log.d("at",str);
