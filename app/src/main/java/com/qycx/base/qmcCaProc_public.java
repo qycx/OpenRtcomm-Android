@@ -2,8 +2,8 @@
 package com.qycx.base;
 
 
-import static com.south.anc.hgCommProc.Consts.CONST_hgCmd_xt;
-import static com.south.anc.hgCommProc.Consts.CONST_hgType_curConf;
+import static com.qycx.anc.hgCommProc.Consts.CONST_hgCmd_xt;
+import static com.qycx.anc.hgCommProc.Consts.CONST_hgType_curConf;
 import static com.qycx.base.Consts.CONST_channelType_talking;
 import static com.qycx.base.ctxQmc.Consts.CONST_intervalInS_xt;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_qisCaReq;

@@ -1,6 +1,6 @@
 package com.south.map;
 
-import static com.south.anc.hgCommProc.Consts.CONST_hgCmd_ulAnHgData;
+import static com.qycx.anc.hgCommProc.Consts.CONST_hgCmd_ulAnHgData;
 import static com.qycx.base.Consts.CONST_channelType_robot;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_anHgData;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_locDataReq;
@@ -14,7 +14,7 @@ import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_req;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_procLocReqSubtype_getCfgs;
 import static com.qycx.base.qyMcMain_global.g.g_pQyMc;
 
-import com.south.anc.hgCommProc;
+import com.qycx.anc.hgCommProc;
 import com.qycx.base.ctxQmc;
 import com.qycx.base.ctxQyMc;
 import com.qycx.base.qmCommFunc_mis;
@@ -23,6 +23,7 @@ import com.qycx.base.qyDefs;
 import com.qycx.base.qy_getuiNextTranNo;
 import com.qycx.base.tmpFunc;
 import com.qycx.base.util.Log;
+import com.south.anc.my_hgCommProc;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -186,7 +187,7 @@ public class mapFunc {
             return -1;
         }
         long msgrId = pMisCnt.idInfo.ui64Id;
-        String hgCliData = hgCommProc.buildTransferLocDataHgCliData(
+        String hgCliData = my_hgCommProc.buildTransferLocDataHgCliData(
                 msgrId,
                 CONST_imCommType_transferMarkData,
                 imGrp_related_ui64Id,
@@ -197,7 +198,7 @@ public class mapFunc {
             return -1;
         }
         byte[] payloadBytes = hgCliData.getBytes();
-        if (payloadBytes.length >= com.south.anc.hgCommProc.Consts.MAX_hg_cliDataLen) {
+        if (payloadBytes.length >= hgCommProc.Consts.MAX_hg_cliDataLen) {
             Log.d("at", "ancSndMarkToHg failed: hgCliData too long, len=" + payloadBytes.length);
             return -1;
         }
@@ -228,7 +229,7 @@ public class mapFunc {
         if (pMapExt == null) {
             return -1;
         }
-        hgCommProc.ParsedHgCliData parsed = hgCommProc.parseHgCliData(req.hg_cliData, req.hg_cliDataLen);
+        my_hgCommProc.ParsedHgCliData parsed = my_hgCommProc.parseHgCliData(req.hg_cliData, req.hg_cliDataLen);
         if (parsed == null || parsed.grpId <= 0) {
             Log.d("at", "doAnHgData failed: parseHgCliData");
             return -1;
@@ -237,7 +238,7 @@ public class mapFunc {
         param.imGrp_ui64Id = parsed.grpId;
         param.outerMsgrId = parsed.outerMsgrId;
         param.m_marks = new ArrayList<>();
-        for (hgCommProc.ParsedHgCliData.Mem mem : parsed.mems) {
+        for (my_hgCommProc.ParsedHgCliData.Mem mem : parsed.mems) {
             if (mem == null || mem.locStr == null || mem.locStr.isEmpty()) {
                 continue;
             }
