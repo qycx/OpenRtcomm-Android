@@ -125,6 +125,7 @@ import static org.maplibre.android.style.layers.PropertyFactory.textOffset;
 import static org.maplibre.android.style.layers.PropertyFactory.textSize;
 
 
+import com.qycx.base.showInfo_open;
 import com.south.mapnav.DlgTalkAv2Bridge;
 import com.south.mapnav.MapFloatingVideoPanel;
 import com.south.mapnav.AmapOfflineMapHelper;
@@ -6870,6 +6871,7 @@ public class Fragment_map extends Fragment {
 
     /** 对活动组发起组会议（与具体成员无关）。 */
     private void startGroupVideoCall() {
+
         //
         ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if  (  pQyMc.appParams.bDbg_floatingView  )  {

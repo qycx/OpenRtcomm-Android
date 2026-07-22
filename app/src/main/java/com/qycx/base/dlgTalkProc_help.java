@@ -347,6 +347,7 @@ public class dlgTalkProc_help {
             }
 
             do {
+
                 //
                 CIsTalker isTalker  =  null;
                 isTalker = findIsTalker(pMisCnt,talker_ui664Id);

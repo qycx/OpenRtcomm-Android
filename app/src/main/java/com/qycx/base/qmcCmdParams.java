@@ -82,6 +82,9 @@ public class qmcCmdParams {
         public boolean bDbg;
 
         //
+        public boolean bDbg_tvd;
+
+        //
         public boolean bDbg_traceRt_a_rec;
         public boolean bDbg_traceRt_a_play;
 

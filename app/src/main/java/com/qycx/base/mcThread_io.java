@@ -1479,7 +1479,16 @@ public class mcThread_io {
                 }
 
                 //
-                for (; bChannelOk(pChannel,false); ) {
+                for (; ; ) {
+
+                    //
+                    if  (  !bChannelOk(pChannel,false)  )  {
+                        //
+                        str = "io: bChannelOk false, break";
+                        showInfo_open.qyFuncs.showInfo_open(0,0,"",str);
+                        //
+                        break;
+                    }
 
                     //
                     pChannel.status.iIoStep=1190;

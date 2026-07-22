@@ -375,6 +375,7 @@ public class ctxQyMc {
             SharedPreferences sp = context.getSharedPreferences("config", Context.MODE_PRIVATE);
             if(sp!=null)
             {
+                //
                 if  (  false  ) {
                     String statusServerInitVal = null;
                     statusServerInitVal = "10.0.1.102";
@@ -384,7 +385,9 @@ public class ctxQyMc {
                 }
 
                 //
-                pQyMc.statusServInitVal  =  "192.168.1.15";
+                //pQyMc.statusServInitVal  =  "192.168.1.15";
+                pQyMc.statusServInitVal  =  "192.168.1.108";
+
 
                 //
      //           String statusServer = sp.getString("statusServer", "10.0.10.84");

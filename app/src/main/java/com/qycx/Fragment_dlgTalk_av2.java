@@ -1377,6 +1377,14 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         Fragment_dlgTalk_av2  fg  =  new Fragment_dlgTalk_av2();
         //
         fg.talker_ui64Id=ui64Id;
+
+        //
+        if  (  false  ) {
+            String str;
+            str = "fg_av2.NewInstance called " + ui64Id;
+            showInfo_open.qyFuncs.showInfo_open(0, 0, "", str);
+        }
+
         //
         return  fg;
     }

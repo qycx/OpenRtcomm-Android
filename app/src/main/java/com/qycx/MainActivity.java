@@ -1105,35 +1105,38 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                 test.testCls_Droid.testChk("after 收到会议通知");
 
                 //
-                audioRecorder_android.qyFuncs_Droid.setMicrophoneOn(true);
-
-                //
-                Activity_dlgTalk hTalk = null;
-                if ((hTalk = guiShare.GuiShare.pf_findTalker.call(pQyMc, pMisCnt, peer_addr.idInfo)) != null
-                        && dlgTalkProc_help.qyFuncs_Droid.bDlgTalkActive(hTalk))
-                {
-                    Log.d("GuiShare.pf_findTalker.call(pQyMc, pMisCnt, addr.idInfo,  hTalk) == 0 && qyFuncs_Droid.bDlgTalkActive(hTalk) 为ture");
-
-                    ((MyApplication) (mainActivity.getApplication())).mediaPlayer.pause();
-                    hTalk.gui_PostMessage(qyWmComm.Consts.CONST_qyWm_postComm, qyWmComm.Consts.CONST_qyWmParam_doTask, usOp);
+                if  (  true  ) {
+                    //
+                    audioRecorder_android.qyFuncs_Droid.setMicrophoneOn(true);
 
                     //
-                    break;
-                }
+                    Activity_dlgTalk hTalk = null;
+                    if ((hTalk = guiShare.GuiShare.pf_findTalker.call(pQyMc, pMisCnt, peer_addr.idInfo)) != null
+                            && dlgTalkProc_help.qyFuncs_Droid.bDlgTalkActive(hTalk)) {
+                        Log.d("GuiShare.pf_findTalker.call(pQyMc, pMisCnt, addr.idInfo,  hTalk) == 0 && qyFuncs_Droid.bDlgTalkActive(hTalk) 为ture");
 
-                //
-                boolean bStay_toAvCall = pQyMc.appParams.bStay_toAvCall;
-                //
-                isCliHelpPublic.PARAM_talkToMessenger param = new isCliHelpPublic.PARAM_talkToMessenger();
-                param.wParam = qyWmComm.Consts.CONST_qyWmParam_doTask;
-                param.lParam = usOp;
+                        ((MyApplication) (mainActivity.getApplication())).mediaPlayer.pause();
+                        hTalk.gui_PostMessage(qyWmComm.Consts.CONST_qyWm_postComm, qyWmComm.Consts.CONST_qyWmParam_doTask, usOp);
 
-                //
-                dlgTalkProc_help.qyFuncs_Droid.talkToMessenger(pQyMc, peer_addr.idInfo.ui64Id, false, true, bStay_toAvCall,  param);
+                        //
+                        break;
+                    }
 
-                //
-                if  (  pQyMc.appParams.bDbg) {
-                    pProcInfo.cfg.debugStatusInfo.bDbg_startToBreak = true;
+                    //
+                    boolean bStay_toAvCall = pQyMc.appParams.bStay_toAvCall;
+                    //
+                    isCliHelpPublic.PARAM_talkToMessenger param = new isCliHelpPublic.PARAM_talkToMessenger();
+                    param.wParam = qyWmComm.Consts.CONST_qyWmParam_doTask;
+                    param.lParam = usOp;
+
+                    //
+                    dlgTalkProc_help.qyFuncs_Droid.talkToMessenger(pQyMc, peer_addr.idInfo.ui64Id, false, true, bStay_toAvCall, param);
+
+                    //
+                    if (pQyMc.appParams.bDbg) {
+                        pProcInfo.cfg.debugStatusInfo.bDbg_startToBreak = true;
+                    }
+
                 }
 
             }
@@ -1820,11 +1823,21 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         do {
 
             //
-            if (!pProcInfo.cfg.bTest_floatingView) {
-                Log.d("MAP_AV_DBG", "makeFloatingView failed: bTest_floatingView false");
-                return -1;
+            /*
+            if  (  false  ) {
+                if (!pProcInfo.cfg.bTest_floatingView) {
+                    Log.d("MAP_AV_DBG", "makeFloatingView failed: bTest_floatingView false");
+                    return -1;
+                }
             }
+            */
 
+            //
+            String str;
+            str  =  "makeFloatingView called "  +  talker_ui64Id;
+            showInfo_open.qyFuncs.showInfo_open(0,0,"fv",str );
+
+            //
             if (this.m_floatingView_fg != null) {
                 closeFloatingView();
             }
@@ -1940,7 +1953,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     public int closeFloatingView()
     {
         //
-        Log.d("at","closeFloatingView called");
+        showInfo_open.qyFuncs.showInfo_open(0,0,"fv","closeFloatingView called");
 
         //
         if  (  this.m_floatingView_fg!=null)  {

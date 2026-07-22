@@ -458,6 +458,7 @@ public class qyShowInfoCommProc {
         }
 
 
+        //
         public static qmcFunc.PF_threadProc showInfoThreadProc = (Object obj) -> {
             int dwRet;
             qyCommProc.QY_SHOW_SMALL showStruct = new qyCommProc.QY_SHOW_SMALL();

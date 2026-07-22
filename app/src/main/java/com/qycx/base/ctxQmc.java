@@ -1445,7 +1445,7 @@ public class ctxQmc {
                 if  (  true  )  {
                     pProcInfo.cfg.bTest_floatingView  =  true;
                     //
-                    Log.d("qy", "test: ucb_TEST_floatingView set to true");
+                    Log.d("qy", "test: bTest_floatingView set to true");
                 }
 
 
