@@ -316,6 +316,8 @@ public class qnmCommProc {
         public final static short CONST_qnmCfgId_uiContentType_org = (CONST_qnmCfgId_base_common + 3510);                //  2008/05/31
         public final static short CONST_qnmCfgId_usCmd_org = (CONST_qnmCfgId_base_common + 3511);                //  2009/10/19
         public final static short CONST_qnmCfgId_usOp_org = (CONST_qnmCfgId_base_common + 3512);             //  2009/10/19
+
+        public final static short CONST_qnmCfgId_ucbNoVDownload = (CONST_qnmCfgId_base_common + 3516);             //
         //
         public final static short CONST_qnmCfgId_ucbSaveVideo = (CONST_qnmCfgId_base_common + 3513);             //  2014/08/04. 这个值其实不应该放在这里.
         //

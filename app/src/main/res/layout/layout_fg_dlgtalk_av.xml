@@ -75,6 +75,37 @@
                 android:gravity="right"
                 >
 
+                <!-- 单向双向模式切换按钮 -->
+                <RelativeLayout
+                    android:id="@+id/confMem_way_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:visibility="visible"
+                    android:layout_marginBottom="15dp"
+                    android:padding="1dp"
+                    android:layout_marginRight="16dp"
+                    >
+
+                    <ImageView
+                        android:id="@+id/confMem_way_iv"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_centerHorizontal="true"
+                        android:src="@drawable/conf_duo" />
+
+                    <TextView
+                        android:id="@+id/confMem_way_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/confMem_way_iv"
+                        android:layout_centerHorizontal="true"
+                        android:layout_marginTop="5dp"
+                        android:textColor="@android:color/white"
+                        android:text="双向模式"
+                        android:textSize="12sp" />
+
+                </RelativeLayout>
+
                 <!-- 调取成员视频按钮 -->
                 <RelativeLayout
                     android:id="@+id/confMem_request_btn"

@@ -389,6 +389,13 @@ public class dlgTalkProc {
     ;
 
     //
+    public static class ConfCtrl{
+        public boolean bNoVDownload;
+        //
+        public int iTaskId;
+    }
+
+    //
     public static class TALK_drawMem_param {
         public qnmCommProc_mis.PLAYER_ID playerId = new qnmCommProc_mis.PLAYER_ID();
     }
@@ -551,6 +558,8 @@ public class dlgTalkProc {
 
         public DlgTalkVar_av av = new DlgTalkVar_av();
 
+        //
+        public ConfCtrl confCtrl = new ConfCtrl();
 
         //				 
         //  2016/03/15

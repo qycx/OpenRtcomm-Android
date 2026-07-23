@@ -410,7 +410,7 @@ public class qnmCommProc_mis {
         public final static short CONST_imOp_pleaseSpeak = 136;                     //  主持人邀请发言
         public final static short CONST_imOp_pleaseStopSpeaking=137;                //  主持人请停止发言
 
-
+        public final static short  CONST_imOp_switchTransmissionMode=138;		//  主持人切换单向双向传输方式
         //
         public final static short CONST_imOp_sendStreamInfo = 141;
 
@@ -2117,6 +2117,10 @@ public class qnmCommProc_mis {
         public TaskProcReq_viewDynBmp viewDynBmp = new TaskProcReq_viewDynBmp(); // 应该无用
         public Object pInternal = new Object(); // 应该无用
         public Object hWnd_task = new Object(); // 应该无用
+
+        public qyDefs.QY_MESSENGER_ID idInfo_imGrp_related = new qyDefs.QY_MESSENGER_ID();
+        public byte ucbNoVDownload;  //单向双向
+
 
         public byte[] toByteArray() {
             ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES * 6 + Short.BYTES * 2 + Long.BYTES + vStream.toByteArray().length +
@@ -4644,6 +4648,9 @@ public class qnmCommProc_mis {
 
             return buffer.array();
         }
+
+        //
+        public byte ucbNoVDownload;
     }
 
     public static class StatusConfLayoutParam extends IM_CONTENTU {
@@ -6151,6 +6158,19 @@ public class qnmCommProc_mis {
                     return iErr;
                 total_len += len;
             }
+            //
+
+            if(0 != pReq.idInfo_imGrp_related.ui64Id){
+                if (0 > (len = data2Stream(CONST_qyDataType_l64, CONST_qnmCfgId_idInfo_grp_related, pReq.idInfo_imGrp_related.ui64Id, 0, ptr)))
+                    return iErr;
+                total_len += len;
+            }
+            //
+            if(0 != pReq.ucbNoVDownload){
+                if(0 > (len = data2Stream(CONST_qyDataType_byte,CONST_qnmCfgId_ucbNoVDownload,pReq.ucbNoVDownload,0,ptr)))
+                    return iErr;
+                total_len += len;
+            }
 
             //  2014/08/28
             if (0 != pReq.usTaskProcObjType) {
@@ -7107,7 +7127,11 @@ public class qnmCommProc_mis {
                                 return iErr;
                             }
                             break;
-
+                        case CONST_qnmCfgId_ucbNoVDownload:
+                            if(0 >(pContent.ucbNoVDownload = getFieldData_byte(pItem))) {
+                                return iErr;
+                            }
+                            break;
                         case CONST_qnmCfgId_usCnt:
                             if (0 > (pContent.usCnt = getFieldData_short(pItem))) {
                                 return iErr;

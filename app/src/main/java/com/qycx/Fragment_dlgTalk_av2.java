@@ -29,6 +29,7 @@ import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendMedia;
 import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendReq;
 import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendTask;
 import static com.qycx.base.qnmCommProc_mis.Consts.*;
+import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_switchTransmissionMode;
 import static com.qycx.base.qnmMainFunc_isCli.qyFuncs.getChannelByType;
 import static com.qycx.base.qyCommProc_open.Consts.CONST_fourcc_I420;
 import static com.qycx.base.qyCusResHelp.qyFuncs.getResStr;
@@ -219,6 +220,15 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
     TextView meeting_account;
     TextView meeting_screen_info;
     TextView meeting_id;
+
+    //
+    // 模式切换整体布局
+    RelativeLayout m_confMem_way_btn;
+    // 图标
+    ImageView m_confMem_way_iv;
+    // 文字
+    TextView m_confMem_way_tv;
+    boolean ubNoVDownload = false;
 
     //
     LinearLayout m_confMem_rightMenu;
@@ -1767,6 +1777,19 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
             m_confMem_request_btn = view.findViewById(R.id.confMem_request_btn);
             m_confMem_request_iv = m_confMem_request_btn.findViewById(R.id.confMem_request_iv);
             m_confMem_request_tv = m_confMem_request_btn.findViewById(R.id.confMem_request_tv);
+            //
+            m_confMem_way_btn = view.findViewById(R.id.confMem_way_btn);
+            m_confMem_way_iv = view.findViewById(R.id.confMem_way_iv);
+            m_confMem_way_tv = view.findViewById(R.id.confMem_way_tv);
+
+            // 设置点击监听（点整个区域都能触发切换）
+            m_confMem_way_btn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    //toggleMode();
+                    confMem_way_btn_Click();
+                }
+            });
 
 
             //
@@ -1812,6 +1835,71 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         return view;
     }
 
+
+    //
+    private void up_way_status(){
+        //
+
+        ctxQyMc.CCtxQyMc  pQyMc  =  g_pQyMc;
+        ctxQmc.CCtxQmc      	pProcInfo			=		pQyMc.get_pProcInfo();
+        qmCommFunc_mis.MIS_CNT pMisCnt=pProcInfo.pMisCnt;
+
+        //
+        //Activity_dlgTalk  hTalk  =  (Activity_dlgTalk) hDlgTalk_mgr;//mOwner_wnd.mOwner_hTalk.get();
+        //if  (  hTalk ==null )  return  -1;
+        CIsTalker talker = findIsTalker(pMisCnt,talker_ui64Id);
+        if  ( talker==null)  return  ;
+
+        dlgTalkProc.DLG_TALK_var m_var  =  talker.m_var;
+        if  (  m_var  ==  null  )  return  ;
+
+
+        //
+        if(m_var.confCtrl.bNoVDownload){
+            // 切换单向模式
+            m_confMem_way_tv.setText("当前单向");
+            // 替换成你单向对应的drawable图片资源，没有就先注释
+            m_confMem_way_iv.setImageResource(R.drawable.conf_dan);
+
+        }else{
+            // 切回双向模式
+            m_confMem_way_tv.setText("当前多向");
+            m_confMem_way_iv.setImageResource(R.drawable.conf_duo);
+        }
+    }
+
+    private void confMem_way_btn_Click() {
+        //
+
+        ctxQyMc.CCtxQyMc  pQyMc  =  g_pQyMc;
+        ctxQmc.CCtxQmc      	pProcInfo			=		pQyMc.get_pProcInfo();
+        qmCommFunc_mis.MIS_CNT pMisCnt=pProcInfo.pMisCnt;
+
+        //
+        //Activity_dlgTalk  hTalk  =  (Activity_dlgTalk) hDlgTalk_mgr;//mOwner_wnd.mOwner_hTalk.get();
+        //if  (  hTalk ==null )  return  -1;
+        CIsTalker talker = findIsTalker(pMisCnt,talker_ui64Id);
+        if  ( talker==null)  return  ;
+
+        dlgTalkProc.DLG_TALK_var m_var  =  talker.m_var;
+        if  (  m_var  ==  null  )  return  ;
+
+
+        if (m_var.confCtrl.bNoVDownload) {
+            // 切回双向模式
+            m_confMem_way_tv.setText("当前多向");
+              m_confMem_way_iv.setImageResource(R.drawable.conf_duo);
+            // 这里可以加你业务：比如发送指令、修改参数、通知后端/硬件
+
+            confMen_bNoVDoVDownload(false);
+        } else {
+            // 切换单向模式
+            m_confMem_way_tv.setText("当前单向");
+            // 替换成你单向对应的drawable图片资源，没有就先注释
+            m_confMem_way_iv.setImageResource(R.drawable.conf_dan);
+            confMen_bNoVDoVDownload(true);
+        }
+    }
 
     //
     public boolean myTextureView_dispatchTouchEvent(MotionEvent e) {
@@ -3523,6 +3611,104 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         return  iErr;
     }
 
+    int confMen_bNoVDoVDownload( boolean  bNoVDownload ){
+        int						iErr				=		-1;
+
+
+        //
+        ctxQyMc.CCtxQyMc  pQyMc  =  g_pQyMc;
+        ctxQmc.CCtxQmc      	pProcInfo			=		pQyMc.get_pProcInfo();
+        qmCommFunc_mis.MIS_CNT pMisCnt=pProcInfo.pMisCnt;
+
+        //
+        //Activity_dlgTalk  hTalk  =  (Activity_dlgTalk) hDlgTalk_mgr;//mOwner_wnd.mOwner_hTalk.get();
+        //if  (  hTalk ==null )  return  -1;
+        CIsTalker talker = findIsTalker(pMisCnt,talker_ui64Id);
+        if  ( talker==null)  return  -1;
+
+        dlgTalkProc.DLG_TALK_var m_var  =  talker.m_var;
+        if  (  m_var  ==  null  )  return  -1;
+
+
+        //
+        //qnmCommProc_mis.TASK_INTERACTION_REQ req    =       new qnmCommProc_mis.TASK_INTERACTION_REQ();
+        qnmCommProc_mis.TASK_PROC_REQ req = new qnmCommProc_mis.TASK_PROC_REQ();
+        int						lenInBytes			=		0;
+
+        //
+/*
+        if  (  0==pIdInfo_speaker  )  return  -1;
+        if  (  !m_var.av.taskInfo.bTaskExists
+                ||  !m_var.av.taskInfo.ucbVideoConference
+        )
+        {
+            return  -1;
+        }
+*/
+//
+        // memset(  &taskProcReq,  0,  sizeof(  taskProcReq  )  );
+        req.uiType  =  CONST_imCommType_taskProcReq;
+        req.usOp  =  CONST_imOp_switchTransmissionMode;
+        req.tStartTime_org  =  m_var.av.taskInfo.tStartTime_org;
+        req.uiTranNo_org  =  m_var.av.taskInfo.uiTranNo_org;
+
+        req.uiContentType_org  =  CONST_imCommType_transferAvInfo;
+//
+        req.idInfo_imGrp_related.ui64Id = m_var.addr.idInfo.ui64Id;
+//
+        req.uiTaskType  =  0;
+
+//
+        if(bNoVDownload){
+            req.ucbNoVDownload = 1;
+        }else{
+            req.ucbNoVDownload = 0;
+        }
+
+//
+        //  lenInBytes  =  sizeof(  req  );
+
+
+        //memset(  &req,  0,  sizeof(  req  )  );
+      /*  req.uiType  =  CONST_imCommType_taskInteractionReq;
+        req.usOp  =  bSpeak  ?  CONST_imOp_pleaseSpeak  :  CONST_imOp_pleaseStopSpeaking;
+        req.tStartTime_org  =  m_var.av.taskInfo.tStartTime_org;
+        req.uiTranNo_org  =  m_var.av.taskInfo.uiTranNo_org;*/
+        //req.uiContentType_org  =  m_var.av.taskInfo.uiContentType_org;
+        //
+        //  2015/02/17
+        //
+        //req.idInfo_speaker.ui64Id  =  pIdInfo_speaker->ui64Id;
+        //
+        if  (  m_var.av.taskInfo.ucbVideoConference  )  req.idInfo_imGrp_related.ui64Id  =  m_var.addr.idInfo.ui64Id;
+        //
+        lenInBytes  =  128;//sizeof(  req  );
+
+
+        //
+        //MACRO_prepareForTran(  );
+        long tStartTran = tmpFunc.qyFuncs.mytime();
+        int uiTranNo = qy_getuiNextTranNo.qyFuncs.getuiNextTranNo.call();
+
+        //
+        // qyDefs.QY_MESSENGER_ID idInfo_dst = new qyDefs.QY_MESSENGER_ID();
+        // idInfo_dst.ui64Id  =  pIdInfo_speaker;
+        //
+        if (0 != postMsgTask2Mgr_mc(null, pMisCnt, CONST_misMsgType_outputTask, (byte) 0, (short) CONST_qyCmd_sendMedia, tStartTran, uiTranNo, (short) 0,0, 0,  req, lenInBytes, m_var.addr.idInfo.ui64Id, 0, 0, m_var.av.taskInfo.idInfo_starter.ui64Id,
+                0, (qnmCommProc_mis.MIS_MSGU) null, false)) {
+            return iErr;
+        }
+        //if  (  postMsgTask2Mgr_mc(  pMisCnt,  uiMisMsgType,  0,  usCode,  tStartTran,  uiTranNo,  0,  iTaskId,  uiTaskType,  (  char  *  )&taskProcReq,  lenInBytes,  &idInfo_peer1,  NULL,  NULL,  &idInfo_dst1,  uiChannelType,  NULL,  FALSE  )  )  goto  errLabel;
+
+        //
+        //qyShowInfo1(  CONST_qyShowType_qwmComm,  0,  (char*)  (  ""  ),  pProcInfo->who_showInfo,  0,  _T(  ""  ),  _T(  ""  ),  _T(  "confCtrl: let %I64u %s"  ),  pIdInfo_speaker->ui64Id,  bPermitToSpeak  ?  _T(  "permit to speak"  )  :  _T(  "prohibit speaking"  )  );
+
+        //
+        m_var.confCtrl.bNoVDownload =  bNoVDownload;
+        iErr  =  0;
+        errLabel:
+        return  iErr;
+    }
 
 
     //
@@ -3688,6 +3874,8 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         //
         confMem_list_btn_update();
 
+        //
+        up_way_status();
 
     }
 
