@@ -1835,6 +1835,17 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         return view;
     }
 
+    /**
+     * 重置菜单自动隐藏倒计时
+     * 只要操作任意按钮，就调用这个方法，重新计时5秒再收菜单
+     */
+    private void resetMenuHideTimer() {
+        // 先移除之前未执行的隐藏任务
+        m_bottomBarHandler.removeCallbacks(m_runnableHideBottomBar);
+        // 重新延迟发送隐藏任务
+        m_bottomBarHandler.postDelayed(m_runnableHideBottomBar, 10000);
+    }
+
 
     //
     private void up_way_status(){
@@ -1855,15 +1866,15 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
 
         //
-        if(m_var.confCtrl.bNoVDownload){
+        if(!m_var.confCtrl.bNoVDownload){
             // 切换单向模式
-            m_confMem_way_tv.setText("当前单向");
+            m_confMem_way_tv.setText("单画面");
             // 替换成你单向对应的drawable图片资源，没有就先注释
             m_confMem_way_iv.setImageResource(R.drawable.conf_dan);
 
         }else{
             // 切回双向模式
-            m_confMem_way_tv.setText("当前多向");
+            m_confMem_way_tv.setText("全画面");
             m_confMem_way_iv.setImageResource(R.drawable.conf_duo);
         }
     }
@@ -1887,16 +1898,15 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
         if (m_var.confCtrl.bNoVDownload) {
             // 切回双向模式
-            m_confMem_way_tv.setText("当前多向");
-              m_confMem_way_iv.setImageResource(R.drawable.conf_duo);
-            // 这里可以加你业务：比如发送指令、修改参数、通知后端/硬件
+            m_confMem_way_tv.setText("单画面");
+            // 替换成你单向对应的drawable图片资源，没有就先注释
+            m_confMem_way_iv.setImageResource(R.drawable.conf_dan);
 
             confMen_bNoVDoVDownload(false);
         } else {
             // 切换单向模式
-            m_confMem_way_tv.setText("当前单向");
-            // 替换成你单向对应的drawable图片资源，没有就先注释
-            m_confMem_way_iv.setImageResource(R.drawable.conf_dan);
+            m_confMem_way_tv.setText("全画面");
+            m_confMem_way_iv.setImageResource(R.drawable.conf_duo);
             confMen_bNoVDoVDownload(true);
         }
     }
@@ -2484,6 +2494,9 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
     private final View.OnTouchListener Long_focus_OnTouchListener = (View v, MotionEvent event) -> {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            //
+            resetMenuHideTimer();
+
             long_focus_bt.setPressed(true);
             dlg_YTBtn_remote(IDC_BUTTON_ZOOM_IN, (byte) CONST_mouseStatus_lBtnDown);
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
@@ -2496,6 +2509,9 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
     private final View.OnTouchListener Short_focus_bt_OnTouchListener = (View v, MotionEvent event) -> {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            //
+            resetMenuHideTimer();
+
             short_focus_bt.setPressed(true);
 
             dlg_YTBtn_remote(IDC_BUTTON_ZOOM_OUT, (byte) CONST_mouseStatus_lBtnDown);
@@ -2508,6 +2524,9 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
     private final View.OnTouchListener Right_bt_OnTouchListener = (View v, MotionEvent event) -> {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            //
+            resetMenuHideTimer();
+
             right_bt.setPressed(true);
 
             dlg_YTBtn_remote(IDC_BUTTON_RIGHT, (byte) CONST_mouseStatus_lBtnDown);
@@ -2520,6 +2539,9 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
     private final View.OnTouchListener Left_bt_OnTouchListener = (View v, MotionEvent event) -> {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            //
+            resetMenuHideTimer();
+
             left_bt.setPressed(true);
 
             dlg_YTBtn_remote(IDC_BUTTON_LEFT, (byte) CONST_mouseStatus_lBtnDown);
@@ -2534,10 +2556,16 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
     private final View.OnTouchListener Up_bt_OnTouchListener = (View v, MotionEvent event) -> {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            //
+            resetMenuHideTimer();
+
             up_bt.setPressed(true);
 
             dlg_YTBtn_remote(IDC_BUTTON_UP, (byte) CONST_mouseStatus_lBtnDown);
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
+            //
+            resetMenuHideTimer();
+
             up_bt.setPressed(false);
 
             dlg_YTBtn_remote(IDC_BUTTON_UP, (byte) CONST_mouseStatus_lBtnUp);
@@ -2548,10 +2576,16 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
     private final View.OnTouchListener Down_bt_OnTouchListener = (View v, MotionEvent event) -> {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            //
+            resetMenuHideTimer();
+
             down_bt.setPressed(true);
 
             dlg_YTBtn_remote(IDC_BUTTON_DOWN, (byte) CONST_mouseStatus_lBtnDown);
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
+            //
+            resetMenuHideTimer();
+
             down_bt.setPressed(false);
 
             dlg_YTBtn_remote(IDC_BUTTON_DOWN, (byte) CONST_mouseStatus_lBtnUp);
