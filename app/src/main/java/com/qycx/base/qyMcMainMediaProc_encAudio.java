@@ -5,6 +5,7 @@ import static com.qycx.base.Consts.CONST_iParamType_encA;
 import static com.qycx.base.Consts.CONST_iParamType_playa;
 import static com.qycx.base.Consts.CONST_iParamType_encA;
 import static com.qycx.base.QYThreadCtx.getCtxThreadTmpVar;
+import static com.qycx.base.audioRecorder_android.qyFuncs_Droid.isMicrophoneMuted;
 import static com.qycx.base.ctxCaller.Consts.CONST_ctxCallerType_thread;
 import static com.qycx.base.ctxQmcTmpl.Consts.CONST_fn_dump_mp3_enc;
 import static com.qycx.base.findOrgMsgAndProcess_is.qyFuncs.canSend;
@@ -143,6 +144,10 @@ public class qyMcMainMediaProc_encAudio {
                         bSend=false;
                     }
                 }
+                //
+                if  (  isMicrophoneMuted()) {  //  2026/07/27
+                    bSend=false;
+                }
 
                 //
                 if  (  bSend) {
@@ -170,13 +175,13 @@ public class qyMcMainMediaProc_encAudio {
                 //
                 boolean bPktRedirected = false;
                 if (bPlayLocal) {
-                    //			  	
+                    //
                     qmcSharedObj.SHARED_OBJ_USR pSharedObjUsr = getSharedObjUsr(pSharedObj, pSharedObj.var.iIndex_curUsr);
                     if (null == pSharedObjUsr) {
                         //goto  errLabel;
                         //continue;
                     } else {
-                        //  
+                        //
 
                         pProcInfo.playLocalAudioData(pSharedObjUsr.iTaskId, pSharedObjUsr.uiTranNo_openAvDev_a, pCapProcInfo.compressAudio.ah_decompress.wfx, pPkt, pktLen, bPktRedirected, pCapProcInfo.uiType, pSharedObj.var.iIndex_capAudio);
                     }
@@ -446,7 +451,7 @@ public class qyMcMainMediaProc_encAudio {
                                 return iErr;
                             }
                             if  (null == pModule.pf_qdcGetOutputByIndexa
-                            &&  null==pModule.pf_qdcGetOutputByIndex)
+                                    &&  null==pModule.pf_qdcGetOutputByIndex)
                             {
                                 return iErr;
                             }
@@ -765,7 +770,14 @@ public class qyMcMainMediaProc_encAudio {
                                             qnmCommProc_mis.TRANSFER_AUDIO_dataMemHead mem_o = new qnmCommProc_mis.TRANSFER_AUDIO_dataMemHead();
                                             mem_o.copyFrom(mem_i);
                                             //
-                                            //mem_o.tmp_pMsgTask=pMsgTask;
+                                            //
+                                            if  (  pQyMc.appParams.bDbg)  {
+                                                int  n  = pProcInfo1.pOutputQBuf2_local_a.getQ2Nodes();
+                                                String str;
+                                                str = "toShareAudio: outputQBuf2_local_a.postMsg nQNodes "  +  n;
+                                                showInfo_open.qyFuncs.showInfo_open(0,0,"",str);
+                                            }
+                                            //
                                             //
                                             pProcInfo1.pOutputQBuf2_local_a.q2PostMsg(mem_o, audio, iPos, mem_o.uiLen, "");
                                             iPos += mem_o.uiLen;

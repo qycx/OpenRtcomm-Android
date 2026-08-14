@@ -605,7 +605,7 @@ public class Fragment_map extends Fragment {
                 s.rightToolsMarginEnd = lp.getMarginEnd();
             }
         }
-        mapOverlayPortraitSnapshot = s;   
+        mapOverlayPortraitSnapshot = s;
     }
 
     /** 竖屏首次进入时捕获 XML 渲染后的像素基准，避免 dp/sp 重算导致偏大。 */
@@ -5484,7 +5484,7 @@ public class Fragment_map extends Fragment {
         if (grpIds == null) return;
         for (long grpId : grpIds) {
             if (grpId <= 0 || !isSelfMemberOfGroup(grpId)) continue;
-               pProcInfo.m_pMapExt.sendLocation(null, payload, grpId);
+            pProcInfo.m_pMapExt.sendLocation(null, payload, grpId);
         }
     }
 
@@ -5954,20 +5954,7 @@ public class Fragment_map extends Fragment {
         }
         activeGroupMeetingRunning = running;
         activeGroupMeetingId = running ? groupId : 0;
-        if (viewActiveGrpMeetingLamp != null) {
-            viewActiveGrpMeetingLamp.setVisibility(View.VISIBLE);
-            viewActiveGrpMeetingLamp.setBackgroundResource(running
-                    ? R.drawable.bg_meeting_lamp_green
-                    : R.drawable.bg_meeting_lamp_red);
-            viewActiveGrpMeetingLamp.clearAnimation();
-            if (running) {
-                AlphaAnimation blink = new AlphaAnimation(1.0f, 0.25f);
-                blink.setDuration(650L);
-                blink.setRepeatMode(Animation.REVERSE);
-                blink.setRepeatCount(Animation.INFINITE);
-                viewActiveGrpMeetingLamp.startAnimation(blink);
-            }
-        }
+        applyMeetingLamp(viewActiveGrpMeetingLamp, running);
         if (tvActiveGrpMeetingEntry != null) {
             tvActiveGrpMeetingEntry.setVisibility(View.VISIBLE);
             tvActiveGrpMeetingEntry.setText(running ? "点击进入会议" : "暂无会议");
@@ -5993,44 +5980,70 @@ public class Fragment_map extends Fragment {
 
     @Nullable
     private ActiveGroupMeetingState findActiveGroupMeetingStateInternal(boolean forEnter) {
+        // 地图顶栏绿灯只表示「当前选中活动组」有会
+        return findMeetingStateForGroup(getSelectedActiveGroupId(), forEnter);
+    }
+
+    /** 指定组是否有可展示的会议（列表红/绿灯用，不依赖当前选中组）。 */
+    private boolean isGroupMeetingRunningForDisplay(long groupId) {
+        return findMeetingStateForGroup(groupId, false) != null;
+    }
+
+    @Nullable
+    private ActiveGroupMeetingState findMeetingStateForGroup(long groupId, boolean forEnter) {
+        if (groupId <= 0) return null;
         Set<Long> activeGrpIds = loadActiveGroupIdsFromTaskGrp();
         ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null) return null;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo != null ? pProcInfo.pMisCnt : null;
         if (pMisCnt == null) return null;
-        ActiveGroupMeetingState notifyState = findActiveGroupMeetingStateFromNotify(pQyMc, pProcInfo, activeGrpIds);
+        ActiveGroupMeetingState notifyState =
+                findActiveGroupMeetingStateFromNotify(pQyMc, pProcInfo, activeGrpIds, groupId);
         if (notifyState != null) return notifyState;
-        ActiveGroupMeetingState taskState = findActiveGroupMeetingStateFromTasks(pQyMc, pProcInfo, pMisCnt, activeGrpIds, forEnter);
+        ActiveGroupMeetingState taskState =
+                findActiveGroupMeetingStateFromTasks(pQyMc, pProcInfo, pMisCnt, activeGrpIds, forEnter, groupId);
         if (taskState != null) return taskState;
-        if (activeGrpIds.isEmpty()) return null;
-        for (Long grpIdObj : activeGrpIds) {
-            if (grpIdObj == null || grpIdObj <= 0) continue;
-            long grpId = grpIdObj;
-            if (!isSelfMemberOfGroup(grpId)) continue;
-            qyDefs.QY_MESSENGER_ID idInfo = new qyDefs.QY_MESSENGER_ID();
-            idInfo.ui64Id = grpId;
-            Activity_dlgTalk talk = guiShare.GuiShare.pf_findTalker.call(pQyMc, pMisCnt, idInfo);
-            dlgTalkProc.DLG_TALK_var talkVar = talk != null ? talk.get_pm_var() : null;
-            if (talk == null || talkVar == null || talkVar.av == null || talkVar.av.taskInfo == null) {
-                continue;
-            }
-            if (!isGroupTalk(talk)) continue;
-            if (talkVar.av.taskInfo.bTaskExists && talkVar.av.taskInfo.ucbVideoConference) {
-                int idx = talkVar.av.taskInfo.iIndex_taskInfo;
-                if (idx < 0) continue;
-                if (forEnter && !isLiveGroupAvTaskIndex(idx)) continue;
-                return new ActiveGroupMeetingState(grpId, talk, idx,
-                        talkVar.av.taskInfo.iTaskId, forEnter, false);
-            }
+        if (!isSelfMemberOfGroup(groupId)) return null;
+        qyDefs.QY_MESSENGER_ID idInfo = new qyDefs.QY_MESSENGER_ID();
+        idInfo.ui64Id = groupId;
+        Activity_dlgTalk talk = guiShare.GuiShare.pf_findTalker.call(pQyMc, pMisCnt, idInfo);
+        dlgTalkProc.DLG_TALK_var talkVar = talk != null ? talk.get_pm_var() : null;
+        if (talk == null || talkVar == null || talkVar.av == null || talkVar.av.taskInfo == null) {
+            return null;
+        }
+        if (!isGroupTalk(talk)) return null;
+        if (talkVar.av.taskInfo.bTaskExists && talkVar.av.taskInfo.ucbVideoConference) {
+            int idx = talkVar.av.taskInfo.iIndex_taskInfo;
+            if (idx < 0) return null;
+            if (forEnter && !isLiveGroupAvTaskIndex(idx)) return null;
+            return new ActiveGroupMeetingState(groupId, talk, idx,
+                    talkVar.av.taskInfo.iTaskId, forEnter, false);
         }
         return null;
+    }
+
+    private void applyMeetingLamp(@Nullable View lamp, boolean running) {
+        if (lamp == null) return;
+        lamp.setVisibility(View.VISIBLE);
+        lamp.setBackgroundResource(running
+                ? R.drawable.bg_meeting_lamp_green
+                : R.drawable.bg_meeting_lamp_red);
+        lamp.clearAnimation();
+        if (running) {
+            AlphaAnimation blink = new AlphaAnimation(1.0f, 0.25f);
+            blink.setDuration(650L);
+            blink.setRepeatMode(Animation.REVERSE);
+            blink.setRepeatCount(Animation.INFINITE);
+            lamp.startAnimation(blink);
+        }
     }
 
     @Nullable
     private ActiveGroupMeetingState findActiveGroupMeetingStateFromNotify(ctxQyMc.CCtxQyMc pQyMc,
                                                                           ctxQmc.CCtxQmc pProcInfo,
-                                                                          Set<Long> activeGrpIds) {
+                                                                          Set<Long> activeGrpIds,
+                                                                          long selectedGid) {
         if (pQyMc == null || pQyMc.gui == null || !(pQyMc.gui.hMainWnd instanceof MainActivity)) return null;
         MainActivity main = (MainActivity) pQyMc.gui.hMainWnd;
         if (main.var_common == null
@@ -6047,6 +6060,7 @@ public class Fragment_map extends Fragment {
         qnmCommProc_mis.MIS_MSG_TASK task = getRecentActiveAvTask(taskInfo, false);
         if (task == null) return null;
         long grpId = extractGroupIdFromAvTask(task);
+        if (grpId != selectedGid) return null;
         if (!isEligibleMeetingGroup(pQyMc, grpId, activeGrpIds)) return null;
         return new ActiveGroupMeetingState(grpId, findGroupTalker(pQyMc, grpId), idx,
                 getTaskIdFromTaskInfo(taskInfo), true, true);
@@ -6057,7 +6071,8 @@ public class Fragment_map extends Fragment {
                                                                          ctxQmc.CCtxQmc pProcInfo,
                                                                          qmCommFunc_mis.MIS_CNT pMisCnt,
                                                                          Set<Long> activeGrpIds,
-                                                                         boolean forEnter) {
+                                                                         boolean forEnter,
+                                                                         long selectedGid) {
         if (pProcInfo == null || pProcInfo.cfg == null) return null;
         for (int i = 0; i < pProcInfo.cfg.usMaxCnt_taskInfos; i++) {
             if (forEnter && !qmcTaskInfo.qyFuncs.qmcTaskInfo_bAlive(null, pProcInfo, i)) {
@@ -6068,6 +6083,7 @@ public class Fragment_map extends Fragment {
             qnmCommProc_mis.MIS_MSG_TASK task = getRecentActiveAvTask(taskInfo, forEnter);
             if (task == null) continue;
             long grpId = extractGroupIdFromAvTask(task);
+            if (grpId != selectedGid) continue;
             if (!isEligibleMeetingGroup(pQyMc, grpId, activeGrpIds)) continue;
             qyDefs.QY_MESSENGER_ID idInfo = new qyDefs.QY_MESSENGER_ID();
             idInfo.ui64Id = grpId;
@@ -6478,7 +6494,8 @@ public class Fragment_map extends Fragment {
         if (pProcInfo == null || pProcInfo.pMisCnt == null) return;
         Set<Long> singleGroup = new HashSet<>();
         singleGroup.add(groupId);
-        ActiveGroupMeetingState notifyState = findActiveGroupMeetingStateFromNotify(pQyMc, pProcInfo, singleGroup);
+        ActiveGroupMeetingState notifyState =
+                findActiveGroupMeetingStateFromNotify(pQyMc, pProcInfo, singleGroup, groupId);
         if (notifyState == null || notifyState.groupId != groupId) return;
         try {
             MainActivity main = (MainActivity) pQyMc.gui.hMainWnd;
@@ -6609,11 +6626,13 @@ public class Fragment_map extends Fragment {
     }
 
     private static final class ActiveGroupPickViewHolder extends RecyclerView.ViewHolder {
+        final View meetingLamp;
         final TextView tvName;
         final TextView tvId;
 
         ActiveGroupPickViewHolder(@NonNull View itemView) {
             super(itemView);
+            meetingLamp = itemView.findViewById(R.id.viewActiveGroupPickMeetingLamp);
             tvName = itemView.findViewById(R.id.tvActiveGroupPickName);
             tvId = itemView.findViewById(R.id.tvActiveGroupPickId);
         }
@@ -6646,6 +6665,8 @@ public class Fragment_map extends Fragment {
             h.tvName.setText(item != null ? item.groupName : "");
             h.tvId.setText(item != null ? "ID: " + item.groupId : "");
             h.itemView.setBackgroundColor(Color.parseColor(selected ? "#E8F2EC" : "#FFFFFF"));
+            boolean meeting = item != null && isGroupMeetingRunningForDisplay(item.groupId);
+            applyMeetingLamp(h.meetingLamp, meeting);
             h.itemView.setOnClickListener(v -> {
                 int pos = h.getAdapterPosition();
                 if (pos == RecyclerView.NO_POSITION) return;
@@ -6892,6 +6913,26 @@ public class Fragment_map extends Fragment {
             return;
         }
         floatingVideoTargetId = gid;
+        // 组内已有会议：直接进入/恢复，勿再 removeTask + 重新 sendConfReq（否则无页面无提示）
+        ActiveGroupMeetingState enterState = findActiveGroupMeetingStateForEnter();
+        if (enterState != null && enterState.groupId == gid) {
+            Toast.makeText(requireContext(), "会议进行中，正在进入", Toast.LENGTH_SHORT).show();
+            enterResolvedActiveGroupMeeting(enterState);
+            return;
+        }
+        ActiveGroupMeetingState displayState = findActiveGroupMeetingStateForDisplay();
+        if (displayState != null && displayState.groupId == gid) {
+            Toast.makeText(requireContext(), "会议进行中，正在进入", Toast.LENGTH_SHORT).show();
+            recoverActiveGroupMeetingFromDisplay(displayState);
+            return;
+        }
+        int liveIdx = findLiveGroupAvTaskIndexForGroup(gid);
+        if (liveIdx >= 0) {
+            Toast.makeText(requireContext(), "会议进行中，正在进入", Toast.LENGTH_SHORT).show();
+            enterResolvedActiveGroupMeeting(
+                    new ActiveGroupMeetingState(gid, null, liveIdx, 0, true, false));
+            return;
+        }
         startMapGroupConferenceAndEnterFloating(gid);
     }
 
@@ -6924,13 +6965,9 @@ public class Fragment_map extends Fragment {
         //
         sendGroupConfReqFromMap(groupId, (short) qyWmComm.Consts.CONST_do_1080P_AV_Call);
         Log.d("MAP_AV_DBG", "startMapGroupConference sendConfReq, group=" + groupId);
-        //
-        if  (  false  ) {
-            if (locationHandler != null) {
-                locationHandler.postDelayed(() -> waitGroupConferenceTaskAndEnter(groupId, 0), 300);
-            }
+        if (locationHandler != null) {
+            locationHandler.postDelayed(() -> waitGroupConferenceTaskAndEnter(groupId, 0), 300);
         }
-
     }
 
     private void waitGroupConferenceTaskAndEnter(long groupId, int attempt) {

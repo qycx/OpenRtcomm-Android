@@ -353,7 +353,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
                             //
                             break;
-                            //
+                        //
                         case  qyWmComm.Consts.CONST_qyWmParam_doTask: {
                             Log.d("at","l4168: doTask");
                             //
@@ -468,8 +468,8 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                 }
                 break;
                 case  CONST_fgType_talk_av2: {
-                      Fragment_dlgTalk_av2 fg =(Fragment_dlgTalk_av2) wnd;
-                      handler=fg.mMainHandler;
+                    Fragment_dlgTalk_av2 fg =(Fragment_dlgTalk_av2) wnd;
+                    handler=fg.mMainHandler;
                 }
                 break;
                 default:
@@ -546,7 +546,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                 qnmCommProc_mis.MIS_MSG_INPUT input = (qnmCommProc_mis.MIS_MSG_INPUT) tmp_pMsg;
                 if (!(
                         //qyComm.qyFuncs.isUcFlgTalkData(input.ucFlg) ||
-                                qyComm.qyFuncs.isUcFlgRouteTalkData(input.ucFlg))) {
+                        qyComm.qyFuncs.isUcFlgRouteTalkData(input.ucFlg))) {
                     return iErr;
                 }
                 addr_logicalPeer_idInfo = input.addr_logicalPeer.idInfo;
@@ -753,13 +753,19 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                 if(pQyMc==null) return;
                 MainActivity mainActivity = (MainActivity) pQyMc.gui.hMainWnd;
 
+                //
                 if (v.getId() == R.id.btn_accept) {
                     //
-                    showInfo_open.qyFuncs.showInfo_open("CONST_imOp_recv_accept");
+                    showInfo_open.qyFuncs.showInfo_open("click: imOp_recv_accept");
+                    //
                     gui_notify_doCmd.call(CONST_imOp_recv_accept);
+
                 } else if (v.getId() == R.id.btn_cancel) {
                     //
+                    showInfo_open.qyFuncs.showInfo_open("click: imOp_recv_cancel");
+                    //
                     gui_notify_doCmd.call(CONST_imOp_recv_cancel);
+
                 }
             }
         }
@@ -1056,7 +1062,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             tmp_notify_avCall_ifForegrounded(hParent);
         }
         else {
-             tmp_notify_avCall_ifBackgrounded();
+            tmp_notify_avCall_ifBackgrounded();
         }
         //
         mainActivity.var_common.notifyTaskStatus.curNotify.bShown = true;
@@ -1169,6 +1175,10 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         //
         qyMcMainWndProc_isCli.qyFuncs_Droid.mainWnd_OnTimer(mainActivity, mainActivity.var_common, 0);
 
+
+
+
+
         //
         if (pProcInfo.bEnd_threadProc_isCli) {
             Log.d("gui_onTimer: threadProc_isCli_end is true, trigger to doClean");
@@ -1177,7 +1187,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             this.gui_PostMessage.call(this, qyWmComm.Consts.CONST_qyWm_postComm, qyWmComm.Consts.CONST_qyWmParam_threadProc_isCli_end, 0);
         }
 
-        //                
+        //
         mAdapter.mFragment_msg1.gui_onTimer(null, null, null);
         mAdapter.mFragment_imObj1.gui_onTimer(null, null, null);
         mAdapter.mFragment_me.gui_onTimer(null, null, null);
@@ -1339,6 +1349,8 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         this.var_common = new qyMcMainWndProc.QY_MC_mainWndVar();
         qyFuncs.test();
 
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         //
         if  (  g_pQyMc  ==  null) {
             InitInstance(0, 0);
@@ -1364,7 +1376,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             pProcInfo.use100k_bDj=true;
         }
         else  {
-              pProcInfo.use100k_bDj=false;
+            pProcInfo.use100k_bDj=false;
         }
         //
         if  (  pProcInfo.cfg.bSupport_autoLogin) {
@@ -2127,14 +2139,14 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                 return false;
             }
             switch (event.getActionMasked()) {
-                    case MotionEvent.ACTION_DOWN:
+                case MotionEvent.ACTION_DOWN:
                     ViewParent parent = v.getParent();
                     if (parent != null) {
                         parent.requestDisallowInterceptTouchEvent(true);
                     }
                     splitDividerDragStartRawY = event.getRawY();
                     splitDividerDragStartVideoH = shellLp.height;
-                        return true;
+                    return true;
                 case MotionEvent.ACTION_MOVE: {
                     int dy = (int) (event.getRawY() - splitDividerDragStartRawY);
                     int newH = clampPortraitSplitVideoHeightPx(embeddedContentH, splitDividerDragStartVideoH + dy);
@@ -2161,8 +2173,8 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     }
 
     private void applyPortraitSplitVideoLayout(int videoShellH, int contentW, int embeddedContentH,
-            @NonNull RelativeLayout.LayoutParams vpLp,
-            @NonNull FrameLayout.LayoutParams shellLp) {
+                                               @NonNull RelativeLayout.LayoutParams vpLp,
+                                               @NonNull FrameLayout.LayoutParams shellLp) {
         videoShellH = clampPortraitSplitVideoHeightPx(embeddedContentH, videoShellH);
         portraitSplitVideoHeightRatio = videoShellH / (float) embeddedContentH;
 
@@ -2294,14 +2306,14 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                     }
                     return true;
                 }
-                    case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
                     ViewParent p = v.getParent();
                     if (p != null) {
                         p.requestDisallowInterceptTouchEvent(false);
                     }
                     notifyMapFloatingLayoutChanged();
-                        return true;
+                    return true;
                 default:
                     break;
             }
@@ -2310,8 +2322,8 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     }
 
     private void applyLandscapeSplitVideoLayout(int videoShellW, int contentW, int embeddedContentH,
-            @NonNull RelativeLayout.LayoutParams vpLp,
-            @NonNull FrameLayout.LayoutParams shellLp) {
+                                                @NonNull RelativeLayout.LayoutParams vpLp,
+                                                @NonNull FrameLayout.LayoutParams shellLp) {
         videoShellW = clampLandscapeSplitVideoWidthPx(contentW, videoShellW);
         landscapeSplitVideoWidthRatio = videoShellW / (float) contentW;
 
@@ -2393,8 +2405,8 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     private boolean isOnMapTab() {
         ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         if (pQyMc == null || pQyMc.appParams == null || !pQyMc.appParams.bENABLE_MAP_TAB) {
-                return false;
-            }
+            return false;
+        }
         return vPager != null && vPager.getCurrentItem() == PAGE_FOUR;
     }
 

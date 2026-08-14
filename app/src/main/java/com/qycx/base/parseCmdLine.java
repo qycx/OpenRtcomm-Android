@@ -14,11 +14,11 @@ public class parseCmdLine {
 
         //
         if  (  true  )  {
-            pParams.bSupport_lyra = false;
+            pParams.bSupport_lyra = true;
         }
 
         //
-        if  (  false  ) {
+        if  (  true  ) {
             pParams.bENABLE_MAP_TAB=true;
 
             //
