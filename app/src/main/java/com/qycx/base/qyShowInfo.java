@@ -328,7 +328,20 @@ public class qyShowInfo {
                                 showStruct.ucPercent_showInfoQ = ucPercent;
 
                                 //
-                                if  (  nQNodes  >  80  )  {
+                                if  (  true   )  {
+                                    //
+                                    boolean b1=false;
+                                    if  (  showStruct.doStr!=null) {
+                                        b1 = showStruct.doStr.contains("encA");
+                                    }
+                                    boolean b2=false;
+                                    if  (  showStruct.what!=null) {
+                                        b2 = showStruct.what.contains("encA");
+                                    }
+                                    if  (  b1  ||  b2  )  {
+                                        Log.d("at","kkk");
+                                    }
+
 
                                     //Log.d("qy","qyShowInfo2: q2.size "  + nQNodes);
                                 }

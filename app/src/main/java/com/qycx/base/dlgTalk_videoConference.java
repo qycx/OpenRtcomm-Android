@@ -19,13 +19,13 @@ import static com.qycx.base.postMsg2MgrFunc.qyFuncs.postMsgTask2Mgr_mc;
 import static com.qycx.base.qmcCommFunc_mis.qyFuncs.M_getActiveMemDesc;
 import static com.qycx.base.qmcSharedObj.qyFuncs.getSharedObjByIndex;
 import static com.qycx.base.qmcTaskInfo.Consts.CONST_taskDataType_conf;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendTask;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_requestToSpeak;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_sendStreamInfo;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_stopSpeaking;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_task;
 import static com.qycx.base.qnmCommProc_mis.Consts.MAX_conf_activeMems;
 import static com.qycx.base.qnmCommProc_mis.Consts.cntof_talkerDesc;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendTask;
 import static com.qycx.base.qyCusResHelp.qyFuncs.getResStr;
 import static com.qycx.base.qyDefs.Consts.CONST_objType_imGrp;
 

@@ -2,15 +2,10 @@
 package com.qycx.base;
 
 
-import static com.qycx.base.Consts.AUDIO_DOWNLOAD;
-import static com.qycx.base.Consts.AUDIO_UPLOAD;
 import static com.qycx.base.Consts.CONST_channelType_rtMedia;
-import static com.qycx.base.Consts.VIDEO_DOWNLOAD;
-import static com.qycx.base.Consts.VIDEO_UPLOAD;
 import static com.qycx.base.genericQueue.qyFuncs.qGetMsg;
 import static com.qycx.base.qisChannel.qyFuncs.startChannel;
 import static com.qycx.base.qisChannel.qyFuncs.waitForChannel;
-import static com.qycx.base.qmcCommFunc_mis.Consts.CONST_iAllocType_longTimeMsg;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_applyForChkChannels_qmc;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_input;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_outputTask;
@@ -30,12 +25,12 @@ import static com.qycx.base.tmpFunc.qyFuncs.myWaitOne;
 import com.qycx.base.util.Log;
 
 
-public class qyMcMainProc_isCli_realTimeMedia {
+public class qyMcMainProc_isCli_rtMedia {
 
     public static class qyFuncs {
 
         //
-        public static Runnable mcThreadProc_mis_realTimeMedia = () ->
+        public static Runnable mcThreadProc_mis_rtMedia = () ->
         {
             ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
             ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();

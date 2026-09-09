@@ -3,6 +3,7 @@
 
 package com.qycx.base;
 
+import static com.qycx.base.commonSock_android.qyFuncs_Droid.qySend_android;
 import static com.qycx.base.qyComm.Consts.CONST_qyCmd_tellService;
 import static com.qycx.base.qyComm.Consts.bufSize_qyCommServiceData;
 import static com.qycx.base.qyCommFunc.Consts.CONST_maxReqDataLen_enc_netMc;
@@ -97,8 +98,11 @@ public class qyCommFunc {
             if (0 >= guiShare.GuiShare.pf_qySend.call(pSock,buffer.array(), 0,  8,  pTo.iWrite))
                 return iErr;
             if (0 != dataLen) {
-                if (0 >= guiShare.GuiShare.pf_qySend.call(pSock, (data) , 0,  dataLen,  pTo.iWrite))
+                //if (0 >= guiShare.GuiShare.pf_qySend.call(pSock, (data) , 0,  dataLen,  pTo.iWrite))
+                if (0 >= qySend_android.call(pSock, (data) , 0,  dataLen,  pTo.iWrite))
+                {
                     return iErr;
+                }
             }
 
             //  2007/04/25

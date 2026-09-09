@@ -18,6 +18,7 @@ import com.qycx.base.qyMcMainObj;
 import com.qycx.base.qyMcMain_global;
 import com.qycx.base.qyMsgFunc;
 import com.qycx.base.qyTypes;
+import com.qycx.base.util.Log;
 
 import java.nio.IntBuffer;
 
@@ -95,6 +96,41 @@ public class ctxQmc_gui {
 //            if (null == (phWnd = guiShare.GuiShare.pf_findTalker.call(pQyMc, pMisCnt, idInfo))) return -1;
             //return guiShare.GuiShare.pf_findTalker.call(pQyMc, pMisCnt, idInfo);
 //            return 0;
+        }
+
+        @Override public int  initVar_post(Object p0, Object p1, Object p2)
+        {
+            ctxQmc.CCtxQmc pBase = this;
+            //
+            if  (  pQyMc.appParams.bDbg) {
+                //
+                pBase.cfg.debugStatusInfo.bTest_noMapExt = true;
+                Log.d("at","test: noMapExt set to true");
+                //
+                pBase.cfg.debugStatusInfo.bTest_noLostVideo=true;
+                Log.d("at","test: noLostVideo set to true");
+                //
+                pBase.cfg.debugStatusInfo.bBbg_traceRt_pOutputQBuf2_local_a=true;
+                Log.d("at","test: traceRt_pOutputQBuf2_local_a set to true");
+                //
+                //pBase.cfg.debugStatusInfo.bDbgDetail_keepAlive=false;
+
+                //
+                pBase.cfg.debugStatusInfo.bDbgDetail_v_r=true;
+                Log.d("at","test: bDbgDetail_v_r set to true");
+
+            }
+
+            //
+            return  0;
+        }
+        @Override public int  exitVar_pre(Object p0, Object p1, Object p2)
+        {
+            return  0;
+        }
+        @Override public int  exitVar_post(Object p0, Object p1, Object p2)
+        {
+            return  0;
         }
 
 

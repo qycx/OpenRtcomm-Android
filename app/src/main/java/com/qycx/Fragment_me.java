@@ -6,6 +6,7 @@ import static android.content.Context.MODE_PRIVATE;
 import static com.qycx.anc.Consts.Str_use100k_bDj;
 import static com.qycx.anc.Consts.Str_use100k_ifP2p;
 import static com.qycx.base.dlgTalkProc_help.qyFuncs_Droid.bDone_retrieveAllImObjRules;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_refreshImObjListReq;
 
 import android.app.AlertDialog;
 import androidx.fragment.app.Fragment;
@@ -333,7 +334,7 @@ public class Fragment_me extends Fragment {
         pStream.ulStreamLen = len;
         long tStartTran = tmpFunc.qyFuncs.mytime();
         int uiTranNo = qy_getuiNextTranNo.qyFuncs.getuiNextTranNo.call();
-        postMsg2MgrFunc.qyFuncs.postMsg2Mgr_mc(null, pMisCnt, null, qnmCommProc_mis.Consts.CONST_misMsgType_req, (byte) 0, qnmCommProc.Consts.CONST_qyCmd_refreshImObjListReq, tStartTran, uiTranNo, (short) 0, pStream, 0, 0, 0, 0, null, false);
+        postMsg2MgrFunc.qyFuncs.postMsg2Mgr_mc(null, pMisCnt, null, qnmCommProc_mis.Consts.CONST_misMsgType_req, (byte) 0, CONST_qyCmd_refreshImObjListReq, tStartTran, uiTranNo, (short) 0, pStream, 0, 0, 0, 0, null, false);
         pendingNewPassword = null;
     };
 

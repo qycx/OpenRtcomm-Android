@@ -18,6 +18,7 @@ import static com.qycx.base.genericQueue.qyFuncs.qGetMsg;
 import static com.qycx.base.genericQueue.qyFuncs.qPostMsg;
 import static com.qycx.base.getNextVPkt.qyFuncs.detachAPkt;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_anHgData;
+import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_anKeepaliveReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_confKey;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_confLayout;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_confNvrInfo;
@@ -67,12 +68,6 @@ import static com.qycx.base.qmcVideoCapture.Consts.CONST_audioCompressors_acm;
 import static com.qycx.base.qmcVideoCapture.Consts.CONST_audioCompressors_dmo;
 import static com.qycx.base.qmcVideoCapture.qyFuncs.qmcApplyForRemovingInvalidTasks;
 import static com.qycx.base.qmcVideoFunc.qyFuncs.askSharedObjToStop;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_getCfgs;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_refreshImObjListReq;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendMedia;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendRobotTask;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendRobotTaskData;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendRobotTaskReply;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_recv_accept;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_recv_cancel;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_send_cancel;
@@ -93,6 +88,12 @@ import static com.qycx.base.qnmCommProc_mis.qyFuncs.qyhtonImContentU;
 import static com.qycx.base.qnmMainFunc_isCli.qyFuncs.getChannelByType;
 import static com.qycx.base.qyComm.Consts.CONST_commFlg_resp;
 import static com.qycx.base.qyComm.Consts.CONST_commFlg_routeTalkData;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_getCfgs;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_refreshImObjListReq;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendMedia;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendRobotTask;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendRobotTaskData;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendRobotTaskReply;
 import static com.qycx.base.qyComm.Consts.CONST_qyRc_ok;
 import static com.qycx.base.qyComm.Consts.CONST_qyRc_servBusy;
 import static com.qycx.base.qyComm.Consts.CONST_qyRc_unknown;
@@ -1789,7 +1790,6 @@ public class qyMcMainProc_isCli_robot {
             //
             int dataLen = 0;
             qmCommFunc_mis.MIS_CNT pMisCnt = null;
-            qnmCommProc_mis.MIS_MSG_routeTalkData pAddrTalkData = null;
             qnmCommProc_mis.IM_CONTENTU pContent = null;
             int uiChannelType = CONST_channelType_robot;
 
@@ -1825,10 +1825,10 @@ public class qyMcMainProc_isCli_robot {
 
                     msgLen = 81736;// (int)Marshal.OffsetOf<MIS_MSG_INPUT>("data");
 
-                    if (
-                            //isUcFlgTalkData(pMsgInput.ucFlg) ||
-                                    isUcFlgRouteTalkData(pMsgInput.ucFlg)) {
+                    if (isUcFlgRouteTalkData(pMsgInput.ucFlg)) {
                         //此时pMsg.data似乎尚未解析出来，需要从pMsg.buffer里读取数据
+                        qnmCommProc_mis.MIS_MSG_routeTalkData pAddrTalkData = null;
+
                         pAddrTalkData = pMsgInput.data;
                         if (null == (pAddrTalkData.buf = qyntohRouteTalkData(pMsgInput.ucFlg, pMsgInput.buffer, pMsgInput.lenInBytes, pAddrTalkData.route, tHintBuf.tHintBuf, cntof_tHintBuf)))
                             return iErr;
@@ -1851,17 +1851,42 @@ public class qyMcMainProc_isCli_robot {
                     pMsgInput.ucbConvrted = true;
                 }
 
+                //
+                pContent = M_getMsgContent(pMsgInput.uiType, pMsgInput.ucFlg, pMsgInput.data);
+                if (null == pContent) return iErr;
+
+                //String str;
+                //
+                if  (  !isUcFlgRouteTalkData(pMsgInput.ucFlg))  {
+                    //
+                    switch (pContent.uiType)  {
+                        case  CONST_imCommType_anKeepaliveReq:  {
+                            //
+                            if  (  pProcInfo.cfg.debugStatusInfo.bDbgDetail_keepAlive) {
+                                str = String.format("procMsgInput_other_resp: get resp for keepalive. tn %d. channel.type %d", pMsgInput.uiTranNo, pChannel.uiType);
+                                showInfo_open.qyFuncs.showInfo_open(str);
+                            }
+
+
+                        }
+                        break;
+                        default:
+                            break;
+                    }
+
+                    //
+                    iErr  =  0;  return  iErr;
+                }
+
 
                 //
+                qnmCommProc_mis.MIS_MSG_routeTalkData pAddrTalkData = null;
                 pAddrTalkData = MACRO_msgRouteTalkData(pMsgInput.ucFlg, pMsgInput.data);
                 if (null == pAddrTalkData) {
                     Log.i("procMsgInput_other_resp failed: pAddrTalkData is null");
                     return iErr;
                 }
 
-                //
-                pContent = M_getMsgContent(pMsgInput.uiType, pMsgInput.ucFlg, pMsgInput.data);
-                if (null == pContent) return iErr;
 
                 switch (pContent.uiType) {
                     case CONST_imCommType_simpleResp: {

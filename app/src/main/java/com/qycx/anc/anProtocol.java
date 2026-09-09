@@ -3,7 +3,6 @@ package com.qycx.anc;
 import static com.qycx.anc.Consts.__USE_atbyte_short__;
 import static com.qycx.anc.ancCommProc_open.Consts.CONST_atCommFlg_msb;
 import static com.qycx.anc.ancCommProc_open.Consts.MAX_12bits;
-import static com.qycx.anc.atFuncs.M_isCommVer1;
 import static com.qycx.base.isProtocolFunc.Consts.cntof_ctx_uiStreamIds;
 import static com.qycx.base.isProtocolFunc.qyFuncs.getFieldData_long;
 import static com.qycx.base.qnmCommProc.Consts.CONST_cntof_cfgItemStr;
@@ -21,15 +20,17 @@ import static com.qycx.base.qnmCommProc.Consts.CONST_qyDataType_str;
 import static com.qycx.base.qnmCommProc.Consts.CONST_qyDataType_utf8Str;
 import static com.qycx.base.qnmCommProc.Consts.bufSize_cfgItemData;
 import static com.qycx.base.qnmCommProc.Consts.bufSize_cfgItemLData;
+import static com.qycx.base.qyComm.qyFuncs.isUcFlgMoreData;
 
 import com.qycx.base.isProtocolFunc;
 import com.qycx.base.qnmCommProc;
+import com.qycx.base.qyMsgFunc;
 import com.qycx.base.util.Log;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-public class ancProtocolFunc {
+public class anProtocol {
 
     public static final int  INT24_MIN  =   -8388608;
     public static final int INT24_MAX  =  8388607;
@@ -756,6 +757,89 @@ public class ancProtocolFunc {
         }
         return pSize_usable;
     }
+    //
+    public static int M_ton_l64(long value,byte[] buf)
+    {
+        byte[] bytes = buf;//new byte[8];
+        bytes[0] = (byte) (value >> 56);
+        bytes[1] = (byte) (value >> 48);
+        bytes[2] = (byte) (value >> 40);
+        bytes[3] = (byte) (value >> 32);
+        bytes[4] = (byte) (value >> 24);
+        bytes[5] = (byte) (value >> 16);
+        bytes[6] = (byte) (value >> 8);
+        bytes[7] = (byte) value;
+
+        return  0;
+    }
+
+    public static int M_ton_long(int value,byte[] buf)
+    {
+        byte[] bytes;
+        bytes = buf;
+        bytes[0] = (byte) (value >> 24);
+        bytes[1] = (byte) (value >> 16);
+        bytes[2] = (byte) (value >> 8);
+        bytes[3] = (byte) value;
+
+        return  0;
+    }
+
+    public static  int M_ton_short(short svalue, byte[] buf)
+    {
+        byte [] bytes;
+        bytes = buf;
+
+        bytes[0] = (byte) (svalue >> 8); // 高8位
+        bytes[1] = (byte) svalue;        // 低8位
+
+        return 0;
+    }
+    //
+    public static int  AT_MSG_HEAD22_hton(long   i64StartTime_base, qyMsgFunc.AT_MSG_HEAD_h pH, qyMsgFunc.AT_MSG_HEAD22_n pN)
+    {
+        //unsigned  char* tmp_p;
+        int  tmpLen;
+
+
+        //
+        pN.ucFlg_buf[0]=pH.ucFlg;
+        //
+        byte[] bytes;
+        bytes= pN.usCode_buf;
+        short svalue = pH.usCode;
+        M_ton_short(svalue,bytes);
+
+        //
+        //tmp_p = pN->uiLen_buf;
+        //M_ton_long(pH->uiLen, tmp_p, tmpLen);
+        //
+        bytes = pN.uiLen_buf;
+        int value = pH.uiLen;
+        M_ton_long(value,bytes);
+
+        //
+        //bytes = pN.i64StartTime_buf;
+        M_ton_l64(pH.i64StartTime, pN.i64StartTime_buf);
+        //
+        //tmp_p = pN->uiTranNo_buf;
+        M_ton_long(pH.uiTranNo, pN.uiTranNo_buf);
+        //
+        //tmp_p = pN->usSeqNo_buf;
+        M_ton_short(pH.usSeqNo, pN.usSeqNo_buf);
+
+        //
+        pN.nBytes = 22;
+        if (!isUcFlgMoreData(pH.ucFlg)) {
+            pN.nBytes -= 2;
+        }
+
+
+
+        //
+        return  0;
+    }
+
 
 
     //

@@ -11,12 +11,12 @@ import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferVide
 import static com.qycx.base.postMsg2MgrFunc.qyFuncs.postMsgTask2Mgr_mc;
 import static com.qycx.base.qmcTransform.Consts.CONST_mutexName_syncIndex_dec;
 import static com.qycx.base.qmcTransform.Consts.MAX_cnt_preDec_array;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendMedia;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_recv_applyForKeyFrame;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_input;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_task;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_usTaskProcObjType_vStream;
 import static com.qycx.base.qnmCommProc_mis.Consts.bufSize_TRANSFER_VIDEO_dataMemHead_mems;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendMedia;
 import static com.qycx.base.qyCommProc_open.Consts.CONST_fourcc_HEVC;
 import static com.qycx.base.qyCommProc_open.Consts.CONST_uiTransformType_dec;
 import static com.qycx.base.qyDefs_open.Consts.NAL_IDR_N_LP;
@@ -33,7 +33,7 @@ public class dec_parseEncVPkt_i {
 
     public static class qyFuncs {
 
-        public static int chkToForceKeyFrame(ctxCaller.CTX_caller ctxCaller, qmcTransform.QY_TRANSFORM pTransform) {
+        public static int chkToForceKeyFrame(ctxCaller.CTX_caller ctxCaller, qmcTransform.QY_TRANSFORM pTransform,boolean bWaitFor_KeyFrameFirst) {
 //            showInfo_open.qyFuncs.showInfo_open("chkToForceKeyFrame enters");
             int iErr = -1;
             ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
@@ -67,7 +67,7 @@ public class dec_parseEncVPkt_i {
 //            long dwTickCnt = tmpFunc.qyFuncs.myGetTickCount(null);
             long dwTickCnt = tmpFunc.qyFuncs.myGetTickCount64(null);
             long iDiffInMs = (long) (dwTickCnt - pTransform.video.decInfo.applyForKeyFrame.dwLastTickCnt_applyForKeyFrame);
-            if (Math.abs(iDiffInMs) < 1000) {
+            if (Math.abs(iDiffInMs) < 300) {
                 iErr = 0;
 //                showInfo_open.qyFuncs.showInfo_open("chkToForceKeyFrame return Math.abs(iDiffInMs) < 1000");
                 return iErr;
@@ -434,7 +434,8 @@ public class dec_parseEncVPkt_i {
                                         pTransform.video.idInfo.ui64Id + " " + pTransform.video.tv.uiTranNo_openAvDev;
                                 Log.d( str);
                                 showInfo_open.qyFuncs.showInfo_open(0, null,str);
-                                chkToForceKeyFrame(null, pTransform);
+                                //
+                                chkToForceKeyFrame(null, pTransform,true);
                                 //
                                 iErr = CONST_qyRet_needKeyFrameFirst;
                                 //

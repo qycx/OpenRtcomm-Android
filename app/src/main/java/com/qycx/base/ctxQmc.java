@@ -905,6 +905,13 @@ public class ctxQmc {
         }
 
 
+        //
+        abstract public int  initVar_post(Object p0, Object p1, Object p2);
+        abstract public int  exitVar_pre(Object p0, Object p1, Object p2);
+        abstract public int  exitVar_post(Object p0, Object p1, Object p2);
+
+
+        //
         public int doApplyForPlayer(Object hMainWnd, qnmCommProc_mis.MIS_MSGU pMsg) {
             return doApplyForPlayer.qyFuncs.doApplyForPlayer(hMainWnd, pMsg);
         }
@@ -1982,7 +1989,7 @@ public class ctxQmc {
                     qCfg = pProcInfo.cfg.outputQ_toMosaic_video;
 
                     pProcInfo.pOutputQBuf2_local_v = new QY_qBuf2();
-                    maxDataBufLen = 2000000 * 1 / 8;
+                    maxDataBufLen = 2000000 * 2 / 8;
                     //
                     //
                     if (0 != pProcInfo.pOutputQBuf2_local_v.initQyQ2(CONST_qType_encV, qCfg.uiMaxQNodes, maxDataBufLen, false, pQyMc.cfg.rwLockParam, true, "encV")) {
@@ -2011,8 +2018,13 @@ public class ctxQmc {
                 pProcInfo.cfg.usTimeoutInMs_waitForProcessingOf_otherTask = 60000;
                 pProcInfo.cfg.usTimeoutInMs_waitIfNoData = 30000;
 
+                //
                 guiShare.GuiShare.pf_customSystem.call();
 
+                //
+                pProcInfo.initVar_post(0,0,0);
+
+                //
                 iErr  =  0;
             } while(false);
 

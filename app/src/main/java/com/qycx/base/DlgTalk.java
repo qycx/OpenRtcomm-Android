@@ -12,13 +12,13 @@ import static com.qycx.base.postMsg2MgrFunc.qyFuncs.postMsgTask2Mgr_mc;
 import static com.qycx.base.qmcFunc_isCli.qyFuncs.msg2TaskRcd;
 import static com.qycx.base.qmcTaskInfo.Consts.CONST_taskDataType_transferFile;
 import static com.qycx.base.qmcTaskInfo.qyFuncs.newTaskInfoIndex;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendRobotTask;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_task;
 import static com.qycx.base.qnmMainFunc_isCli.qyFuncs.newTaskId;
 //
 //import static com.qycx.base.qyComm.Consts.CONST_commFlg_talkData;
 //
 import static com.qycx.base.qyComm.Consts.CONST_commFlg_routeTalkData;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendRobotTask;
 import static com.qycx.base.qyComm.Consts.CONST_qyRc_unknown;
 import static com.qycx.base.qyCusResPublic.Consts.CONST_imTaskType_sendFile;
 import static com.qycx.base.qyDefs.Consts.CONST_objType_imGrp;

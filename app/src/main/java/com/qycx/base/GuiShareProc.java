@@ -38,7 +38,7 @@ public class GuiShareProc
             guiShare.GuiShare.pf_qyConnect =qyConnect_android;
             guiShare.GuiShare.pf_qyDisconnect =qyDisconnect_android;
             guiShare.GuiShare.pf_qySend =qySend_android;
-            guiShare.GuiShare.pf_qyRecv =qyRecv_android;
+            //guiShare.GuiShare.pf_qyRecv =qyRecv_android;
             guiShare.GuiShare.pf_qyWaitForRead =qyWaitForRead_android;
             guiShare.GuiShare.pf_qyWaitForWrite =qyWaitForWrite_android;
             

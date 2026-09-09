@@ -130,7 +130,9 @@ public class qmCommFunc_mis {
         public boolean ulbToSendQuit;                              //  
         public boolean ulbSndQuit;                                 //  
         public boolean ulbRecvQuit;                                    //  
+
         //
+        public long  dwTickCnt_startChannel;
 
         public long dwTickCnt_lastStartToRecv;                        //  2009/02/25
         public long dwTickCnt_lastRecvd;

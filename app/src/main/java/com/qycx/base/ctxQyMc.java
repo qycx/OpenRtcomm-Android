@@ -15,6 +15,7 @@ import static com.qycx.base.qmCommonFunc_mis.Consts.CONST_maxQNodes_guiProcessQ;
 import static com.qycx.base.qmCommonFunc_mis.Consts.CONST_mutexName_guiProcessQ;
 import static com.qycx.base.qmCommonFunc_mis.Consts.DEFAULT_iTimeoutInMs_channelIdle_others;
 import static com.qycx.base.qmCommonFunc_mis.Consts.DEFAULT_iTimeoutInMs_channelIdle_recv_talk;
+import static com.qycx.base.qmCommonFunc_mis.Consts.DEFAULT_iTimeoutInMs_channelKeepalive;
 import static com.qycx.base.qnmCustom.Consts.CONST_qyCustomId_general;
 import static com.qycx.base.qyComm.Consts.CONST_qyServiceId_is;
 import static com.qycx.base.qyMcLogon.qyFuncs.qyMcLogoff;
@@ -121,10 +122,15 @@ public class ctxQyMc {
 
         public commonSock.SOCK_TIMEOUT to = new commonSock.SOCK_TIMEOUT();   //sock超时的结构
         public commonSock.SOCK_PARAM sockParam;//=new commonSock.SOCK_PARAM();
+        //
         public int iTimeoutInMs_channelIdle_others;            //  2009/02/25
         //  int										iTimeoutInMs_channelIdle_recv_others;		//  2011/01/31
         public int iTimeoutInMs_channelIdle_recv_talk;         //  2011/01/31
 
+        //
+        public int iTimeoutInMs_channelKeepalive;
+
+        //
         public int usDelayInMsToViewToolbar;                    //  2010/09/02
 
         //
@@ -380,13 +386,13 @@ public class ctxQyMc {
                     String statusServerInitVal = null;
                     statusServerInitVal = "10.0.1.102";
                     statusServerInitVal = "192.168.1.119";
-                    statusServerInitVal = "192.168.1.15";
+                    statusServerInitVal = "192.168.1.108";
                     //statusServerInitVal="10.0.10.70";
                 }
 
                 //
-                //pQyMc.statusServInitVal  =  "192.168.1.15";
-                pQyMc.statusServInitVal  =  "192.168.1.108";
+                pQyMc.statusServInitVal  =  "192.168.1.15";
+               // pQyMc.statusServInitVal  =  "192.168.1.108";
 
 
                 //
@@ -591,8 +597,10 @@ public class ctxQyMc {
 
             //
             pQyMc.cfg.iTimeoutInMs_channelIdle_others = DEFAULT_iTimeoutInMs_channelIdle_others;
-            //  pQyMc->cfg.iTimeoutInMs_channelIdle_recv_others  =  DEFAULT_iTimeoutInMs_channelIdle_recv_others;
             pQyMc.cfg.iTimeoutInMs_channelIdle_recv_talk = DEFAULT_iTimeoutInMs_channelIdle_recv_talk;
+            //
+            pQyMc.cfg.iTimeoutInMs_channelKeepalive  =DEFAULT_iTimeoutInMs_channelKeepalive;
+
 
             //
             pQyMc.cfg.rwLockParam.uiMaxCnt_sema = CONST_uiInitCnt_sema_q2SyncFlg;

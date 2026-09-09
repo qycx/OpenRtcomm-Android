@@ -619,7 +619,7 @@ public class qyMcMainMediaProc_decVideo_rtsp {
                             Log.d("qy",  str);
                             showInfo_open.qyFuncs.showInfo_open(0, null,str);
                             //
-                            chkToForceKeyFrame(null, pTransform);
+                            chkToForceKeyFrame(null, pTransform,true);
                             //
                             iErr = CONST_qyRet_needKeyFrameFirst;
                             //
@@ -635,15 +635,8 @@ public class qyMcMainMediaProc_decVideo_rtsp {
                 }
 
 
-                                //  2014/
-                //chkToForceKeyFrame(null, pTransform);
-
-
-                //  2014/
-
-
+                               
                 //
-
                 param.pInput = encData;
                 param.uiInputSize = pMem.uiLen;
                 //  2015/01/28

@@ -23,10 +23,12 @@ public class ancCommProc_open {
         public final static int CONST_atCommFlg_resp = (1 << 6);
         public final static int CONST_atCommFlg_moreData = (1 << 5);
         //
-        //public final static int CONST_atCommFlg_talkData = (1 << 4);                                  //  数据区的格式为MIS_MSG_TALKDATA，否则为IM_MSG_CONTENTU
+        public final static int CONST_atCommFlg_head14 = (1 << 4);                                  //  数据区的格式为MIS_MSG_TALKDATA，否则为IM_MSG_CONTENTU
         //
         public final static int CONST_atCommFlg_routeTalkData = (1 << 3);                                    //  数据区的格式为用MSG_ROUTE+IM_MSG_CONTENTU
 
+        //
+        public final static int CONST_endFlg_usSeqNo  =					(  1  <<  15  );
 
 
         //

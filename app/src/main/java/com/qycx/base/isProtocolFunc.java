@@ -5,12 +5,10 @@ import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCfgId_conf_ui64Id;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCommType_mem;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCommType_transferAudioData;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCommType_transferVideoData;
-import static com.qycx.anc.ancProtocolFunc.atData2Stream;
-import static com.qycx.anc.ancProtocolFunc.atStream2Data;
-import static com.qycx.anc.ancProtocolFunc.atntohCfgItem;
+import static com.qycx.anc.anProtocol.atData2Stream;
+import static com.qycx.anc.anProtocol.atStream2Data;
+import static com.qycx.anc.anProtocol.atntohCfgItem;
 import static com.qycx.anc.atFuncs.M_isCommVer1;
-import static com.qycx.base.QYThreadCtx.getCtxThreadTmpVar;
-import static com.qycx.base.imCommType_defs.*;
 import static com.qycx.base.imCommType_defs.Consts.*;
 import static com.qycx.base.isProtocolFunc.Consts.*;
 import static com.qycx.base.parseSpsPps.qyFuncs.makeSpsPps;
@@ -18,41 +16,24 @@ import static com.qycx.base.parseSpsPps.qyFuncs.parseSpsPps1;
 import static com.qycx.base.qnmCommProc.*;
 import static com.qycx.base.qnmCommProc.Consts.*;
 import static com.qycx.base.qnmCommProc.qyFuncs.myUtf82WChar;
-import static com.qycx.base.qnmCommProc.qyFuncs.myWChar2Utf8;
 import static com.qycx.base.qnmCommProc_mis.Consts.*;
 import static com.qycx.base.qnmCommProc_mis.qyFuncs.*;
 import static com.qycx.base.qyComm.qyFuncs.isUcFlgRouteTalkData;
 
 //import static com.qycx.base.qyComm.qyFuncs.isUcFlgTalkData;
 
-import static com.qycx.base.qyCommProc.Consts.*;
 import static com.qycx.base.qyCommProc_open.Consts.*;
-import static com.qycx.base.qyCommonFunc9.qyFuncs.*;
-import static com.qycx.base.qyCommonSock.qyFuncs.bIpValid;
 import static com.qycx.base.qyCommonSock.qyFuncs.isValidIPAddress;
 import static com.qycx.base.qyCommonSock.qyFuncs.myinet_addr;
-import static com.qycx.base.qyCommonSock.qyFuncs.ulIp2Str;
 import static com.qycx.base.qyDefs.Consts.*;
-import static com.qycx.base.qyFuncs.Consts.CONST_qyMaxIpLen;
 import static com.qycx.base.qyMcMainDaemon_isCli.Consts.bufSize_1024;
 import static com.qycx.base.tmpFunc.qyFuncs.*;
 
 import com.qycx.anc.muxStream_open;
 import com.qycx.base.util.Log;
-import com.qycx.base.util.javatuples.Pair;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-
-import kotlin.UShort;
 
 public class isProtocolFunc {
 //    private static final String TAG = isProtocolFunc.class.getSimpleName();
@@ -2536,20 +2517,6 @@ public class isProtocolFunc {
                     return iErr;
                 }
             }
-            /*
-            else if (isUcFlgTalkData(ucFlg)) {       //  仅用来talkData
-                if (null == pAddr) return iErr;
-
-                qnmCommProc_mis.MSG_SIMPLE_ROUTE pTalkDataAddr = new qnmCommProc_mis.MSG_SIMPLE_ROUTE();
-                pTalkDataAddr.idInfo_from.ui64Id = pAddr.idInfo_from.ui64Id;
-                pTalkDataAddr.idInfo_to.ui64Id = pAddr.idInfo_to.ui64Id;
-
-                ptr.putLong(pTalkDataAddr.idInfo_to.ui64Id);
-                ptr.putLong(pTalkDataAddr.idInfo_from.ui64Id);
-                lenInBytes_addr = Long.BYTES * 2;
-            }
-
-             */
 
             //  要求不转换的
             //
@@ -2843,6 +2810,14 @@ public class isProtocolFunc {
                     }
                     //
                     break;
+                case  CONST_imCommType_anKeepaliveReq:
+                    //
+                    if  (  0>(lenInBytes=anKeepaliveReq2Stream(pContent.uiType,(qnmCommProc_mis.AnKeepaliveReq) pContent,content_buffer)) ) {
+                        return iErr;
+                    }
+                    //
+                    break;
+
 
 
                 default: {
@@ -3611,6 +3586,75 @@ public class isProtocolFunc {
             return 0;
         };
 
+////////////////////////////////////////////////////////
+
+        public static int  anKeepaliveReq2Stream(int  uiStreamId, qnmCommProc_mis.AnKeepaliveReq pReq, ByteBuffer ptr)
+        {
+            int				iErr = -1;
+            int				i = 0;
+            //char* ptr = buf;
+            int		len = -1;//*uiBufSize;
+            int total_len=0;
+
+            //if (!pReq)  return  -1;
+            //if (!buf)  return  -1;
+
+            if (0>(len=data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_start, uiStreamId, 0, ptr))) {
+                return -1;
+            }
+            total_len += len;
+
+
+            //
+            if (0!=pReq.ucbResp) {
+                if (0>(len=data2Stream(CONST_qyDataType_char, CONST_qnmCfgId_ucbResp, pReq.ucbResp, 0, ptr)) )  {
+                    return -1;
+                }
+            }
+
+
+            //
+            if (0>(len=data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_null, 0, 0, ptr)) ) {
+                return -1;
+            }
+            total_len += len;
+
+            iErr = 0;
+            /*
+            errLabel:
+            if (!iErr) {
+		 *uiBufSize = *uiBufSize - len;
+            }
+
+             */
+            return  total_len;
+        }
+
+
+        public static isProtocolFunc.PF_handler_stream2Data tmpHandler_stream2AnKeepaliveReq = (isProtocolFunc.CTX_stream2Data pCtx, Object p0, Object p1, int uiStreamId, qnmCommProc.QY_CFGITEM pItem) ->
+        {
+            int iErr = -1;
+            if (uiStreamId != CONST_imCommType_anKeepaliveReq) return iErr;
+
+            qnmCommProc_mis.AnKeepaliveReq pContent = (qnmCommProc_mis.AnKeepaliveReq) p1;
+            if (null == pContent) return iErr;
+
+            int tmp_cfgId = pItem.cfgId;
+            switch (tmp_cfgId) {
+                case CONST_qnmCfgId_start:
+                    pContent.uiType = uiStreamId;
+                    break;
+                case  CONST_qnmCfgId_ucbResp:
+                    if (0 > (pContent.ucbResp = (byte) getFieldData_byte(pItem))) return iErr;
+                    break;
+                default:
+                    break;
+            }
+
+            //
+            return 0;
+        };
+
 
 
 
@@ -4039,7 +4083,12 @@ public class isProtocolFunc {
                             return null;
                         }
                         break;
-
+                    case  CONST_imCommType_anKeepaliveReq:
+                        pContent = new qnmCommProc_mis.AnKeepaliveReq();
+                        if (0 > stream2Data(data, size, filterStream_is, tmpHandler_stream2AnKeepaliveReq, null, pContent)) {
+                            return null;
+                        }
+                        break;
                     default: {
                         String str = "qyntohRouteTalkData failed: uiContentType " + uiContentType + " error";
                         Log.w(str);

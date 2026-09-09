@@ -3,46 +3,12 @@ package com.qycx.base;
 
 
 
-import static com.qycx.anc.ancProtocolFunc.athtonl3;
-import static com.qycx.anc.ancProtocolFunc.atntohl3;
-import static com.qycx.base.qmcTaskInfo.Consts.CONST_taskDataType_conf;
 import static com.qycx.base.qyMcMain_global.g.g_pQyMc;
 
-import com.alt.mysmxjlibrary.testCls;
 import com.qycx.base.util.Log;
-import com.qycx.tmpffmpeglibrary.TmpFfmpeg;
-import com.qycx.tmpjavalibrary.FileUtil;
 import com.qycx.tmpjavalibrary.TmpJniUtil;
 
-import android.app.ActivityManager;
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraManager;
-import android.os.Debug;
-import android.os.Environment;
-
-import com.qycx.MainActivity;
-import com.qycx.R;
-
-import java.io.File;
-import java.io.Serializable;
-import java.nio.ByteBuffer;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.RandomAccess;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.locks.ReentrantLock;
-
 //
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-
 
 
 //

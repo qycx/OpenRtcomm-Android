@@ -23,7 +23,9 @@ public class qyMcMain_qyMc_proc {
             param.pfNewVar = ctxQmc_gui.CCtxQmc_gui.newVar_isCli_gui;
             param.pfFreeVar = ctxQmc_gui.CCtxQmc_gui.freeVar_isCli_gui;
             //
-            if (initQyMc(0, param, qyMcMain_global.g.g_pQyMc) !=0) return bRet;
+            if (initQyMc(0, param, qyMcMain_global.g.g_pQyMc) !=0) {
+                return bRet;
+            }
             
             ctxQmc.CCtxQmc pProcInfo = qyMcMain_global.g.g_pQyMc.get_pProcInfo();
             //

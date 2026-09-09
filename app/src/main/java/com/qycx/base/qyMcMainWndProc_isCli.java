@@ -34,7 +34,6 @@ import static com.qycx.base.prepare.qyFuncs_Droid.g_transes;
 import static com.qycx.base.procSendFunc.qyFuncs.procSendTaskProcReq;
 import static com.qycx.base.qmcCaProc_public.qyFuncs.send_xt;
 import static com.qycx.base.qmcTaskInfo.Consts.CONST_taskDataType_conf;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendMedia;
 import static com.qycx.base.qnmCommProc.Consts.CONST_stateType_players;
 import static com.qycx.base.qnmCommProc.Consts.CONST_stateType_qs;
 import static com.qycx.base.qnmCommProc.Consts.CONST_stateType_sys;
@@ -52,6 +51,7 @@ import static com.qycx.base.qnmCommProc_mis.qyFuncs.M_getMsgContent;
 import static com.qycx.base.qnmMainFunc_isCli.qyFuncs.bChannelOk;
 import static com.qycx.base.qnmMainFunc_isCli.qyFuncs.getChannelByType;
 import static com.qycx.base.qwmNetworkStatusCommProc.qyFuncs.CONST_qyStatusTable_en;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendMedia;
 import static com.qycx.base.qyComm.qyFuncs.isUcFlgResp;
 import static com.qycx.base.qyCommProc.qyFuncs.bTaskAlive;
 import static com.qycx.base.qyDefs_open.Consts.CONST_imTaskStatus_autoCanceledByReceiver;
@@ -892,16 +892,16 @@ public class qyMcMainWndProc_isCli {
             //
             str = "";
             qmCommFunc_mis.MIS_CHANNEL channel = getChannelByType(pMisCnt, CONST_channelType_talking);
-            if (!bChannelOk(channel,false)) {
+            if (!bChannelOk(channel,null)) {
                 str += ("t not ok");
             }
 
             channel = getChannelByType(pMisCnt, CONST_channelType_media);
-            if (!bChannelOk(channel,false)) {
+            if (!bChannelOk(channel,null)) {
                 str += (" v not ok");
             }
             channel = getChannelByType(pMisCnt, CONST_channelType_rtMedia);
-            if (!bChannelOk(channel,false)) {
+            if (!bChannelOk(channel,null)) {
                 str += (" a not ok");
             }
             if (str != null) {

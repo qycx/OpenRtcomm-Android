@@ -10,12 +10,12 @@ import static com.qycx.base.dlgTalkProc.qyFuncs_Droid.chkResources;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_queryCustomerServiceOfficerReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferFileReplyReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferFileReq;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendRobotTaskReply;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_dual_permit;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_recvFile_saveas;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_recv_accept;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_task;
 import static com.qycx.base.qnmCommProc_mis.Consts.cntof_content;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendRobotTaskReply;
 import static com.qycx.base.qyDefs_open.Consts.CONST_imTaskStatus_waitToRecv;
 import static com.qycx.base.tmpProc.qyFuncs.bSupported_fileServer;
 

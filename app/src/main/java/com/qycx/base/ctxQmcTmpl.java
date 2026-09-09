@@ -142,6 +142,7 @@ public class ctxQmcTmpl {
 
     //
     public abstract static class CCtxQmcTmpl extends ctxQyTmpl.CCtxQyTmpl {
+        //
         public ctxQyMc.CCtxQyMc pQyMc;
         //Object pSgiParam;
 

@@ -41,7 +41,7 @@ public class parseCmdLine {
                 Log.d("qy","Note: parseCmdLine_qyMc: set bTest_andSndMarkToHg to true");
             }
             //
-            if  (  true  )  {
+            if  (  false  )  {
                 pParams.bDbg_traceRt_a_rec=true;
                 Log.d("at","Note: parseCmdLine_qyMc: set bDbg_traceRt_a_rec to true");
                 //

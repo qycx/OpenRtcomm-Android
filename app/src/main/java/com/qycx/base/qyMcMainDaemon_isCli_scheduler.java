@@ -30,8 +30,6 @@ import static com.qycx.base.isTmpFunc.qyFuncs.printRetrieveContactListResp;
 import static com.qycx.base.isTmpFunc.qyFuncs.printRetrieveImGrpListResp;
 import static com.qycx.base.isTmpFunc.qyFuncs.printRetrieveImGrpMemListResp;
 import static com.qycx.base.logImMsg_isCli.qyFuncs.logImMsg;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_getCfgs;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_refreshImObjListReq;
 import static com.qycx.base.qnmCommProc.qyFuncs.CONST_fieldIdTable_en;
 import static com.qycx.base.qnmCommProc1.qyFuncs.bObjDbAvail;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_maxContactUpdateInfos_contact;
@@ -48,6 +46,8 @@ import static com.qycx.base.qnmCommProc_mis.qyFuncs.M_getMsgContent;
 import static com.qycx.base.qnmCommProc_mis.qyFuncs.retrieveImObjListReq2Stream;
 import static com.qycx.base.qnmMainFunc_isCli.qyFuncs.bChannelOk;
 import static com.qycx.base.qnmMainFunc_isCli.qyFuncs.getChannelByType;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_getCfgs;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_refreshImObjListReq;
 import static com.qycx.base.qyComm.qyFuncs.isUcFlgResp;
 import static com.qycx.base.qyComm.qyFuncs.isUcFlgRouteTalkData;
 //
@@ -1010,6 +1010,8 @@ public class qyMcMainDaemon_isCli_scheduler {
 
                 int loopCtrl;
                 loopCtrl  =  0;
+                //
+                qnmMainFunc_isCli.qyFuncs.Param_bChannelOk param = new qnmMainFunc_isCli.qyFuncs.Param_bChannelOk();
 
                 //
                 for (; !pProcInfo.bQuit_threadProc_isCli; ) {
@@ -1058,7 +1060,7 @@ public class qyMcMainDaemon_isCli_scheduler {
                     if (null == (pChannel = getChannelByType(pMisCnt, CONST_channelType_talking)))
                         continue;
 
-                    if (!bChannelOk(pChannel,false)) continue;
+                    if (!bChannelOk(pChannel,param)) continue;
 
                     if (!pMisCnt.bIntervalParamsGot && dwCurTickCnt > pMisCnt.dwLastTickCnt_getIntervalParams + pMisCnt.cfg.usIntervalInS_getIntervalParams * 1000) {
 

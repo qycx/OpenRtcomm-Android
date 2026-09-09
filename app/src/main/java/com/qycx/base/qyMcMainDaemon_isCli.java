@@ -9,7 +9,6 @@ import static com.qycx.base.Consts.CONST_channelType_robot;
 import static com.qycx.base.Consts.CONST_channelType_rtOp;
 import static com.qycx.base.Consts.CONST_channelType_talking;
 import static com.qycx.base.Consts.CONST_qyRet_qFull;
-import static com.qycx.base.Consts.VIDEO_UPLOAD;
 import static com.qycx.base.genericQueue.qyFuncs.qGetMsg;
 import static com.qycx.base.genericQueue.qyFuncs.qPostMsg;
 import static com.qycx.base.genericQueue.qyFuncs.qPostMsgAndTrigger;
@@ -42,11 +41,9 @@ import static com.qycx.base.qyComm.Consts.CONST_qyServiceId_mis;
 import static com.qycx.base.qyComm.qyFuncs.isRcNeedVerified;
 import static com.qycx.base.qyComm.qyFuncs.isRcOk;
 import static com.qycx.base.qyComm.qyFuncs.isUcFlgResp;
-import static com.qycx.base.qyCommProc.Consts.CONST_qyShowType_debugWarning;
 import static com.qycx.base.qyCommProc.Consts.bufSize_publicKeyBlob;
 import static com.qycx.base.qyCommProc.qyFuncs.waitForThread_io;
 import static com.qycx.base.qyCommonSock.qyFuncs.clearQySock;
-import static com.qycx.base.qyCusResHelp.qyFuncs.getResStr;
 import static com.qycx.base.qyCusResPublic.Consts.CONST_usRunningStatus_online;
 import static com.qycx.base.qyCustom.qyFuncs.qnmVerStr;
 import static com.qycx.base.qyDefs.Consts.CONST_objType_me;
@@ -56,7 +53,7 @@ import static com.qycx.base.qyMcMainDaemon_isCli.Consts.bufSize_4096;
 import static com.qycx.base.qyMcMainDaemon_isCli_mgr.qyFuncs.mcThreadProc_mis_mgr;
 import static com.qycx.base.qyMcMainDaemon_isCli_scheduler.qyFuncs.mcThreadProc_mis_scheduler;
 import static com.qycx.base.qyMcMainProc_isCli_media.qyFuncs.mcThreadProc_mis_media;
-import static com.qycx.base.qyMcMainProc_isCli_realTimeMedia.qyFuncs.mcThreadProc_mis_realTimeMedia;
+import static com.qycx.base.qyMcMainProc_isCli_rtMedia.qyFuncs.mcThreadProc_mis_rtMedia;
 import static com.qycx.base.qyMcMainProc_isCli_robot.qyFuncs.mcThreadProc_mis_robot;
 import static com.qycx.base.qyMcMainProc_isCli_robot.qyFuncs.procMsgInput_other_req;
 import static com.qycx.base.qyMsgFunc.qyFuncs.qnmCloseSession_msg;
@@ -75,7 +72,6 @@ import static com.qycx.base.tmpFunc.qyFuncs.myWaitOne;
 import static com.qycx.base.tmpFunc.qyFuncs.safeTcsnCpy;
 import static com.qycx.base.tmpFunc.qyFuncs.safeWcsnCpy;
 
-import com.qycx.R;
 import com.qycx.base.util.Log;
 
 import java.nio.ByteBuffer;
@@ -675,7 +671,7 @@ public class qyMcMainDaemon_isCli {
             pProcInfo.hThread_media.start();
             pProcInfo.hThread_media.setName("ThreadProc_mis_media");
 
-            pProcInfo.hThread_realTimeMedia = new Thread(mcThreadProc_mis_realTimeMedia);
+            pProcInfo.hThread_realTimeMedia = new Thread(mcThreadProc_mis_rtMedia);
             pProcInfo.hThread_realTimeMedia.start();
             pProcInfo.hThread_realTimeMedia.setName("ThreadProc_mis_realTimeMedia");
 
@@ -914,15 +910,15 @@ public class qyMcMainDaemon_isCli {
             if (null == pMisCnt) return bRet;
 
             if (pMisCnt.cfg.dynCfg.cnt.usCntPort != 0) {
-                if (bChannelOk(getChannelByType(pMisCnt, CONST_channelType_talking),false))
+                if (bChannelOk(getChannelByType(pMisCnt, CONST_channelType_talking),null))
                     bTalkReady = true;
-                if (bChannelOk(getChannelByType(pMisCnt, CONST_channelType_media),false))
+                if (bChannelOk(getChannelByType(pMisCnt, CONST_channelType_media),null))
                     bMediaReady = true;
-                if (bChannelOk(getChannelByType(pMisCnt, CONST_channelType_rtMedia),false))
+                if (bChannelOk(getChannelByType(pMisCnt, CONST_channelType_rtMedia),null))
                     bRtMediaReady = true;
-                if (bChannelOk(getChannelByType(pMisCnt, CONST_channelType_robot),false))
+                if (bChannelOk(getChannelByType(pMisCnt, CONST_channelType_robot),null))
                     bRobotReady = true;
-                if (bChannelOk(getChannelByType(pMisCnt, CONST_channelType_rtOp),false))
+                if (bChannelOk(getChannelByType(pMisCnt, CONST_channelType_rtOp),null))
                     bRtOpReady = true;
             }
 
@@ -1238,69 +1234,94 @@ public class qyMcMainDaemon_isCli {
             //
             String whereStr =  "bServConnected_mis";
 
-            //
-            if (null == (buffer = qnmOpenSession_mis(serverIp, serverPort, auth, CONST_qnmAuthCmd_clientHello, CONST_channelType_talking, null, serviceId, ver, ecs, i64StartTime_base,session, sock, pSockParam,whereStr))) {
-                Log.d("qnmOpenSession_mis failed ");
-                if (bSessionOpen) {
-                    qnmCloseSession_msg(session, sock, pSockParam.to,whereStr);
+            do {
+                //
+                buffer = qnmOpenSession_mis(serverIp, serverPort, auth, CONST_qnmAuthCmd_clientHello, CONST_channelType_talking, null, serviceId, ver, ecs, i64StartTime_base, session, sock, pSockParam, whereStr);
+                if (null == buffer ) {
+                    Log.d("qnmOpenSession_mis failed ");
+                    //
+                    break;
                 }
-                return bRet;
-            }
-            bSessionOpen = true;
-            if (!isRcOk(session.usLastRespCode_i)) {
-                Log.d("isRcOk failed ");
-                if (bSessionOpen) {
-                    qnmCloseSession_msg(session, sock, pSockParam.to,whereStr);
-                }
-                return bRet;
-            }
-            qnmCloseSession_msg(session, sock, pSockParam.to,whereStr);
-            bSessionOpen=false;
-            int len = buffer.capacity();
-            if (0 > stream2Data(buffer, len, isProtocolFunc.qyFuncs.filterStream_is, tmpHandler_stream2AuthResp_mis, null, authResp))
-            {
-                if (bSessionOpen) {
-                    qnmCloseSession_msg(session, sock, pSockParam.to,whereStr);
-                }
-                return bRet;
-            }
-
-            pMisCnt.commEncCtx.ucbPublicKeyDownloaded = true;
-
-            if (false) {
-            } else {
-                try (qySyncObj.CQySyncObj syncObj = new qySyncObj.CQySyncObj()) {
-                    Log.i("publicKey verified");
-
-                    //if (syncObj.sync(CONST_mutexName_syncKey_qmc)) return iErr;
-
-                    //  Èç¹ûÔ­À´Ã»ÓÐÃÜÔ¿£¬Ôò´æÈë×¢²á±í¡£²¢µ¼ÈëCSP
-                    //  Èç¹ûÓÐ£¬Ð£ÑéÊÇ·ñÒ»ÖÂ¡£
-                    pMisCnt.commEncCtx.common.type = authResp.uiCommEncCtxType;
-                    if (authResp.uiBlobLen_publicKey > bufSize_publicKeyBlob){
-                        if (bSessionOpen) {
-                            qnmCloseSession_msg(session, sock, pSockParam.to,whereStr);
-                        }
-                        return bRet;
+                bSessionOpen = true;
+                if (!isRcOk(session.usLastRespCode_i)) {
+                    Log.d("isRcOk failed ");
+                    /*
+                    if (bSessionOpen) {
+                        qnmCloseSession_msg(session, sock, pSockParam.to, whereStr);
                     }
-                    pMisCnt.commEncCtx.m_var.uiBlobLen_publicKey = authResp.uiBlobLen_publicKey;
-                    pMisCnt.commEncCtx.m_var.publicKeyBlob_base64 = new String(authResp.publicKeyBlob);
-                    System.arraycopy(authResp.publicKeyBlob, 0, pMisCnt.commEncCtx.m_var.publicKeyBlob.array(), 0, authResp.uiBlobLen_publicKey);
-                    pMisCnt.commEncCtx.ucbPublicKeyVerified = true;
-                } catch (Exception e) {
-                    Log.e(e.getMessage());
                     return bRet;
-                }
-            }
 
-            if (!pMisCnt.commEncCtx.ucbPublicKeyVerified) {
-                if (bSessionOpen) {
-                    qnmCloseSession_msg(session, sock, pSockParam.to,"bServConnected_mis.1280");
+                     */
+                    break;
                 }
-                return bRet;
-            }
+                qnmCloseSession_msg(session, sock, pSockParam.to, whereStr);
+                bSessionOpen = false;
+                //
+                int len = buffer.capacity();
+                if (0 > stream2Data(buffer, len, isProtocolFunc.qyFuncs.filterStream_is, tmpHandler_stream2AuthResp_mis, null, authResp)) {
+                    /*
+                    if (bSessionOpen) {
+                        qnmCloseSession_msg(session, sock, pSockParam.to, whereStr);
+                    }
+                    return bRet;
 
-            bRet = true;
+                     */
+                    break;
+                }
+
+                //
+                pMisCnt.commEncCtx.ucbPublicKeyDownloaded = true;
+
+                //
+                {
+                    try (qySyncObj.CQySyncObj syncObj = new qySyncObj.CQySyncObj()) {
+                        Log.i("publicKey verified");
+
+                        //if (syncObj.sync(CONST_mutexName_syncKey_qmc)) return iErr;
+
+                        //  Èç¹ûÔ­À´Ã»ÓÐÃÜÔ¿£¬Ôò´æÈë×¢²á±í¡£²¢µ¼ÈëCSP
+                        //  Èç¹ûÓÐ£¬Ð£ÑéÊÇ·ñÒ»ÖÂ¡£
+                        pMisCnt.commEncCtx.common.type = authResp.uiCommEncCtxType;
+                        if (authResp.uiBlobLen_publicKey > bufSize_publicKeyBlob) {
+                            /*
+                            if (bSessionOpen) {
+                                qnmCloseSession_msg(session, sock, pSockParam.to, whereStr);
+                            }
+                            return bRet;
+
+                             */
+                            //
+                            break;
+                        }
+                        pMisCnt.commEncCtx.m_var.uiBlobLen_publicKey = authResp.uiBlobLen_publicKey;
+                        pMisCnt.commEncCtx.m_var.publicKeyBlob_base64 = new String(authResp.publicKeyBlob);
+                        System.arraycopy(authResp.publicKeyBlob, 0, pMisCnt.commEncCtx.m_var.publicKeyBlob.array(), 0, authResp.uiBlobLen_publicKey);
+                        pMisCnt.commEncCtx.ucbPublicKeyVerified = true;
+                    } catch (Exception e) {
+                        Log.e(e.getMessage());
+                        //return bRet;
+                        break;
+                    }
+                }
+
+                if (!pMisCnt.commEncCtx.ucbPublicKeyVerified) {
+                    /*
+                    if (bSessionOpen) {
+                        qnmCloseSession_msg(session, sock, pSockParam.to, "bServConnected_mis.1280");
+                    }
+                    return bRet;
+
+                     */
+                    //
+                    break;
+                }
+
+                //
+                bRet = true;
+
+            } while (false);
+
+            //
 
 
             if (bSessionOpen) {

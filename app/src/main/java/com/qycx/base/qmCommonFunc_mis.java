@@ -162,10 +162,12 @@ public static class Consts
     public final static int CONST_maxQNodes_guiProcessQ = 100;
 
     //
-    public final static int DEFAULT_iTimeoutInMs_channelIdle_others = 10000;                               //  2009/02/25
-                                                                                                    //#define		DEFAULT_iTimeoutInMs_channelIdle_recv_others		30000								//  2011/01/31
-    public final static int DEFAULT_iTimeoutInMs_channelIdle_recv_talk = 100000;//300000;                               //  2011/01/31
+    public final static int DEFAULT_iTimeoutInMs_channelIdle_others = 20000;                               //  2009/02/25
+    //#define		DEFAULT_iTimeoutInMs_channelIdle_recv_others		30000								//  2011/01/31
+    public final static int DEFAULT_iTimeoutInMs_channelIdle_recv_talk = 300000;//300000;                               //  2011/01/31
 
+    //
+    public final static int DEFAULT_iTimeoutInMs_channelKeepalive  =  10000;
     //
     public final static int MAX_failures_frames_perSecond = 5;                                 //  ÌáÉýÖ¡ËÙµÄ×î¶à¿ÉÔÊÐíÊ§°Ü´ÎÊý
                                                                                         //
@@ -177,20 +179,24 @@ public static class Consts
     public  static class TRAN_INFO_MIS
     {
         //
-        public int uiMaxSendMsgs;                     //  2011/01/23
-                                                        //
-        public int nNodes_processed;                  //  messenger->iocp
+        public int uiMaxSendMsgs;                                   //  2011/01/23
+        //
+        public int nNodes_processed;                     //  messenger->iocp
         public long tNow;
         public int uiTranNo;
         public int uiCliIndex;
         public Object pQMem;
 
-        public boolean bNeedRemoveMsg;                        //  2008/04/02, daemon doMisMgr_sendFinished(  ) remove
-        public boolean bNotResendMsg;                     //  2008/05/15, media rtMedia, msg
-                                                       //
-        public qnmCommProc_mis.MIS_MSGU pMsg_o;                               //  sendFinished buf
-                                                               //
-        public String whereBuf_showInfo;//[64];                //  2015/09/04
+        public boolean bNeedRemoveMsg;                              //  2008/04/02, daemon doMisMgr_sendFinished(  ) remove
+        public boolean bNotResendMsg;                               //  2008/05/15, media rtMedia, msg
+
+        //
+        //public qnmCommProc_mis.MIS_MSGU pMsg_o;                   //  sendFinished buf
+        public qnmCommProc_mis.MIS_MSG_TASK pMsgTask_o;             //  sendFinished buf
+        public qnmCommProc_mis.MIS_MSG_REQ pMsgReq_o;               //  sendFinished buf
+
+        //                                                          //
+        public String whereBuf_showInfo;//[64];                     //  2015/09/04
 
         //
         public void memset0()
@@ -207,8 +213,11 @@ public static class Consts
 
             bNeedRemoveMsg = false;                        //  2008/04/02, daemon doMisMgr_sendFinished(  ) remove
             bNotResendMsg  =  false;                     //  2008/05/15, media rtMedia, msg
+
             //
-            pMsg_o  =  null;                               //  sendFinished buf
+            pMsgTask_o  =  null;                               //  sendFinished buf
+            pMsgReq_o=null;
+
             //
             whereBuf_showInfo  =  "";//[64];                //  2015/09/04
 

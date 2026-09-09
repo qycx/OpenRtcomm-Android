@@ -86,9 +86,11 @@ public class guiShare {
         int call(commonSock.QY_SOCK pSock,byte[] buffer, int offset,  int len, int timeoutVal);
     }
 
-    public interface PF_qyRecv {
+   /* public interface PF_qyRecv {
         int call(commonSock.QY_SOCK pSock, ByteBuffer buffer, int offset, int len,  int timeoutVal);
     }
+
+    */
 
     public interface PF_qyWaitForRead {
         int call(commonSock.QY_SOCK pSock, int timeoutInMs);
@@ -365,7 +367,7 @@ public class guiShare {
         public static PF_qyConnect pf_qyConnect;
         public static PF_qyDisconnect pf_qyDisconnect;
         public static PF_qySend pf_qySend;
-        public static PF_qyRecv pf_qyRecv;
+        //public static PF_qyRecv pf_qyRecv;
         public static PF_qyWaitForRead pf_qyWaitForRead;
         public static PF_qyWaitForWrite pf_qyWaitForWrite;
 

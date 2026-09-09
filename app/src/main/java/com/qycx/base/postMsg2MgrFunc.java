@@ -9,6 +9,7 @@ import static com.qycx.base.genericQueue.qyFuncs.isQFull;
 import static com.qycx.base.genericQueue.qyFuncs.qPostMsg;
 import static com.qycx.base.genericQueue.qyFuncs.qPostMsgAndTrigger;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_anHgData;
+import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_anKeepaliveReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_confReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_getCfgsReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_lStream;
@@ -21,8 +22,9 @@ import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferAudi
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferVideoData;
 import static com.qycx.base.isFunc.qyFuncs.CONST_channelTypeTable;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_input;
+import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_outputReq;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_outputTask;
-import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_outputTask_toMix;
+//import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_outputTask_toMix;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_req;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_talk;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_task;
@@ -51,7 +53,7 @@ public class postMsg2MgrFunc {
     public static class qyFuncs {
         static int logCountE = 0;
 
-        public static int postMsg2MgrFunc_mc(ctxCaller.CTX_caller ctxCaller, qmCommFunc_mis.MIS_CNT pMIS_CNT, qnmCommProc_mis.MSG_ROUTE pRoute, int uiMisMsgType, byte ucFlg, short usCode, long tStartTime, int uiTranNo, short usSeqNo, int iTaskId, int uiTaskType, qnmCommProc_mis.IM_CONTENTU data, int dataLen,
+        public static int postMsg2MgrFunc_mc(ctxCaller.CTX_caller ctxCaller, qmCommFunc_mis.MIS_CNT pMisCnt, qnmCommProc_mis.MSG_ROUTE pRoute, int uiMisMsgType, byte ucFlg, short usCode, long tStartTime, int uiTranNo, short usSeqNo, int iTaskId, int uiTaskType, qnmCommProc_mis.IM_CONTENTU data, int dataLen,
                                              long pIdInfo_logicalPeer1,
                                              long pIdInfo_taskSender,
                                              long pIdInfo_taskReceiver,
@@ -63,7 +65,7 @@ public class postMsg2MgrFunc {
             qyDefs.QY_MESSENGER_ID idInfo_logicalPeer = new qyDefs.QY_MESSENGER_ID();
             idInfo_logicalPeer.ui64Id = pIdInfo_logicalPeer1;
 
-            if (null == pMIS_CNT) {
+            if (null == pMisCnt) {
                 Log.i("postMsg2MgrFunc_mc failed: pMisCnt is null.");
                 return -1;
             }
@@ -88,11 +90,14 @@ public class postMsg2MgrFunc {
 
             //  2011/01/23
             boolean bMix = false;
+            /*
             if (uiMisMsgType == CONST_misMsgType_outputTask_toMix) {
                 bMix = true;
                 uiMisMsgType = CONST_misMsgType_task;
             }
-            if (null == (pMsg = makeMsg2MgrFunc_mc(pMIS_CNT, pRoute, uiMisMsgType, ucFlg, usCode, tStartTime, uiTranNo, usSeqNo, iTaskId, uiTaskType, data, dataLen, idInfo_logicalPeer.ui64Id, pIdInfo_taskSender, pIdInfo_taskReceiver, pIdInfo_dst, uiChannelType,null))) {
+            */
+
+            if (null == (pMsg = makeMsg2MgrFunc_mc(pMisCnt, pRoute, uiMisMsgType, ucFlg, usCode, tStartTime, uiTranNo, usSeqNo, iTaskId, uiTaskType, data, dataLen, idInfo_logicalPeer.ui64Id, pIdInfo_taskSender, pIdInfo_taskReceiver, pIdInfo_dst, uiChannelType,null))) {
                 return iErr;
             }
 
@@ -100,17 +105,38 @@ public class postMsg2MgrFunc {
                 qmCommFunc_mis.MIS_CHANNEL pChannel = null;
 
                 qnmCommProc_mis.MIS_MSG_TASK task = (qnmCommProc_mis.MIS_MSG_TASK) pMsg;
-                if (null == (pChannel = getChannelByType(pMIS_CNT, task.uiChannelType)))
+                if (null == (pChannel = getChannelByType(pMisCnt, task.uiChannelType)))
                     return iErr;
 
-                if (0 > (len = procMsgTask2Output_mc(pProcInfo, pMIS_CNT, task, (int) len, pChannel, ("postMsg2MgrFunc_mc"))))
+                if (0 > (len = procMsgTask2Output_mc(pProcInfo, pMisCnt, task, (int) len, pChannel, ("postMsg2MgrFunc_mc"))))
                     return iErr;
 
                 iErr = 0;
                 return iErr;
             }
+            //
+            if (pMsg.uiType == CONST_misMsgType_outputReq) {		//  2008/05/13, ¶ÔoutputTask, Ö±½Ó·¢µ½Êä³ö¶ÔÁÐÀïÁË
+                //MIS_CNT pMisCnt = (MIS_CNT)pMsg.req.pMisCnt;
+                qmCommFunc_mis.MIS_CHANNEL pChannel = null;
+
+                //if (!pMisCnt)  goto  errLabel;
+                qnmCommProc_mis.MIS_MSG_REQ req =(qnmCommProc_mis.MIS_MSG_REQ) pMsg;
+                if (null==(pChannel = getChannelByType(pMisCnt, req.uiChannelType)))  {
+                    return  iErr;
+                }
+
+                procMsgReq2Output_mc(pProcInfo, pMisCnt, req, len, pChannel, ("postMsg2MgrFunc_mc")) ;
+
+                //
+                iErr = 0;  return  iErr;
+
+            }
+
+
+
 
             //  2011/01/23
+            /*
             if (bMix) {
                 if ((tmpiRet = pProcInfo.processQ_media.qTraverse(ctxCaller, findOrgMsgAndProcess_is.qyFuncs.tmpHandler_findOrgMsgAndProc, pMsg, 0)) <= 0) {
                     Log.e(("postMsg2MgrFunc_mc: msg_task_toMix"), tmpiRet != 0 ? "failed" : "not found");
@@ -119,6 +145,7 @@ public class postMsg2MgrFunc {
                 iErr = 0;
                 return iErr;
             }
+             */
 
             switch (uiChannelType) {
                 case CONST_channelType_robot: {
@@ -196,10 +223,13 @@ public class postMsg2MgrFunc {
 
             //  2011/01/23
             boolean bMix = false;
+            /*
             if (uiMisMsgType == CONST_misMsgType_outputTask_toMix) {
                 bMix = true;
                 uiMisMsgType = CONST_misMsgType_task;
             }
+
+             */
             data.uiType = uiMisMsgType;
 
             ///todo 这个if不会执行
@@ -478,7 +508,9 @@ public class postMsg2MgrFunc {
                     len = offset + input.lenInBytes;
                     return input;
                 }
-                case CONST_misMsgType_req: {
+                case CONST_misMsgType_req:
+                case  CONST_misMsgType_outputReq:
+                {
                     qnmCommProc_mis.MIS_MSG_REQ req = new qnmCommProc_mis.MIS_MSG_REQ();
                     //
                     //req.buffer = ByteBuffer.allocate(bufSize_transferVideoData);
@@ -490,6 +522,9 @@ public class postMsg2MgrFunc {
                     req.tStartTime = tStartTime;
                     req.uiTranNo = uiTranNo;
                     req.usSeqNo = usSeqNo;
+                    //
+                    req.uiChannelType  =  uiChannelType;
+                    //
                     req.lenInBytes = dataLen;
                     req.data = data;
                     switch (data.uiType)
@@ -526,6 +561,10 @@ public class postMsg2MgrFunc {
                         case  CONST_imCommType_anHgData:
                         case CONST_imCommType_confReq:
                               break;
+                        case  CONST_imCommType_anKeepaliveReq:  {
+                            Log.d("at","l567");
+                        }
+                        break;
 
                         default:
                             //
@@ -625,8 +664,9 @@ public class postMsg2MgrFunc {
                 return iErr;
             }
             pMsgTask.data.route.idInfo_from.ui64Id = pMisCnt.idInfo.ui64Id;
-
-            boolean tmp_bChannelOk = bChannelOk(pChannel,false);
+            //
+            qnmMainFunc_isCli.qyFuncs.Param_bChannelOk param = new qnmMainFunc_isCli.qyFuncs.Param_bChannelOk();
+            boolean tmp_bChannelOk = bChannelOk(pChannel,param);
             if (!tmp_bChannelOk) {
 
                 //  2015/08/22
@@ -707,7 +747,109 @@ public class postMsg2MgrFunc {
 
             return iErr;
         }
+        //
+        public static int procMsgReq2Output_mc(ctxQmc.CCtxQmc pProcInfo, qmCommFunc_mis.MIS_CNT pMisCnt, qnmCommProc_mis.MIS_MSG_REQ pMsgReq, int lenInBytes_msg, qmCommFunc_mis.MIS_CHANNEL pChannel, String tHint) {
+            int iErr = -1;
+            ctxQyMc.CCtxQyMc pQyMc = pProcInfo.pQyMc;
+            qnmCommProc_mis.IM_CONTENTU pContent = pMsgReq.data;//M_getMsgContent(pMsgReq.uiType, pMsgReq.ucFlg, pMsgReq.data);
+            if (null == tHint) tHint = "";
 
+
+
+            //
+            qnmMainFunc_isCli.qyFuncs.Param_bChannelOk param = new qnmMainFunc_isCli.qyFuncs.Param_bChannelOk();
+            boolean tmp_bChannelOk = bChannelOk(pChannel,param);
+            if (!tmp_bChannelOk) {
+
+                //  2015/08/22
+                String str = String.format("procMsgTask2Output_mc failed: %s is not ready. %s", qyGetDesByType1(CONST_channelTypeTable, pChannel.uiType), tHint);
+
+                if (logCountF < 6) {
+                    ++logCountF;
+                } else {
+                    showInfo_open.qyFuncs.showInfo_open( str);
+
+                    logCountF = 0;
+
+                }
+
+            }
+            if (pContent != null) {
+                switch (pContent.uiType) {
+                    case CONST_imCommType_transferVideoData:
+                    case CONST_imCommType_transferAudioData:
+                    case CONST_imCommType_remoteAssistReq:
+                    case CONST_imCommType_ptzControlReq:                    //  2012/8/07
+                    case CONST_imCommType_ptzControlCmd:
+                        if (!tmp_bChannelOk) {
+                            return iErr;
+                        }
+                        break;
+                    case  CONST_imCommType_anKeepaliveReq:
+                    {
+                        int  ii  =  0;
+                    }
+                    break;
+                    default:
+                        break;
+                }
+            }
+
+
+            {
+
+                try//(qyq2.CQyQ2Help q2Help = new qyq2.CQyQ2Help())
+                {
+                    genericQueue.GENERIC_Q pQ_toPostMsg  =  pChannel.toSendQ2.qs0;
+                    if (0 != qPostMsg(pMsgReq, pQ_toPostMsg)) {
+                        if (!isQFull(pQ_toPostMsg)) {
+                            {
+                                return iErr;
+                            }
+                        } else {
+                            switch (pChannel.uiType) {
+                                case CONST_channelType_media:
+                                case CONST_channelType_rtMedia:
+                                    emptyGenericQ(pQ_toPostMsg);
+                                    showInfo_open.qyFuncs.showInfo_open( ("procMsgTask2Output_mc: emptyQ now"));
+                                    break;
+                                default:
+                                    break;
+                            }
+                            //  2015/08/22. 队列满时，不能退出，应接着触发发送
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e(e.getMessage());
+                    return -1;
+                }
+            }
+            if  (  pChannel.m_b_useQ2_toOutput) {
+                int tmpiRet = q2PostMsgAndTrigger(null, pChannel.outputQ21, "procMsgTask2Output_mc.637");
+                if (0 == tmpiRet) {
+                    //  2008/11/22
+                    if (pChannel.outputQ21.ucbTriggerErr) {
+                        q2AvoidTriggerTooHigh("", pChannel.outputQ21);
+                    }
+                }
+            }
+            else  {
+                pChannel.outputQBuf2.q2PostMsgAndTrigger(null,null,0, 0,"");
+
+            }
+
+
+            iErr = 0;
+
+
+            return iErr;
+        }
+
+
+
+
+
+        //
         static int logCountF = 0;
 
         public static int postMsg2Mgr_mc(ctxCaller.CTX_caller ctxCaller, qmCommFunc_mis.MIS_CNT pMIS_CNT, qnmCommProc_mis.MSG_ROUTE pRoute, int uiMisMsgType, byte ucFlg, short usCode, long tStartTime, int uiTranNo, int uiSeqNo, qnmCommProc_mis.IM_CONTENTU data, int dataLen, long pIdInfo_logicalPeer, long pIdInfo_dst, int uiChannelType, qnmCommProc_mis.CMIS_MSGU pMsgBuf, boolean bLog) {

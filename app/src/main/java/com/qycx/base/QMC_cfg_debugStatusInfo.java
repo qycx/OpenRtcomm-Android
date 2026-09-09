@@ -117,6 +117,22 @@ public class QMC_cfg_debugStatusInfo {                                          
     //
     public boolean bDbg_startToBreak;
 
+    //
+    public boolean bTest_noMapExt;
+    public boolean bTest_noLostVideo;
+
+    //
+    public boolean bBbg_traceRt_pOutputQBuf2_local_a;
+    public boolean bBbg_traceRt_pOutputQBuf2_local_v;
+
+    //
+    public boolean bDbgDetail_keepAlive;
+
+    //
+    public boolean bDbgDetail_v_r;
+
+    //
+
 }
 
 ;

@@ -4,6 +4,8 @@
 package com.qycx.base;
 
 import static com.qycx.base.commonSock.Consts.*;
+import static com.qycx.base.commonSock_android.qyFuncs_Droid.qyRecv_android;
+
 
 import com.qycx.base.util.Log;
 
@@ -68,7 +70,7 @@ public class commonSock {
     public static class qyFuncs {
 
         // 持续接收内容，将内容接收完全。
-        public static int qyRecvEx(commonSock.QY_SOCK pAsrSock, ByteBuffer buffer, int uiLen, int timeoutVal) {
+     /*   public static int qyRecvEx(commonSock.QY_SOCK pAsrSock, ByteBuffer buffer, int uiLen, int timeoutVal) {
             if (buffer == null) {
                 Log.e("qy","qyRecvEx failed, buffer is null");
                 return -1;
@@ -106,6 +108,73 @@ public class commonSock {
 
         }
 
+      */
+        //
+        public static int qyRecvEx(
+                commonSock.QY_SOCK pAsrSock,
+                ByteBuffer buffer,
+                int offset1,
+                int uiLen,
+                int timeoutVal) {
+
+
+            if (buffer == null)
+                return -1;
+
+
+            if (uiLen <= 0)
+                return -1;
+
+/*
+            if (buffer.remaining() < uiLen)
+                return -1;
+
+ */
+            //
+            if  ( buffer.capacity()  < offset1  +  uiLen)  {
+                return -1;
+            }
+            //
+            buffer.clear();
+            buffer.position(offset1);
+
+
+            int startPos = buffer.position();
+
+            int need = uiLen;
+
+
+            while (need > 0) {
+
+                int offset2 = buffer.position();
+
+                int nRead =
+                        //guiShare.GuiShare.pf_qyRecv.call
+                        qyRecv_android(
+                                pAsrSock,
+                                buffer,
+                                offset2,
+                                need,
+                                timeoutVal);
+
+
+                if (nRead <= 0) {
+                    Log.e("qy",
+                            "qyRecvEx： recv failed " + nRead);
+                    return -1;
+                }
+
+
+                need -= nRead;
+            }
+
+
+            return uiLen;
+        }
+
+
+
+        //
         public static int setSockTimeout(commonSock.SOCK_TIMEOUT p) {
             p.iAccept = DEFAULT_QY_ACCEPT_TIMEOUT;
             p.iConnect = DEFAULT_QY_CONNECT_TIMEOUT;

@@ -169,6 +169,7 @@ import com.qycx.base.qmcTaskInfo;
 import com.qycx.base.TableItem;
 import com.qycx.base.CIsTalker;
 import static com.qycx.base.qmcProc.doChkTalkDraw;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_talkTo;
 import static com.qycx.base.qyMcMain_global.g.g_pQyMc;
 import static com.qycx.base.showInfo_open.qyFuncs.showInfo_open;
 
@@ -7288,7 +7289,7 @@ public class Fragment_map extends Fragment {
                 route,
                 qnmCommProc_mis.Consts.CONST_misMsgType_talk,
                 (byte) 0,
-                (short) qnmCommProc.Consts.CONST_qyCmd_talkTo,
+                (short) CONST_qyCmd_talkTo,
                 tStartTran,
                 uiTranNo,
                 (short) 0,

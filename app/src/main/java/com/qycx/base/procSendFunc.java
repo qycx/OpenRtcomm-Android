@@ -18,7 +18,6 @@ import static com.qycx.base.qmcTaskInfo.Consts.CONST_taskDataType_conf;
 import static com.qycx.base.qmcTaskInfo.qyFuncs.getQmcTaskInfoByIndex;
 import static com.qycx.base.qmcTaskInfo.qyFuncs.newTaskInfoIndex;
 import static com.qycx.base.qmcVideoFunc.qyFuncs.getSharedObjUsr;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendMedia;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_outputTask;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_task;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_transferAvInfo_subtype_task;
@@ -30,6 +29,7 @@ import static com.qycx.base.qnmCommProc_mis.Consts.MAX_resourceMems_taskAv_p2p;
 //import static com.qycx.base.qyComm.Consts.CONST_commFlg_talkData;
 //
 import static com.qycx.base.qyComm.Consts.CONST_commFlg_routeTalkData;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendMedia;
 import static com.qycx.base.qyComm.Consts.CONST_qyRc_unknown;
 import static com.qycx.base.qyCusResPublic.Consts.CONST_imTaskType_transferAvInfo;
 import static com.qycx.base.qyCusResPublic.Consts.CONST_imTaskType_viewDynBmp;

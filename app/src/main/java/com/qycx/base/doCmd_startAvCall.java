@@ -338,10 +338,12 @@ public class doCmd_startAvCall {
 
                         //
                         if  (  pProcInfo.bUse100k )  {
-                            //
-                            avCompressor_req.audio.common.head.ucCompressors  =  CONST_audioCompressors_lyra;
-                            //
-                            Log.d("anc","for test: set ucCompressors to lyra");
+                            if  (  false  ) {
+                                //
+                                avCompressor_req.audio.common.head.ucCompressors = CONST_audioCompressors_lyra;
+                                //
+                                Log.d("anc", "for test: set ucCompressors to lyra");
+                            }
                         }
 
                         //  2014/10/07

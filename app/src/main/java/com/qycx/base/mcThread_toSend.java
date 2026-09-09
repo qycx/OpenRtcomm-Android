@@ -1,6 +1,7 @@
 package com.qycx.base;
 
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCommType_transferAudioData;
+import static com.qycx.anc.ancKeepalive.sendKeepaliveReq;
 import static com.qycx.base.Consts.*;
 import static com.qycx.base.QYThreadCtx.getCtxThreadTmpVar;
 import static com.qycx.base.ctxCaller.Consts.*;
@@ -16,7 +17,6 @@ import static com.qycx.base.isProtocolFunc.qyFuncs.qyhtonRouteTalkData;
 import static com.qycx.base.isProtocolFunc.qyFuncs.qyntohRouteTalkData;
 import static com.qycx.base.qmcSharedObj.qyFuncs.getSharedObjByIndex;
 import static com.qycx.base.qmcTaskInfo.qyFuncs.getQmcTaskInfoByIndex;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendMedia;
 import static com.qycx.base.qnmCommProc_mis.Consts.*;
 import static com.qycx.base.qnmCommProc_mis.qyFuncs.M_getMsgContent;
 import static com.qycx.base.qnmMainFunc_isCli.qyFuncs.bChannelOk;
@@ -27,11 +27,13 @@ import static com.qycx.base.qyComm.qyFuncs.isUcFlgResp;
 import static com.qycx.base.qyDefs.qyFuncs.MACRO_makeCommonParam3;
 import static com.qycx.base.qyDmItemCommProc.qyFuncs.qyGetDesByType1;
 import static com.qycx.base.qyMcMainDaemon_isCli.qyFuncs.postMsg2OutputQ_mc;
+import static com.qycx.base.qyMcMain_global.g.g_pQyMc;
 import static com.qycx.base.qy_getuiNextTranNo.qyFuncs.getuiNextTranNo;
 import static com.qycx.base.qyq2.qyFuncs.getQ2Nodes;
 import static com.qycx.base.qyq2.qyFuncs.getQ2Nodes_toPostMsg;
 import static com.qycx.base.qyq2.qyFuncs.q2AvoidTriggerTooHigh;
 import static com.qycx.base.tmpFunc.qyFuncs.myGetTickCount;
+import static com.qycx.base.tmpFunc.qyFuncs.myGetTickCount64;
 import static com.qycx.base.tmpFunc.qyFuncs.myWaitOne;
 
 import com.qycx.base.qnmCommProc_mis.CMIS_MSGU;
@@ -60,13 +62,12 @@ public class mcThread_toSend {
             qmCommonFunc_mis.TRAN_INFO_MIS pTranInfo = (qmCommonFunc_mis.TRAN_INFO_MIS) pCommonParam1.p0;
             qyShowInfoCommProc.Ctx_thread_tmpVar tmpVar =(qyShowInfoCommProc.Ctx_thread_tmpVar) pCommonParam1.p2  ;
 
-            qnmCommProc_mis.MIS_MSG_TASK pMsgTask_o = (qnmCommProc_mis.MIS_MSG_TASK) pTranInfo.pMsg_o;
 
 
             //
             int lenInBytes = 0;
 
-            if (null == pProcInfo || null == pMisCnt || null == pChannel || null == pMsgTask_o) {
+            if (null == pProcInfo || null == pMisCnt || null == pChannel ) {
                 String str = "tmpHandler_toSend failed: pMisCnt or pChannel or pMsgTask_o is null";
                 Log.e(str);
                 showInfo_open.qyFuncs.showInfo_open(0, null,str);
@@ -89,41 +90,77 @@ public class mcThread_toSend {
 
             //
             switch (((qnmCommProc_mis.MIS_MSGU) pMsgElemParam).uiType) {
+                case  CONST_misMsgType_req:
+                case  CONST_misMsgType_outputReq:  {
+                    qnmCommProc_mis.MIS_MSG_REQ pMsgElem = (qnmCommProc_mis.MIS_MSG_REQ) pMsgElemParam;
+                    qnmCommProc_mis.MIS_MSG_REQ pMsgReq_o = (qnmCommProc_mis.MIS_MSG_REQ) pTranInfo.pMsgReq_o;
+                    //
+                    pMsgElem.nTimes_tryToSend++;
+
+                    //
+                    if  (  pMsgReq_o  ==  null  )  {
+                        Log.e("qy","tmpHandler_toSend: pMsgTask_o is null");
+                        return  iErr;
+                    }
+
+                    //
+
+                    if  (  pChannel.m_b_useQ2_toOutput) {
+                        //pMsgTask_o = qnmCommProc_mis.MIS_MSG_TASK.copyHeadInfo(pMsgElem);
+                        pMsgReq_o  =  new qnmCommProc_mis.MIS_MSG_REQ();
+                        //
+                        qnmCommProc_mis.MIS_MSG_REQ.copyHeadInfo(pMsgElem, pMsgReq_o);
+                        //
+                        pMsgReq_o.buffer=ByteBuffer.allocate(bufSize_transferVideoData);
+
+                    }
+                    else  {
+                        qnmCommProc_mis.MIS_MSG_REQ.copyHeadInfo(pMsgElem, pMsgReq_o);
+                        //
+                        pMsgReq_o.buffer.position(0);
+                        pMsgReq_o.buffer.limit(pMsgReq_o.buffer.capacity());
+
+                    }
+
+
+                    //
+                    if (0 > (lenInBytes = qyhtonRouteTalkData(tmpVar, null, pMsgElem.data, 0, true, pMsgElem.ucFlg, pMsgReq_o.buffer, null, 0))) {
+                        Log.e("tmpHandler_toSend failed: htonRouteTalkData failed");
+                        showInfo_open.qyFuncs.showInfo_open("tmpHandler_toSend failed: htonRouteTalkData failed");
+                        return iErr;
+                    }
+                    pMsgReq_o.lenInBytes = (int) lenInBytes;
+
+                    //
+                    if (0 != postMsg2OutputQ_mc(pMisCnt, pMsgReq_o, lenInBytes, pChannel)) { //在这数据发送。zzq
+                        String str ="tmpHandler_toSend failed: postMsg2OutputQ_mc failed";
+                        Log.d(str);
+                        showInfo_open.qyFuncs.showInfo_open(str);
+                        return iErr;
+                    }
+
+                    //
+                    pMsgElem.tStartTime_processed = pTranInfo.tNow;
+                    pMsgElem.uiTranNo_processed = pTranInfo.uiTranNo;
+
+                    pTranInfo.nNodes_processed++;
+
+                    iErr = 0;
+                    return iErr;
+
+
+                    //
+                }
+                //break;
                 case CONST_misMsgType_task:
                 case CONST_misMsgType_outputTask: {
                     qnmCommProc_mis.MIS_MSG_TASK pMsgElem = (qnmCommProc_mis.MIS_MSG_TASK) pMsgElemParam;
+                    qnmCommProc_mis.MIS_MSG_TASK pMsgTask_o = (qnmCommProc_mis.MIS_MSG_TASK) pTranInfo.pMsgTask_o;
 
                     pMsgElem.nTimes_tryToSend++;
 
-                    /*
-                    if (pMsgElem.data.route.debugInfo.dwTickCnt_me_start != 0) {
-                        pMsgElem.dwTickCnt_start = pMsgElem.data.route.debugInfo.dwTickCnt_me_start;
-                        pMsgElem.dwTickCnt_toSend = myGetTickCount(null);
-                    }
-                    if (pMsgElem.data.route.debugInfo.tTime_start != 0) {
-                        if (isUcFlgResp(pMsgElem.ucFlg))
-                            pMsgElem.data.route.debugInfo.usElapsed_peer_resp_toSend = (int) (myGetTickCount(null) - pMsgElem.data.route.debugInfo.dwTickCnt_peer_recved);
-                        else {
-                            pMsgElem.data.route.debugInfo.usElapsed_toSend = (int) (myGetTickCount(null) - pMsgElem.data.route.debugInfo.dwTickCnt_me_start);
-                        }
-                        pMsgElem.index_debugInfo = pMsgElem.data.route.debugInfo.index;
-                    }
-                     */
 
                     pMsgElem.data.route.idInfo_from.ui64Id = pMisCnt.idInfo.ui64Id;
-
-//                    if (pMsgElem.data.buf instanceof qnmCommProc_mis.TRANSFER_VIDEO_DATA) {
-//                        return iErr;
-//                    }
-//
-//                    if (pMsgElem.data.buf instanceof qnmCommProc_mis.TRANSFER_AUDIO_DATA) {
-//                        return iErr;
-//                    }
-
-                    if (pMsgElem.data.buf instanceof qnmCommProc_mis.TRANSFER_AV_replyInfo) {
-//                        return iErr;
-                        int a = 1;
-                    }
 
                     if  (  pMsgTask_o  ==  null  )  {
                         Log.e("qy","tmpHandler_toSend: pMsgTask_o is null");
@@ -149,50 +186,6 @@ public class mcThread_toSend {
                     }
 
                     //
-                    if  (  true ) {
-
-                        //
-                        if (pChannel.uiType == CONST_channelType_rtMedia && pMsgElem.data.buf.uiType == CONST_imCommType_transferAudioData) {
-
-                            //
-                            if  ( pQyMc.appParams.bDbg_traceRt_a_rec ) {
-
-                                qnmCommProc_mis.TRANSFER_AUDIO_DATA tad = (qnmCommProc_mis.TRANSFER_AUDIO_DATA) pMsgElem.data.buf;
-                                //
-                                String str;
-                                str = "th_toSend: tn " + pMsgTask_o.uiTranNo + " tad";
-                                //
-                                if (tad.usCnt == 0) {
-                                    Log.d("at", "err: tad.cnt is 0");
-                                } else {
-                                    int i;
-                                    for (i = 0; i < tad.usCnt; i++) {
-                                        str += " pts " + tad.mems[i].uiPts;
-                                    }
-                                }
-                                //
-                                str += " oQBuf2_local_a.nQNodes " + pProcInfo.pOutputQBuf2_local_a.size();
-                                //
-                                showInfo_open.qyFuncs.showInfo_open(0, 0, "", str);
-
-                                //
-                                if (false) {
-                                    byte[] b = tad.buf.array();
-                                    String fn = "toSend.mp3";
-                                    //GuiShare.pf_dumpData1.call(0, 0, 0, 0, false, false, fn);
-                                    guiShare.GuiShare.pf_dumpData1.call(b, (int) tad.uiLen, 0, 0, true, false, fn);
-                                }
-
-                            }
-
-                        }
-                    }
-
-
-
-
-
-                    //
                     //pMsgTask_o.buffer = ByteBuffer.allocate(bufSize_transferVideoData);
                     if (0 > (lenInBytes = qyhtonRouteTalkData(tmpVar, pMsgElem.data.route, pMsgElem.data.buf, 0, true, pMsgElem.ucFlg, pMsgTask_o.buffer, null, 0))) {
                         Log.e("tmpHandler_toSend failed: htonRouteTalkData failed");
@@ -201,41 +194,6 @@ public class mcThread_toSend {
                     }
                     pMsgTask_o.lenInBytes = (int) lenInBytes;
 
-                    //
-                    if  ( false)  {
-                        //
-                        Log.d("anc","for test....");
-                        //
-                        if (pChannel.uiType == CONST_channelType_rtMedia && pMsgElem.data.buf.uiType == CONST_ancCommType_transferAudioData) {
-                            //
-                            //pMsgTask_o.uiTranNo  =  933;
-                            Log.d("anc","for test. set tn to 933");
-                        }
-                        //
-                        //qnmCommProc_mis.MSG_ROUTE tmp_route=new qnmCommProc_mis.MSG_ROUTE();
-                        //qnmCommProc_mis.IM_CONTENTU tmp_pContent  =  qyntohRouteTalkData(pMsgTask_o.ucFlg,pMsgTask_o.buffer,pMsgTask_o.lenInBytes,tmp_route,"",0);
-                        //
-                        if (pChannel.uiType == CONST_channelType_rtMedia && pMsgElem.data.buf.uiType == CONST_ancCommType_transferAudioData) {
-                            //
-                            Log.d("anc","mmmmm");
-                        }
-
-                    }
-
-                    //
-                    int size = 0;
-                    if  (  pChannel.m_b_useQ2_toOutput) {
-                        size = getQ2Nodes(pChannel.outputQ21);
-                    }
-                    else  {
-                          size  =  pChannel.outputQBuf2.size();
-                    }
-
-                    //
-                    if(pChannel.uiType == CONST_channelType_media)
-                    {
-                        //Log.d(VIDEO_UPLOAD,"2.10 postMsg2OutputQ_mc");
-                    }
                     if (0 != postMsg2OutputQ_mc(pMisCnt, pMsgTask_o, lenInBytes, pChannel)) { //在这数据发送。zzq
                         String str ="tmpHandler_toSend failed: postMsg2OutputQ_mc failed";
                         Log.d(str);
@@ -281,20 +239,35 @@ public class mcThread_toSend {
             qmCommonFunc_mis.TRAN_INFO_MIS pTranInfo = (qmCommonFunc_mis.TRAN_INFO_MIS) pCommonParam1.p0;
 
             switch (pMsgElem.uiType) {
+                case  CONST_misMsgType_req:
+                case  CONST_misMsgType_outputReq:
+
+                    //
+                    if (((qnmCommProc_mis.MIS_MSG_REQ)pMsgElem).nTimes_tryToSend!=0) {			//  Õâ¸öÌõ¼þÊÇÎªÁËÈ·±£Ö»ÄÜÉ¾³ýÒÑ·¢¹ýµÄ¡£
+
+                        //
+                        iErr = 1;
+                        return  iErr;
+                    }
+                    //
+                    break;
+
+
                 case CONST_misMsgType_task:
                 case CONST_misMsgType_outputTask:
+                    //
+                    if (((qnmCommProc_mis.MIS_MSG_TASK) pMsgElem).nTimes_tryToSend != 0) {           //  Õâ¸öÌõ¼þÊÇÎªÁËÈ·±£Ö»ÄÜÉ¾³ýÒÑ·¢¹ýµÄ¡£
+                        //
+                        //showInfo_open.qyFuncs.showInfo_open(0,"","needRemove msg.id "  + pMsgElem.tmpID);
+                        //
+                        iErr = 1;
+                        return iErr;
+                    }
+
                     break;
                 default:
                     Log.i("tmpHandler_needRemoveMsg_cli: msgType error.");
                     return iErr;
-            }
-
-            if (((qnmCommProc_mis.MIS_MSG_TASK) pMsgElem).nTimes_tryToSend != 0) {           //  Õâ¸öÌõ¼þÊÇÎªÁËÈ·±£Ö»ÄÜÉ¾³ýÒÑ·¢¹ýµÄ¡£
-                //
-                //showInfo_open.qyFuncs.showInfo_open(0,"","needRemove msg.id "  + pMsgElem.tmpID);
-                //
-                iErr = 1;
-                return iErr;
             }
 
             iErr = 0;
@@ -556,7 +529,7 @@ public class mcThread_toSend {
 
             //
             int iErr = -1;
-            ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+            ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
             ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
             qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo.pMisCnt;
 
@@ -632,7 +605,7 @@ public class mcThread_toSend {
 
 
                 qmCommonFunc_mis.TRAN_INFO_MIS pTranInfo = (qmCommonFunc_mis.TRAN_INFO_MIS) pCommonParam1.p0;
-                qnmCommProc_mis.MIS_MSG_TASK pMsgTask_o = (qnmCommProc_mis.MIS_MSG_TASK) pTranInfo.pMsg_o;
+                qnmCommProc_mis.MIS_MSG_TASK pMsgTask_o = (qnmCommProc_mis.MIS_MSG_TASK) pTranInfo.pMsgTask_o;
 
                 qnmCommProc_mis.MIS_MSG_TASK pMsgMixer = (qnmCommProc_mis.MIS_MSG_TASK) pCommonParam1.p1;
                 qnmCommProc_mis.TRANSFER_AUDIO_DATA pMixer = (qnmCommProc_mis.TRANSFER_AUDIO_DATA) pMsgMixer.data.buf;//(qnmCommProc_mis.TRANSFER_AUDIO_DATA) pMsgMixer.data.buf;
@@ -788,7 +761,7 @@ public class mcThread_toSend {
 
             //Log.d(VIDEO_UPLOAD,"2.8 tmpHandler_toMixer_video");
             //
-            ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+            ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
             ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
             qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo.pMisCnt;
 
@@ -848,7 +821,7 @@ public class mcThread_toSend {
                 }
 
                 qmCommonFunc_mis.TRAN_INFO_MIS pTranInfo = (qmCommonFunc_mis.TRAN_INFO_MIS) pCommonParam1.p0;
-                qnmCommProc_mis.MIS_MSG_TASK pMsgTask_o = (qnmCommProc_mis.MIS_MSG_TASK) pTranInfo.pMsg_o;
+                qnmCommProc_mis.MIS_MSG_TASK pMsgTask_o = (qnmCommProc_mis.MIS_MSG_TASK) pTranInfo.pMsgTask_o;
 
                 qnmCommProc_mis.MIS_MSG_TASK pMsgMixer = (qnmCommProc_mis.MIS_MSG_TASK) pCommonParam1.p1;
                 qnmCommProc_mis.TRANSFER_VIDEO_DATA pMixer = (qnmCommProc_mis.TRANSFER_VIDEO_DATA) (pMsgMixer.data.buf);
@@ -994,12 +967,21 @@ public class mcThread_toSend {
             qyDefs.COMMON_PARAM p0 = pCommonParam0;
             qyDefs.COMMON_PARAM p1 = pCommonParam1;
 
+            //
+            ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+            if  ( pQyMc==null )  {
+                Log.d("at","th_toSendMedia failed: pQyMc is null");
+                return  -1;
+            }
+
+            //
+
             ctxQmc.CCtxQmc pProcInfo = (ctxQmc.CCtxQmc) pCommonParam0.p0;
             qmCommFunc_mis.MIS_CNT pMisCnt = (qmCommFunc_mis.MIS_CNT) pCommonParam0.p1;
             qmCommFunc_mis.MIS_CHANNEL pChannel = (qmCommFunc_mis.MIS_CHANNEL) pCommonParam0.p2;
             //
             qmCommonFunc_mis.TRAN_INFO_MIS pTranInfo = (qmCommonFunc_mis.TRAN_INFO_MIS) pCommonParam1.p0;
-            qnmCommProc_mis.MIS_MSG_TASK pMsgTask_o = (qnmCommProc_mis.MIS_MSG_TASK) pTranInfo.pMsg_o;
+            qnmCommProc_mis.MIS_MSG_TASK pMsgTask_o = (qnmCommProc_mis.MIS_MSG_TASK) pTranInfo.pMsgTask_o;
 
             qnmCommProc_mis.MIS_MSG_TASK pMsgMixer = (qnmCommProc_mis.MIS_MSG_TASK) pCommonParam1.p1;
 
@@ -1120,10 +1102,18 @@ public class mcThread_toSend {
                                           }
                                           qnmCommProc_mis.TRANSFER_AUDIO_dataMemHead head  =  tmpVar.m_ctxThreadtoSend.a.tmp_audio_head;//new qnmCommProc_mis.TRANSFER_AUDIO_dataMemHead();
                                           byte[] audio =  tmpVar.m_ctxThreadtoSend.a.tmp_audio_buf;//new byte[bufSize_decObj_a_mediaCodec_tmpDataBuf];
+                                          //
                                           for  (  ; ;) {
-                                              if (pTranInfo.nNodes_processed >= pProcInfo.cfg.uiMaxSendMsgs)
+                                              if (pTranInfo.nNodes_processed >= pProcInfo.cfg.uiMaxSendMsgs) {
                                                   break;
+                                              }
+
                                               //
+                                              if  (  pProcInfo.cfg.debugStatusInfo.bBbg_traceRt_pOutputQBuf2_local_a  )  {
+                                                  int n=pProcInfo.pOutputQBuf2_local_a.getQ2Nodes();
+                                                  String str = "th_toSendMedia l1104: before outputQBuf2_local_a getMsg. nQNodes "  +  n;
+                                                  showInfo_open.qyFuncs.showInfo_open(0,0,"",str);
+                                              }
                                               int tmpLen = 0;
                                               tmpLen  =  pProcInfo.pOutputQBuf2_local_a.q2GetMsg(head,audio,0,audio.length);
                                               //tmpLen = pTask.mixer.pOutputQBuf2.q2GetMsg(head, audio, 0, audio.length);
@@ -1177,6 +1167,15 @@ public class mcThread_toSend {
 
                                               //
                                               if  (  true ) {
+                                                  //
+                                                  if  (  pQyMc.appParams.bDbg)  {
+                                                      //
+                                                      int n = pProcInfo.pOutputQBuf2_local_a.getQ2Nodes();
+                                                      String str;
+                                                      str = "th_toSendMedia l1162: before outputQBuf2_local_a.getMsg, nQNodes "  +  n;
+                                                      showInfo_open.qyFuncs.showInfo_open(0,0,"",str);
+                                                  }
+
                                                   //  再取一个包
                                                   tmpLen = pProcInfo.pOutputQBuf2_local_a.q2GetMsg(head, audio, 0, audio.length);
                                                   //tmpLen = pTask.mixer.pOutputQBuf2.q2GetMsg(head, audio, 0, audio.length);
@@ -1445,9 +1444,18 @@ public class mcThread_toSend {
                 }
                 //
                 int loopCtrl = 0;
-
+                long lastTickCnt_chkKeepalive = 0;
                 qnmCommProc_mis.MIS_MSGU pMsg_o = null;
+                //
+                qnmCommProc_mis.MIS_MSG_TASK pMsgTask_o = null;
+                qnmCommProc_mis.MIS_MSG_REQ pMsgReq_o=null;
+                //
+                pMsgTask_o = new qnmCommProc_mis.MIS_MSG_TASK();
+                pMsgReq_o=new qnmCommProc_mis.MIS_MSG_REQ();
+                //
+                pMsgReq_o.buffer=ByteBuffer.allocate(300000);       //  这里用了300k的缓存
 
+                //
                 qyDefs.COMMON_PARAM commonParam0 = new qyDefs.COMMON_PARAM();
                 qyDefs.COMMON_PARAM commonParam1 = new qyDefs.COMMON_PARAM();
 
@@ -1500,16 +1508,16 @@ public class mcThread_toSend {
                         Log.d(VIDEO_UPLOAD, "<stage2.39> pMsgMixer is set." + pMsgMixer.uiType);
                         //
                         if  (  pProcInfo.cfg.b_useQ2_toEncV) {
-                            pMsg_o.buffer = ByteBuffer.allocate(bufSize_transferVideoData);
+                            pMsgTask_o.buffer = ByteBuffer.allocate(bufSize_transferVideoData);
                         }
                         else  {
-                            pMsg_o.buffer = ByteBuffer.allocate(transferVideoData.buf.capacity()+2048);
+                            pMsgTask_o.buffer = ByteBuffer.allocate(transferVideoData.buf.capacity()+2048);
                         }
                         //
                         break;
                     default:
                         //
-                        pMsg_o.buffer = ByteBuffer.allocate(bufSize_transferVideoData);
+                        pMsgTask_o.buffer = ByteBuffer.allocate(bufSize_transferVideoData);
                         //
                         break;
                 }
@@ -1604,7 +1612,10 @@ public class mcThread_toSend {
                         return;
                     }
                     tranInfo.tNow = tmpFunc.qyFuncs.mytime();
-                    tranInfo.pMsg_o = pMsg_o;
+                    //
+                    tranInfo.pMsgTask_o = pMsgTask_o;
+                    tranInfo.pMsgReq_o=pMsgReq_o;
+                    //
                     qyShowInfoCommProc.Ctx_thread_tmpVar tmpVar =  getCtxThreadTmpVar(CONST_iParamType_toSend,pChannel.uiType);
                     if  (  tmpVar==null)  {
 
@@ -1685,7 +1696,58 @@ public class mcThread_toSend {
                         }
                         //
                     }
+                    //
+                    //
+                    if (true) {
+                        long  dwTickCnt = myGetTickCount64(null);
+                        long  iDiffInMs = dwTickCnt - lastTickCnt_chkKeepalive;
+                        if (Math.abs(iDiffInMs) > 2000) {
+                            lastTickCnt_chkKeepalive = dwTickCnt;
 
+                            //
+                            long  e_startChannel = dwTickCnt - pChannel.status.dwTickCnt_startChannel;
+                            long  e_lastStartToRecv = dwTickCnt - pChannel.status.dwTickCnt_lastStartToRecv;
+                            long  e_lastEndSending = dwTickCnt - pChannel.status.dwTickCnt_lastEndSending;
+
+                            if  (  true  ) {
+                                //
+                                String str;
+                                //
+                                if  (  false  ) {
+                                    str = "channel.type " + pChannel.uiType + ";";
+                                    str += " e_startChannel " + e_startChannel;
+                                    str += " e_lastStartRecv " + e_lastStartToRecv;
+                                    str += " e_lastEndSending " + e_lastEndSending;
+                                    showInfo_open.qyFuncs.showInfo_open(0, 0, "", str);
+                                }
+                                //
+                                if (Math.abs(e_startChannel) > 5000) {
+                                    if (Math.abs(e_lastStartToRecv) > pQyMc.cfg.iTimeoutInMs_channelKeepalive
+                                            || Math.abs(e_lastEndSending) > pQyMc.cfg.iTimeoutInMs_channelKeepalive)
+                                    {
+                                        //
+                                        /*
+                                        if (Math.abs(e_lastStartToRecv) > pQyMc.cfg.iTimeoutInMs_channelKeepalive  )  {
+                                            showInfo_open.qyFuncs.showInfo_open(0,0,"","e_recv too big");
+                                        }
+                                        if  (  Math.abs(e_lastEndSending) > pQyMc.cfg.iTimeoutInMs_channelKeepalive) {
+                                            showInfo_open.qyFuncs.showInfo_open(0,0,"","e_send too big");
+                                        }
+                                         */
+
+                                        //
+                                        sendKeepaliveReq(pProcInfo, false, pChannel.uiType);
+                                    }
+                                }
+                            }
+                            //
+
+
+                        }
+                    }
+
+
+                    //
                     tranInfo.uiMaxSendMsgs = 4;
                     do {
                         if (null == pToSendQ || isQEmpty(pToSendQ)) {

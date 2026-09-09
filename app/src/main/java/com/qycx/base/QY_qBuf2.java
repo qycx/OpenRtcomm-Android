@@ -170,7 +170,13 @@ public class QY_qBuf2 {
                 }
             }
 
+            //
+            if (  pQ.name.equals("encV-0"))  {
+                Log.d("at","kk");
+            }
 
+
+            //
             iErr = 0;
 
 
@@ -532,6 +538,11 @@ public class QY_qBuf2 {
                 }
                 if (pQ.startPos_data  +  pQ.dataLen + size > pQ.cfg.maxDataBufLen) {
                     str = String.format(pQ.name + " qFull l534 " + Thread.currentThread().getName() );
+                    //
+                    if  (  pQ.name.equals("encV-0"))  {
+                        Log.d("at","kk");
+                    }
+                    //
                     int tmpLen  =  pQ.startPos_data  +  pQ.dataLen + size;
                     str  +=  ". startPos_data  +  dataLen  +  size "  +  tmpLen  +  "  >  pQ.cfg.maxDataBufLen "  +  pQ.cfg.maxDataBufLen;
                     //

@@ -1,6 +1,7 @@
 package com.qycx.base;
 
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_input;
+import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_outputReq;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_outputTask;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_req;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_talk;
@@ -319,6 +320,7 @@ public class tmpFunc {
             //
             switch  (  head.msg_uiType)  {
                 case  CONST_misMsgType_req:
+                case  CONST_misMsgType_outputReq:
                     qnmCommProc_mis.MIS_MSG_REQ  req  =  (qnmCommProc_mis.MIS_MSG_REQ)pMsg;
                       head.dataLen  =  req.lenInBytes;
                       //

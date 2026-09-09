@@ -44,4 +44,7 @@
 	<dimen name="map_split_compass_size_landscape">72dp</dimen>
 	<dimen name="map_split_compass_size_portrait">80dp</dimen>
 
+	<dimen name="login_top_margin">120dp</dimen>
+	<dimen name="login_title_top_margin">96dp</dimen>
+
 </resources>

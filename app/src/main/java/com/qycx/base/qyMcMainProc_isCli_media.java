@@ -24,7 +24,6 @@ import static com.qycx.base.qmcSharedObj.qyFuncs.getCapBmpBySth;
 import static com.qycx.base.qmcSharedObj.qyFuncs.getSharedObjByIndex;
 import static com.qycx.base.qmcTaskInfo.Consts.CONST_taskDataType_conf;
 import static com.qycx.base.qmcVideoFunc.qyFuncs.getSharedObjUsr;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendMedia;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_recv_accept;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_recv_cancel;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_send_cancel;
@@ -38,6 +37,7 @@ import static com.qycx.base.qnmCommProc_mis.qyFuncs.MACRO_makeImSimpleResp;
 import static com.qycx.base.qnmMainFunc_isCli.qyFuncs.bChannelOk;
 import static com.qycx.base.qnmMainFunc_isCli.qyFuncs.getChannelByType;
 import static com.qycx.base.qyComm.Consts.CONST_commFlg_resp;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendMedia;
 import static com.qycx.base.qyComm.Consts.CONST_qyRc_ok;
 import static com.qycx.base.qyComm.Consts.CONST_qyRc_unknown;
 import static com.qycx.base.qyComm.qyFuncs.isRcOk;
@@ -1275,17 +1275,6 @@ public class qyMcMainProc_isCli_media {
 
                             //
                             if  (  false  ) {
-                                long dwTickCnt = myGetTickCount(null);
-                                str = "procMsgInput_mc_media: tvd: bef startChannel ";
-                                if (pChannel.hThread_io == null) str += "thread_io is null";
-                                else str += "thread_io not null";
-                                long iE = dwTickCnt - pChannel.status.dwTickCnt_lastRecvd;
-                                str += " e_recvd " + iE + ".";
-                                if (bChannelOk(pChannel,false)) str += " ch ok";
-                                else str += " ch bad";
-                                str += " ioQuit " + pChannel.status.ulbIoQuit1;
-                                str += " ioStep " + pChannel.status.iIoStep;
-                                showInfo_open.qyFuncs.showInfo_open(str);
                             }
                             //
                             startChannel(pProcInfo, pMisCnt, pChannel, ("recv transferVideoData"));

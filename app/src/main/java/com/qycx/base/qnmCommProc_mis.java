@@ -46,7 +46,6 @@ import static com.qycx.base.qyCustom.qyFuncs.qnmVerStr;
 import static com.qycx.base.qyDefs.Consts.CONST_objType_android;
 import static com.qycx.base.qyEncFunc.Consts.CONST_qyEncType_rsa1;
 import static com.qycx.base.qyMcMainDaemon_isCli.Consts.*;
-import static com.qycx.base.qyMsgFunc.qyFuncs.old_qyRecvMsg;
 import static com.qycx.base.qyMsgFunc.qyFuncs.qyRecvMsg;
 import static com.qycx.base.qyMsgFunc.qyFuncs.qyTellService_msg;
 import static com.qycx.base.qyWmComm.Consts.*;
@@ -131,9 +130,14 @@ public class qnmCommProc_mis {
         public final static int CONST_misMsgType_procGps_qmc = (CONST_misMsgType_base + 82);   //  2012/04/20
         //
         public final static int CONST_misMsgType_getDaemonStatus = (CONST_misMsgType_base + 85);   //  2011/01/12
+
+
+        /////////////////
         //
-        public final static int CONST_misMsgType_outputTask = (CONST_misMsgType_base + 90);    //  robot
-        public final static int CONST_misMsgType_outputTask_toMix = (CONST_misMsgType_base + 91);  //  2011/01/23
+        public final static int CONST_misMsgType_outputTask = (CONST_misMsgType_base + 690);    //  robot
+
+        //
+        public final static  int CONST_misMsgType_outputReq  =	(  CONST_misMsgType_base  +  691  );
 
 
         //  2008/05/26
@@ -3081,6 +3085,17 @@ public class qnmCommProc_mis {
 
     //
     //
+    public static class AnKeepaliveReq extends IM_CONTENTU  {
+
+        public byte 										ucbResp;
+
+    }		 ;
+
+
+
+    //
+    //
+
 
     /** 融合中心 AnHgData 请求（对应 C++ AnHgData） */
     public static class AnHgData extends IM_CONTENTU {
@@ -3715,60 +3730,7 @@ public class qnmCommProc_mis {
             return;
         }
 
-        /*
-        public byte[] toByteArray1() {
-            byte[] addrLogicalPeerBytes = addr_logicalPeer.toByteArray();
-            byte[] idInfoTaskSenderBytes = idInfo_taskSender.toByteArray();
-            byte[] idInfoTaskReceiverBytes = idInfo_taskReceiver.toByteArray();
-            byte[] dataBytes = data.toByteArray();
 
-            int size = Integer.BYTES * 21 + Short.BYTES * 3 + Long.BYTES * 7 + Byte.BYTES * 2 + 1 * 4 + addrLogicalPeerBytes.length + idInfoTaskSenderBytes.length + idInfoTaskReceiverBytes.length + dataBytes.length;
-            ByteBuffer buffer = ByteBuffer.allocate(size);
-
-            buffer.putInt(uiType);
-            buffer.putInt(uiCliIndex);
-            buffer.putInt(uiSessionId);
-            buffer.putInt(uiStep);
-            buffer.put((byte) (ucbConvrted ? 1 : 0));
-            buffer.put((byte) (ucbConvrted_msgRoute ? 1 : 0));
-            buffer.putInt(lenInBytes_msgRouteInDataBuf);
-            buffer.put(addrLogicalPeerBytes);
-            buffer.put(ucFlg);
-            buffer.putInt(usCode);
-            buffer.putInt(usCode_org);
-            buffer.putLong(tStartTime);
-            buffer.putInt(uiTranNo);
-            buffer.putInt(usSeqNo);
-            buffer.putLong(tStartTime_processed);
-            buffer.putInt(uiTranNo_processed);
-            buffer.putInt(nTimes_tryToSend);
-            buffer.putLong(tTime_alive);
-            buffer.putLong(tTime_applyForChkTaskAlive);
-            buffer.put(nTimes_applyForChkTaskAlive);
-            buffer.putInt(uiTaskMode_unused);
-            buffer.putInt(iTaskId);
-            buffer.putInt(uiTaskType);
-            buffer.put(idInfoTaskSenderBytes);
-            buffer.put(idInfoTaskReceiverBytes);
-            buffer.putInt(iStatus);
-            buffer.putLong(tLastModifiedTime);
-            buffer.put((byte) (bFrom_sharedObj ? 1 : 0));
-            buffer.putInt(index_sharedObj);
-            buffer.putLong(tRecvTime);
-            buffer.putLong(dwTickCnt_start);
-            buffer.putLong(dwTickCnt_toSend);
-            buffer.putInt(usElapsed_recved);
-            buffer.putInt(usElapsed_serv_startToProcess);
-            buffer.putInt(index_debugInfo);
-            buffer.putInt(uiChannelType);
-            buffer.putInt(uiChannelType_input);
-            buffer.putInt(lenInBytes);
-            buffer.put(dataBytes);
-
-            return buffer.array();
-        }
-
-         */
     }
 
     public static class MIS_MSG_REQ extends MIS_MSGU {                                   //  2007/11/29, addressable talk
@@ -3833,6 +3795,7 @@ public class qnmCommProc_mis {
         //
         public IM_CONTENTU data = new IM_CONTENTU();
 
+
         //        public byte[] data = new byte[2444440];
         /*
         public byte[] toByteArray1() {
@@ -3888,6 +3851,56 @@ public class qnmCommProc_mis {
         }
 
          */
+        public static void copyHeadInfo(MIS_MSG_REQ req_src, MIS_MSG_REQ req_dst) {
+            //
+            MIS_MSG_REQ task = req_src;
+            MIS_MSG_REQ misMsgTask = req_dst;
+
+            //MIS_MSG_TASK misMsgTask = new MIS_MSG_TASK();
+            misMsgTask.uiType = task.uiType;
+            misMsgTask.uiCliIndex = task.uiCliIndex;
+            misMsgTask.uiSessionId = task.uiSessionId;
+            misMsgTask.uiStep = task.uiStep;
+            misMsgTask.ucbConvrted = task.ucbConvrted;
+            misMsgTask.ucbConvrted_msgRoute = task.ucbConvrted_msgRoute;
+            misMsgTask.lenInBytes_msgRouteInDataBuf = task.lenInBytes_msgRouteInDataBuf;
+            misMsgTask.addr_logicalPeer = task.addr_logicalPeer;
+            misMsgTask.ucFlg = task.ucFlg;
+            misMsgTask.usCode = task.usCode;
+            misMsgTask.usCode_org = task.usCode_org;
+            misMsgTask.tStartTime = task.tStartTime;
+            misMsgTask.uiTranNo = task.uiTranNo;
+            misMsgTask.usSeqNo = task.usSeqNo;
+            misMsgTask.tStartTime_processed = task.tStartTime_processed;
+            misMsgTask.uiTranNo_processed = task.uiTranNo_processed;
+            misMsgTask.nTimes_tryToSend = task.nTimes_tryToSend;
+            misMsgTask.tTime_alive = task.tTime_alive;
+            misMsgTask.tTime_applyForChkTaskAlive = task.tTime_applyForChkTaskAlive;
+            misMsgTask.nTimes_applyForChkTaskAlive = task.nTimes_applyForChkTaskAlive;
+            misMsgTask.uiTaskMode_unused = task.uiTaskMode_unused;
+            misMsgTask.iTaskId = task.iTaskId;
+            misMsgTask.uiTaskType = task.uiTaskType;
+            misMsgTask.idInfo_taskSender = task.idInfo_taskSender;
+            misMsgTask.idInfo_taskReceiver = task.idInfo_taskReceiver;
+            misMsgTask.iStatus = task.iStatus;
+            misMsgTask.tLastModifiedTime = task.tLastModifiedTime;
+            //
+            //misMsgTask.bFrom_sharedObj = task.bFrom_sharedObj;
+            //misMsgTask.index_sharedObj = task.index_sharedObj;
+            //
+            misMsgTask.tRecvTime = task.tRecvTime;
+            misMsgTask.dwTickCnt_start = task.dwTickCnt_start;
+            misMsgTask.dwTickCnt_toSend = task.dwTickCnt_toSend;
+            misMsgTask.usElapsed_recved = task.usElapsed_recved;
+            misMsgTask.usElapsed_serv_startToProcess = task.usElapsed_serv_startToProcess;
+            misMsgTask.index_debugInfo = task.index_debugInfo;
+            misMsgTask.uiChannelType = task.uiChannelType;
+            misMsgTask.uiChannelType_input = task.uiChannelType_input;
+            misMsgTask.lenInBytes = task.lenInBytes;
+            //return misMsgTask;
+            return;
+        }
+
 
     }
 
@@ -5094,9 +5107,18 @@ public class qnmCommProc_mis {
 
         //建立会话
         public static ByteBuffer qnmOpenSession_mis(String servIp, int usPort, QY_COMM_AUTHINFO_MIS pAuthInfo, int usAuthCmd, int uiChannelType,
-                                             String clientIp, int iServiceId, String serviceVer, qmCrypt.ENC_CTX_session pCommEncCtx,  long i64StartTime_base,
-                                             QY_COMM_SESSION pSession, commonSock.QY_SOCK pSock, commonSock.SOCK_PARAM pSockParam,String hint) {
+                                                    String clientIp, int iServiceId, String serviceVer, qmCrypt.ENC_CTX_session pCommEncCtx,  long i64StartTime_base,
+                                                    QY_COMM_SESSION pSession, commonSock.QY_SOCK pSock, commonSock.SOCK_PARAM pSockParam,String hint)
+        {
             //
+            ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+            if (pQyMc == null) {
+                Log.e("qnmOpenSession_mis: pQyMc null");
+                return null;
+            }
+            ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
+            qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo.pMisCnt;
+
             if  (  false  ) {
             }
             //
@@ -5109,73 +5131,101 @@ public class qnmCommProc_mis {
             //
             String whereStr  =  hint;
 
-            //
-            if (!guiShare.GuiShare.pf_bQySockOpen.call(pSock)) {
-                if (guiShare.GuiShare.pf_qyConnect.call(servIp, usPort, pSockParam, pSock) != 0) {
-                    String str = String.format("qnmOpenSession_mis: connect %s: %d failed", servIp, usPort );
-                    Log.e(str);
-                    showInfo_open.qyFuncs.showInfo_open(0, null, str);
-                    return null;
-                }
-                //
-                Log.d("anc", whereStr  + " qnmOpenSession_mis: connect ok" + qnmVerStr(0));
-            }
-            authInfo.usAuthCmd = (short) usAuthCmd;
-            authInfo.uiChannelType = uiChannelType;
-            authInfo.ip = getLocalHostExactAddress().getHostAddress();
+            do {
 
-            qmCrypt.ENC_CTX_session pEncCtx = pCommEncCtx;
-            if (pEncCtx == null) return null;
-            if (pEncCtx.common.type == CONST_qyEncType_rsa1
-                /*&& pEncCtx.m_var.uiBlobLen_sessionKey != 0*/) {
+                //
+                if (!guiShare.GuiShare.pf_bQySockOpen.call(pSock)) {
+                    if (guiShare.GuiShare.pf_qyConnect.call(servIp, usPort, pSockParam, pSock) != 0)
+                    {
+                        String str = String.format("qnmOpenSession_mis: connect %s: %d failed", servIp, usPort);
+                        Log.e(str);
+                        showInfo_open.qyFuncs.showInfo_open(0, null, str);
+                        return null;
+                    }
+                    //
+                    Log.d("anc", whereStr + " qnmOpenSession_mis: connect ok" + qnmVerStr(0));
+                }
+                authInfo.usAuthCmd = (short) usAuthCmd;
+                authInfo.uiChannelType = uiChannelType;
+                authInfo.ip = getLocalHostExactAddress().getHostAddress();
+
+                qmCrypt.ENC_CTX_session pEncCtx = pCommEncCtx;
+                if (pEncCtx == null) return null;
+                if (pEncCtx.common.type == CONST_qyEncType_rsa1
+                    /*&& pEncCtx.m_var.uiBlobLen_sessionKey != 0*/) {
 //                if (pEncCtx.m_aes.Key.length() > bufSize_sessionKeyBlob) return iErr;
-                if (pEncCtx.m_aes == null || pEncCtx.m_aes.Key == null || pEncCtx.m_aes.Key.length > bufSize_sessionKeyBlob)
-                    return null;
+                    if (pEncCtx.m_aes == null || pEncCtx.m_aes.Key == null || pEncCtx.m_aes.Key.length > bufSize_sessionKeyBlob)  {
+                        break;
+                    }
 
-                authInfo.uiBlobLen_sessionKey = pEncCtx.m_aes.Key.length;
-                authInfo.sessionKeyBlob = pEncCtx.m_aes.Key;
+                    //
+                    authInfo.uiBlobLen_sessionKey = pEncCtx.m_aes.Key.length;
+                    authInfo.sessionKeyBlob = pEncCtx.m_aes.Key;
 
-                if (pEncCtx.m_aes.IV.length > bufSize_sessionIv) return null;
-                authInfo.usLen_sessionIv = (int) pEncCtx.m_aes.IV.length;
-                authInfo.sessionIv = pEncCtx.m_aes.IV;
+                    if (pEncCtx.m_aes.IV.length > bufSize_sessionIv) {
+                        break;
+                    }
+                    authInfo.usLen_sessionIv = (int) pEncCtx.m_aes.IV.length;
+                    authInfo.sessionIv = pEncCtx.m_aes.IV;
+
+                    //
+                    if (false) {
+                        Log.d("qy", "len: iv: " + authInfo.usLen_sessionIv);
+                        Log.d("qy", "长度: key: " + authInfo.uiBlobLen_sessionKey);
+                    }
+//                System.arraycopy(pEncCtx.m_aes.IV.getBytes(), 0, authInfo.sessionIv, 0, authInfo.usLen_sessionIv);
+                }
+
+                ByteBuffer tmpBuf4096 = ByteBuffer.allocate(bufSize_4096);
+                //
+                //Log.d("qy", "authInfo.uiDevType: " + authInfo.uiDevType);
+                //
+                int len = commAuthInfo2Stream_mis(authInfo, tmpBuf4096);
+                if (len < 0) {
+                    break;
+                }
+
+                pSession.clientIp = authInfo.ip;
+                long tStartTime = mytime();//System.currentTimeMillis();
+                int uiTranNo = qy_getuiNextTranNo.qyFuncs.getuiNextTranNo.call();
 
                 //
-                if  (  false ) {
-                    Log.d("qy", "len: iv: " + authInfo.usLen_sessionIv);
-                    Log.d("qy", "长度: key: " + authInfo.uiBlobLen_sessionKey);
+
+                //
+                if (pQyMc.appParams.bDbg) {
+                    uiTranNo = 776;
                 }
-//                System.arraycopy(pEncCtx.m_aes.IV.getBytes(), 0, authInfo.sessionIv, 0, authInfo.usLen_sessionIv);
-            }
 
-            ByteBuffer tmpBuf4096 = ByteBuffer.allocate(bufSize_4096);
-            //
-            //Log.d("qy", "authInfo.uiDevType: " + authInfo.uiDevType);
-            //
-            int len = commAuthInfo2Stream_mis(authInfo, tmpBuf4096);
-            if (len < 0) return null;
+                //
+                if (0 != qyTellService_msg(iServiceId, serviceVer, pCommEncCtx, i64StartTime_base, CONST_qyCmd_tellService, tStartTime, uiTranNo, tmpBuf4096, pSock, pSockParam.to, pSession, pMisCnt.commEncCtx.m_var.publicKeyBlob_base64)) {
+                    Log.e("qnmOpenSession_mis: qyTellService_msg failed");
+                    //return null;
+                    break;
+                }
 
-            pSession.clientIp = authInfo.ip;
-            long tStartTime = mytime();//System.currentTimeMillis();
-            int uiTranNo = qy_getuiNextTranNo.qyFuncs.getuiNextTranNo.call();
-//            tmpBuf4096.flip();
-            ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
-            if (pQyMc == null) {
-                Log.e("qnmOpenSession_mis: pQyMc null");
-                return null;
-            }
-            ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
-            qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo.pMisCnt;
-            if (0 != qyTellService_msg(iServiceId, serviceVer, pCommEncCtx, i64StartTime_base, CONST_qyCmd_tellService, tStartTime, uiTranNo, tmpBuf4096, pSock, pSockParam.to, pSession, pMisCnt.commEncCtx.m_var.publicKeyBlob_base64)) {
-                Log.e("qnmOpenSession_mis: qyTellService_msg failed");
-                return null;
-            }
+                //
+                ByteBuffer bbRet=null;
+                //
+                qyMsgFunc.AT_MSG_HEAD_h tmpResp = new qyMsgFunc.AT_MSG_HEAD_h();
+                tmpResp.uiLen = 0;
+                tmpResp.i64StartTime = tStartTime;
+                tmpResp.uiTranNo = uiTranNo;
+                bbRet = qyRecvMsg(pSession, pSock, pSockParam.to, tmpResp);
+                if  (  bbRet ==null)  {
+                    break;
+                }
+                //
+                return  bbRet;
+
+            }  while(false);
 
             //
-            qyMsgFunc.QY_MSG_HEAD_h tmpResp = new qyMsgFunc.QY_MSG_HEAD_h();
-            tmpResp.uiLen = 0;
-            tmpResp.i64StartTime = tStartTime;
-            tmpResp.uiTranNo = uiTranNo;
-            return qyRecvMsg(pSession, pSock, pSockParam.to, tmpResp);
+            if (guiShare.GuiShare.pf_bQySockOpen.call(pSock)) {
+                guiShare.GuiShare.pf_qyDisconnect.call(pSock);
+            }
+
+            //
+            return  null;
         }
 
 

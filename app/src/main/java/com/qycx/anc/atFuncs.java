@@ -2,10 +2,10 @@ package com.qycx.anc;
 
 import static com.qycx.anc.Consts.CONST_atCommVer_1;
 import static com.qycx.anc.Consts.CONST_atCommVer_null;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_refreshRecentFriendsReq;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_req;
 import static com.qycx.base.qnmCommProc_mis.Consts.cntof_imHtmlContent_wBuf;
 import static com.qycx.base.qnmMainFunc_isCli.qyFuncs.getChannelByType;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_refreshRecentFriendsReq;
 import static com.qycx.base.qyMcMainDaemon_isCli.qyFuncs.postMsg2OutputQ_mc;
 import static com.qycx.base.qyMcMain_global.g.g_pQyMc;
 import static com.qycx.base.tmpFunc.qyFuncs.myGetTickCount;

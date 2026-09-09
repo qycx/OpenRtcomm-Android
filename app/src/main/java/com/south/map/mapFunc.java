@@ -7,11 +7,11 @@ import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_locDataReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_procLocReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferMarkData;
 import static com.qycx.base.postMsg2MgrFunc.qyFuncs.postMsg2Mgr_mc;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_hg;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendVDevReq;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_outputTask;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_req;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_procLocReqSubtype_getCfgs;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_hg;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendVDevReq;
 import static com.qycx.base.qyMcMain_global.g.g_pQyMc;
 
 import com.qycx.anc.hgCommProc;

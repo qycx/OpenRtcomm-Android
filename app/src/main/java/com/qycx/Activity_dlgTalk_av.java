@@ -719,11 +719,20 @@ public class Activity_dlgTalk_av extends BaseActivity implements PopupWindow.OnD
 
     //
     private View.OnClickListener BtnCancel_Click = (View view) -> {
+        //
+        Log.d("BtnCancel_Click");
+        showInfo_open.qyFuncs.showInfo_open("dlgTalk_av.askToStopAv, BtnCancel_Click...BBBBBBBBBBBBB");
+
+        //
         m_bsd_askToStopAv.dismiss();
     };
 
     private View.OnClickListener BtnYes_Click = (View view) -> {
-        //throw new NotImplementedException();
+
+        //
+        Log.d("BtnYes_Click");
+        showInfo_open.qyFuncs.showInfo_open("dlgTalk_av.askToStopAv, BtnYes_Click...AAAAAAAAAAAAAAAAAAA");
+
 
         //
         if (showBackSheetDialog) {
@@ -735,9 +744,7 @@ public class Activity_dlgTalk_av extends BaseActivity implements PopupWindow.OnD
             //  mHandler.removeCallbacksAndMessages(null);
         }
         //
-        Log.d("BtnYes_Click");
-        showInfo_open.qyFuncs.showInfo_open("dlgTalk_av.BtnYes_Click...AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-        //
+
         guiShare.GuiShare.pf_PostMessage_new.get().call(this, qyWndContentType.Consts.CONST_qyWndContentType_talk_av, qyWmComm.Consts.CONST_qyWm_postComm, qyWmComm.Consts.CONST_qyWmParam_closeWnd, 0);
         Log.d("发送点击退出msg");
     };

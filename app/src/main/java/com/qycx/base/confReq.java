@@ -1,8 +1,8 @@
 package com.qycx.base;
 
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_confReq;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendReq;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_req;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendReq;
 import static com.qycx.base.videoFunc_open.Consts.cntof_buf5;
 
 import com.qycx.Activity_dlgTalk;

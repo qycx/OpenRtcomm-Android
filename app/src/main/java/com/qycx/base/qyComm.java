@@ -2,10 +2,12 @@
 
 package com.qycx.base;
 
+import static com.qycx.anc.ancCommProc_open.Consts.CONST_atCommFlg_head14;
 import static com.qycx.anc.ancCommProc_open.Consts.CONST_atCommFlg_moreData;
 import static com.qycx.anc.ancCommProc_open.Consts.CONST_atCommFlg_resp;
 import static com.qycx.anc.ancCommProc_open.Consts.CONST_atCommFlg_routeTalkData;
 //import static com.qycx.anc.ancCommProc_open.Consts.CONST_atCommFlg_talkData;
+import static com.qycx.anc.ancCommProc_open.Consts.CONST_endFlg_usSeqNo;
 import static com.qycx.base.qyComm.Consts.*;
 import static com.qycx.base.qyDefs.Consts.CONST_qyMaxVerLen;
 import static com.qycx.base.qyDefs.Consts.CONST_qyTimeLen;
@@ -34,8 +36,46 @@ public class qyComm {
         //  命令码, !!! 严重警告：以下命令码，只能添加，不能修改，以避免出现各产品不兼容的局面
         //			 类型：short
         //			 低端保留：
-        public final static int CONST_qyCmd_tellService = 0;                       //  "启动服务"
+        public final static int CONST_qyCmd_tellService = 1;                       //  "启动服务"
         public final static int CONST_qyCmd_end = 255;                 //  "结束会话"
+
+        //
+        public final static short CONST_qyCmd_getCfgs = ( 2);
+        //  2007/04/23, mis
+        public final static short CONST_qyCmd_showInfo = (10);   //
+        public final static short CONST_qyCmd_showInfo_small = (11);   //
+        public final static short CONST_qyCmd_showInfo_small_java = (12);   //
+
+
+        //
+        public final static short CONST_qyCmd_refreshImObjListReq = (13);    //  ??????????2007/05/06????????????imCommType???
+        //
+        public final static short CONST_qyCmd_refreshRecentFriendsReq = (14);    //  ??????????2007/05/10
+        //
+        public final static short CONST_qyCmd_mcComm = (15); //  2011/01/08
+        //
+        public final static short CONST_qyCmd_sendReq = (16);
+
+        //
+        public final static short CONST_qyCmd_ca  =  (  17  );	//
+
+        //
+        public final static short CONST_qyCmd_hg  =		(  18  );	//
+
+        //
+        public final static short CONST_qyCmd_talkTo = (19); //  ???2007/04/09
+
+        public final static short CONST_qyCmd_sendTask = (20);   //  ???????2007/06/23
+        public final static short CONST_qyCmd_sendTaskReply = (21);  //  ???????2007/06/23
+        public final static short CONST_qyCmd_sendRobotTask = (22);  //  ????????
+        public final static short CONST_qyCmd_sendRobotTaskReply = (23); //  ????????
+        public final static short CONST_qyCmd_sendRobotTaskData = (24);  //  ????????????????channel????????????????????????channel????, ????????channel???; ?????????????channel, ???channel????
+        //
+        public final static short CONST_qyCmd_sendMedia = (25);  //  ??????
+        //
+        public final static short CONST_qyCmd_lastMsgInSession = (26);   //  webMessenger?cgi????????????????????????daemon?????????????????????????????????????2007/12/11
+        //
+        public final static short CONST_qyCmd_sendVDevReq = (27);    //  ??????????????????,2008/01/24
 
 
         //			 用户定义:
@@ -55,17 +95,22 @@ public class qyComm {
         public final static int CONST_qyRc_ok = ((int) 0);
         public final static int CONST_qyRc_err = ((int) 255);
         //
-        public final static int CONST_qyRc_user = ((int) 2000);
-        public final static int CONST_qyRc_redirect = ((int) (CONST_qyRc_user + 1));
-        public final static int CONST_qyRc_needAutoReg = ((int) (CONST_qyRc_user + 2));
-        //  public final static int 		CONST_qyRc_notFound						(  (  short  )(  CONST_qyRc_user  +  3  )  )	//  2005/02/01
-        public final static int CONST_qyRc_needVerified = ((int) (CONST_qyRc_user + 4));     //  2007/04/22
-        public final static int CONST_qyRc_anotherLogonExists = ((int) (CONST_qyRc_user + 5));       //  2011/02/02
+        public final static int CONST_qyRc_user = ((int) 10);
+        public final static int CONST_qyRc_redirect = ((int) (11));
+        public final static int CONST_qyRc_needAutoReg = ((int) (12));
+        //  public final static int 		CONST_qyRc_notFound						(  (  short  )(  13  )  )	//  2005/02/01
+        public final static int CONST_qyRc_needVerified = ((int) (14));     //  2007/04/22
+        public final static int CONST_qyRc_anotherLogonExists = ((int) (15));       //  2011/02/02
 
 
-        public final static int CONST_qyRc_peerOffline = ((int) CONST_qyRc_user + 100);          //  2007/05/29
-        public final static int CONST_qyRc_servBusy = ((int) CONST_qyRc_user + 101);         //  2007/05/29
-        public final static int CONST_qyRc_unknown = ((int) CONST_qyRc_user + 102);          //  2007/07/01
+        public final static int CONST_qyRc_peerOffline = ((int) 16);          //  2007/05/29
+        public final static int CONST_qyRc_servBusy = ((int) 17);         //  2007/05/29
+        public final static int CONST_qyRc_unknown = ((int) 18);          //  2007/07/01
+
+
+        //////////////////////////////////////
+
+
 
         //
         public final static int CONST_qyRc_upReserved = ((int) 0xe000);  //  57344
@@ -82,7 +127,6 @@ public class qyComm {
         public final static int CONST_commFlg_resp = CONST_atCommFlg_resp;
         public final static int CONST_commFlg_moreData = CONST_atCommFlg_moreData;                                 //  2007/05/07
         //
-        //public final static int CONST_commFlg_talkData = CONST_atCommFlg_talkData;                                  //  数据区的格式为MIS_MSG_TALKDATA，否则为IM_MSG_CONTENTU
         //
         public final static int CONST_commFlg_routeTalkData = CONST_atCommFlg_routeTalkData;                                    //  数据区的格式为用MSG_ROUTE+IM_MSG_CONTENTU
 
@@ -261,16 +305,18 @@ public class qyComm {
             return (0 != (ucFlg & CONST_commFlg_moreData));
         }           //  2007/05/07
 
-        /*
-        public static boolean isUcFlgTalkData(byte ucFlg) {
-            return (0 != (ucFlg & CONST_commFlg_talkData));
-        }           //  2007/07/11
-
-         */
-
         public static boolean isUcFlgRouteTalkData(byte ucFlg) {
             return (0 != (ucFlg & CONST_commFlg_routeTalkData));
         }        //  2007/11/29
+
+        public static boolean isUcFlgHead14(byte ucFlg) {
+            return (0 != (ucFlg & CONST_atCommFlg_head14));
+        }           //  2007/07/11
+
+        //
+        public static boolean isMoreDataEnd(short real_usSeqNo) {
+            return (0 != (real_usSeqNo & CONST_endFlg_usSeqNo));
+        }
 
 
     }

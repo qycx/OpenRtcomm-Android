@@ -8,6 +8,7 @@ import static com.qycx.base.isTalkerQProc.findIsTalkerQMem;
 import static com.qycx.base.qmcProc.isGroup;
 import static com.qycx.base.qmcTaskInfo.qyFuncs.freeTaskInfo;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_applyForConf;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_talkTo;
 import static com.qycx.base.qyComm.qyFuncs.isRcOk;
 import static com.qycx.base.qyMcMain_global.g.g_pQyMc;
 import static com.qycx.base.qyWmComm.Consts.CONST_do_1080P_AV_Call;
@@ -803,6 +804,10 @@ public class Fragment_dlgTalk_msgList extends Fragment implements View.OnTouchLi
     }
 
     private View.OnClickListener M_button_avCall_Click = (View view) -> {
+        //
+        showInfo_open.qyFuncs.showInfo_open(0,0,"","avCall_lick");
+
+        //
         if (mhTalk.hasAllPermission()) {
             act_toAvCall(mhTalk,CONST_do_480P_AV_Call);
         } else {
@@ -814,6 +819,8 @@ public class Fragment_dlgTalk_msgList extends Fragment implements View.OnTouchLi
     private View.OnClickListener M_button_avCall_HD_Click = (View view) -> {
         ctxQyMc.CCtxQyMc  pQyMc  = g_pQyMc;
 
+        //
+        showInfo_open.qyFuncs.showInfo_open(0,0,"","avCall_HD_Click");
 
         //
         int  level;
@@ -955,7 +962,7 @@ public class Fragment_dlgTalk_msgList extends Fragment implements View.OnTouchLi
 
         if (mhTalk.m_talker.m_var.addr.uiObjType != qyDefs.Consts.CONST_objType_imGrp) {
             if (0 != postMsg2MgrFunc.qyFuncs.postMsg2Mgr_mc(mainActivity.var_common.ctxCaller, pMisCnt, route,
-                    qnmCommProc_mis.Consts.CONST_misMsgType_talk, ucFlg, qnmCommProc.Consts.CONST_qyCmd_talkTo, tStartTran, uiTranNo, (short) 0, content, lenInBytes, talk_idInfo.ui64Id, talk_idInfo.ui64Id, 0, pMsgBuf, true))
+                    qnmCommProc_mis.Consts.CONST_misMsgType_talk, ucFlg, CONST_qyCmd_talkTo, tStartTran, uiTranNo, (short) 0, content, lenInBytes, talk_idInfo.ui64Id, talk_idInfo.ui64Id, 0, pMsgBuf, true))
                 return;
         } else {
             qyDefs.QY_MESSENGER_ID idInfo_dst = new qyDefs.QY_MESSENGER_ID();
@@ -966,11 +973,11 @@ public class Fragment_dlgTalk_msgList extends Fragment implements View.OnTouchLi
 
 //            byte[] data = content.toByteArray();
             if (0 != postMsg2MgrFunc.qyFuncs.postMsg2Mgr_mc(mainActivity.var_common.ctxCaller, pMisCnt, route,
-                    qnmCommProc_mis.Consts.CONST_misMsgType_talk, ucFlg, (short) qnmCommProc.Consts.CONST_qyCmd_talkTo, tStartTran, uiTranNo, (short) 0, content, lenInBytes, talk_idInfo.ui64Id, idInfo_dst.ui64Id, 0, pMsgBuf, true))
+                    qnmCommProc_mis.Consts.CONST_misMsgType_talk, ucFlg, (short) CONST_qyCmd_talkTo, tStartTran, uiTranNo, (short) 0, content, lenInBytes, talk_idInfo.ui64Id, idInfo_dst.ui64Id, 0, pMsgBuf, true))
                 return;
         }
 
-        talk_addNewMsg(this.mhTalk.m_talker.m_var.addr.idInfo.ui64Id, idInfo_from, tStartTran, uiTranNo, qnmCommProc.Consts.CONST_qyCmd_talkTo, content.uiType, str, 0);
+        talk_addNewMsg(this.mhTalk.m_talker.m_var.addr.idInfo.ui64Id, idInfo_from, tStartTran, uiTranNo, CONST_qyCmd_talkTo, content.uiType, str, 0);
     };
 
     @Override

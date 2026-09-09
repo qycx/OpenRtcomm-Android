@@ -7,9 +7,9 @@ import static com.qycx.base.Consts.CONST_channelType_media;
 import static com.qycx.base.findOrgMsgAndProcess_is.qyFuncs.tmpHandler_findOrgMsgAndProc;
 import static com.qycx.base.postMsg2MgrFunc.qyFuncs.makeMsg2MgrFunc_mc;
 import static com.qycx.base.qmcVideoFunc.qyFuncs.getSharedObjUsr;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendMedia;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_task;
 import static com.qycx.base.qyComm.Consts.CONST_commFlg_routeTalkData;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendMedia;
 import static com.qycx.base.qy_getuiNextTranNo.qyFuncs.getuiNextTranNo;
 
 import com.qycx.base.util.Log;

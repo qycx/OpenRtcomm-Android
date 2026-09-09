@@ -8,9 +8,8 @@ import static com.qycx.base.Consts.CONST_channelType_talking;
 import static com.qycx.base.ctxQmc.Consts.CONST_intervalInS_xt;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_qisCaReq;
 import static com.qycx.base.postMsg2MgrFunc.qyFuncs.postMsg2Mgr_mc;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_ca;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_refreshImObjListReq;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_misMsgType_req;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_ca;
 import static com.qycx.base.qyMcMain_global.g.g_pQyMc;
 
 //

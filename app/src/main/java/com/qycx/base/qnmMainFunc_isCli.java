@@ -78,24 +78,39 @@ public class qnmMainFunc_isCli {
         }
 
         //
-        public static boolean bChannelOk(qmCommFunc_mis.MIS_CHANNEL pChannel, boolean bDbgParam) {
+        public static class Param_bChannelOk {
+            public String str_result;
+            public boolean bDbg;
+        };
+
+
+        //
+       // public static boolean bChannelOk(qmCommFunc_mis.MIS_CHANNEL pChannel, boolean bDbgParam) {
+        public static boolean bChannelOk(qmCommFunc_mis.MIS_CHANNEL pChannel, Param_bChannelOk param_bChannelOk) {
+
+            //
+            if (param_bChannelOk == null) {
+                param_bChannelOk = new Param_bChannelOk();
+            }
+
+            //
             if (null == pChannel) {
-                channelLog(pChannel , "channel pChannel is not ok");
+                param_bChannelOk.str_result="channel pChannel is not ok";
                 return false;
             }
             qmCommFunc_mis.MIS_CNT pMisCnt = pChannel.pMisCnt;
             if (null == pMisCnt) {
-                channelLog(pChannel , "channel pMisCnt is not ok");
+                param_bChannelOk.str_result="channel pMisCnt is not ok";
                 return false;
             }
             ctxQmc.CCtxQmc pProcInfo = pMisCnt.pProcInfoParam;
             if (null == pProcInfo) {
-                channelLog(pChannel , "channel pProcInfo is not ok");
+                param_bChannelOk.str_result="channel pProcInfo is not ok";
                 return false;
             }
             ctxQyMc.CCtxQyMc pQyMc = pProcInfo.pQyMc;
             if (null == pQyMc) {
-                channelLog(pChannel , "channel pQyMc is not ok");
+                param_bChannelOk.str_result="channel pQyMc is not ok";
                 return false;
             }
 
@@ -104,6 +119,7 @@ public class qnmMainFunc_isCli {
 
             //
             if (pChannel.bSessionOpen.get()) {
+
                 long dwTickCnt = tmpFunc.qyFuncs.myGetTickCount64(null);
                 //
                 if (pChannel.uiType != CONST_channelType_talking) {
@@ -111,22 +127,30 @@ public class qnmMainFunc_isCli {
                     //
                     if (dwTickCnt - pChannel.status.dwTickCnt_lastStartToRecv > pQyMc.cfg.iTimeoutInMs_channelIdle_others
                             && dwTickCnt - pChannel.status.dwTickCnt_lastEndSending > pQyMc.cfg.iTimeoutInMs_channelIdle_others) {
-                        //qyShowInfo1(CONST_qyShowType_qwmComm, 0, "", ("IsClient"), 0, "", "", ("Channel %s timeout, idle too long, iTimeoutInMs_channelsIdle_others %d"), qyGetDesByType1(CONST_channelTypeTable, pChannel->uiType), pQyMc->cfg.iTimeoutInMs_channelIdle_others);
-                        channelLog(pChannel , "channel s1 is not ok, not read and sent for too long");
+                        //
+                        long e_lastToRecv  =  dwTickCnt - pChannel.status.dwTickCnt_lastStartToRecv;
+                        long e_lastToSnd  =  dwTickCnt - pChannel.status.dwTickCnt_lastEndSending;
+
+                        //
+                        param_bChannelOk.str_result="channel s1 is not ok, not read and sent for too long";
+                        param_bChannelOk.str_result+=  " e_lastToRecv "  +  e_lastToRecv  +  " e_lastToSnd "  +  e_lastToSnd;
+
+                        //
                         return false;
                     }
 
                 } else {
                     if (dwTickCnt - pChannel.status.dwTickCnt_lastStartToRecv > pQyMc.cfg.iTimeoutInMs_channelIdle_recv_talk) {
-                        //qyShowInfo1(CONST_qyShowType_qwmComm, 0, "", ("IsClient"), 0, "", "", ("Channel %s timeout, idle too long, iTimeoutInMs_channelsIdle_recv_talk %d"), qyGetDesByType1(CONST_channelTypeTable, pChannel->uiType), pQyMc->cfg.iTimeoutInMs_channelIdle_recv_talk);
-                        channelLog(pChannel , "channel s2 is not ok");
+                        //
+                        param_bChannelOk.str_result="channel s2 is not ok";
+
                         return false;
                     }
                     //  2017/10/03. 当talk通道堵塞时，应尽快重新连接
                     if (dwTickCnt - pProcInfo.status.dwTickCnt_sendTo_applyForOrgReq < 5000
                             && pProcInfo.status.dwTickCnt_sendTo_applyForOrgReq > pChannel.status.dwTickCnt_lastStartToRecv + 10000) {
-                        //qyShowInfo1(CONST_qyShowType_qwmComm, 0, "", ("IsClient"), 0, "", "", ("Channel %s timeout, idle too long, dwTickCnt_sendTo_applyForOrgReq > dwTickCnt_lastStartToRecv + 10000"), qyGetDesByType1(CONST_channelTypeTable, pChannel->uiType));
-                        channelLog(pChannel , "channel s3 is not ok");
+                        //
+                        param_bChannelOk.str_result="channel s3 is not ok";
                         return false;
                     }
                     //  2012/05/21.以下为了防止误判,用另一个变量做了一个辅助. 这样让判断至少在超时2次后才生效
@@ -139,8 +163,8 @@ public class qnmMainFunc_isCli {
                     if (tmp_bOk) pChannel.status.dwTickCnt_noSending_start = 0;
                     if (pChannel.status.dwTickCnt_noSending_start != 0) {
                         if (dwTickCnt - pChannel.status.dwTickCnt_noSending_start > pQyMc.cfg.iTimeoutInMs_channelIdle_others + 5000) {
-                            //qyShowInfo1(CONST_qyShowType_qwmComm, 0, "", ("IsClient"), 0, "", "", ("Channel %s timeout, idle too long, iTimeoutInMs_channelsIdle_others %d"), qyGetDesByType1(CONST_channelTypeTable, pChannel->uiType), pQyMc->cfg.iTimeoutInMs_channelIdle_others);
-                            channelLog(pChannel , "channel s4 is not ok");
+
+                            param_bChannelOk.str_result="channel s4 is not ok";
                             return false;
                         }
                     }
@@ -153,16 +177,21 @@ public class qnmMainFunc_isCli {
             }
 
             if (pQyMc.b_notifyPanic) {
-                channelLog(pChannel , "channel s5 is not ok");
+                //
+                param_bChannelOk.str_result="b_notifyPanic true";
+
+                //
                 return false;
             }
 
             //
             //boolean result = (!pQyMc.bQuit && !pProcInfo.bQuit_threadProc_isCli && !pChannel.status.ulbSessionErr);
             boolean result = (!pQyMc.bQuit && !pProcInfo.bQuit_threadProc_isCli && pChannel.bSessionOpen.get() && !pChannel.status.ulbSessionErr1);
-            if(!result){
-                if  (  false  ) {
-                }
+            if (!result) {
+
+                //
+                param_bChannelOk.str_result="result false, l100";
+
             }
             //
             return result;
@@ -205,7 +234,7 @@ public class qnmMainFunc_isCli {
             //
             //boolean result = (!pQyMc.bQuit && !pProcInfo.bQuit_threadProc_isCli && !pChannel.status.ulbSessionErr);
             boolean result = (!pQyMc.bQuit && !pProcInfo.bQuit_threadProc_isCli);
-            result  =  bChannelOk(pChannel,true);
+            result  =  bChannelOk(pChannel,null);
             if(!result){
                 if  (  false  ) {
                 }

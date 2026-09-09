@@ -563,44 +563,6 @@ public class qnmCommProc {
         public final static short CONST_qnmCfgId_user = 32000;
 
 
-        //
-        public final static short CONST_qyCmd_getCfgs = (CONST_qyCmd_base + 2);
-        //  2007/04/23, mis
-        //public final static short CONST_qyCmd_showInfo = (CONST_qyCmd_base + 200);   //
-        public final static short CONST_qyCmd_showInfo_small = (CONST_qyCmd_base + 201);   //
-        public final static short CONST_qyCmd_showInfo_small_java = (CONST_qyCmd_base + 202);   //
-
-
-        //
-        public final static short CONST_qyCmd_refreshImObjListReq = (CONST_qyCmd_base + 205);    //  ??????????2007/05/06????????????imCommType???
-        //
-        public final static short CONST_qyCmd_refreshRecentFriendsReq = (CONST_qyCmd_base + 207);    //  ??????????2007/05/10
-        //
-        public final static short CONST_qyCmd_mcComm = (CONST_qyCmd_base + 210); //  2011/01/08
-        //
-        public final static short CONST_qyCmd_sendReq = (CONST_qyCmd_base + 220);
-
-        //
-        public final static short CONST_qyCmd_ca  =  (  CONST_qyCmd_base  +  225  );	//
-
-        //
-        public final static short CONST_qyCmd_hg  =		(  CONST_qyCmd_base  +  226  );	//
-
-        //
-        public final static short CONST_qyCmd_talkTo = (CONST_qyCmd_base + 300); //  ???2007/04/09
-
-        public final static short CONST_qyCmd_sendTask = (CONST_qyCmd_base + 320);   //  ???????2007/06/23
-        public final static short CONST_qyCmd_sendTaskReply = (CONST_qyCmd_base + 321);  //  ???????2007/06/23
-        public final static short CONST_qyCmd_sendRobotTask = (CONST_qyCmd_base + 322);  //  ????????
-        public final static short CONST_qyCmd_sendRobotTaskReply = (CONST_qyCmd_base + 323); //  ????????
-        public final static short CONST_qyCmd_sendRobotTaskData = (CONST_qyCmd_base + 324);  //  ????????????????channel????????????????????????channel????, ????????channel???; ?????????????channel, ???channel????
-        //
-        public final static short CONST_qyCmd_sendMedia = (CONST_qyCmd_base + 330);  //  ??????
-        //
-        public final static short CONST_qyCmd_lastMsgInSession = (CONST_qyCmd_base + 340);   //  webMessenger?cgi????????????????????????daemon?????????????????????????????????????2007/12/11
-        //
-        public final static short CONST_qyCmd_sendVDevReq = (CONST_qyCmd_base + 350);    //  ??????????????????,2008/01/24
-
 
         //
         public final static short CONST_qnmMaxRegFields = 30;                    //  ÒÔÏÂµÄÉèÖÃÖµ²»ÄÜ³¬¹ý´ËÏî, Ö¸cols, »¹ÓÐ¼¸ÏîÈçmac0µÈ£¬²»°üº¬ÔÚÄÚ
@@ -994,16 +956,23 @@ public class qnmCommProc {
                     guiShare.GuiShare.pf_qyDisconnect.call(pSock);
                 return iErr;
             }
+            //
+            Log.d("at","after tellService");
+            //
             if (0 != qyRecvResp(pSession, pSock, pSockParam.to, tmpResp, tmpBuf.buf, (int) sizeof_tmpBuf,tmp_bb))
             {
+                //
+                Log.d("at","qyRecvResp failed");
+                //
                 if (guiShare.GuiShare.pf_bQySockOpen.call(pSock))
                     guiShare.GuiShare.pf_qyDisconnect.call(pSock);
                 return iErr;
             }
-            //  Log.e(TAG,  "qwmOpenSession: get respCode of qyTellService is %s",  qyGetDesByType1(  CONST_qyRcTable,  tmpResp.head.usCode  )  );
-            //  ÕâÀï²»ÄÜÓÃÀ´ÅÐ¶Ï·µ»ØÂë£¬ÒòÎªÊÇÍ¨ÓÃµÄ½Ó¿Ú£¬Ó¦ÔÚÆäËûµØ·½ÅÐ¶Ï£¬2005/06/25
-            //  if  (  !isRcOk(  tmpResp.head.usCode  )  )  goto  errLabel; 
+            //
+            Log.d("at","qyRecvResp ok");
 
+
+            //
             iErr = 0;
 
 
@@ -1047,10 +1016,15 @@ public class qnmCommProc {
             int iErr = -1;
             byte[] encBuf = null;
             int encLen = CONST_maxReqDataLen_enc_netMc;
-//            byte[] buf = new qyComm.QY_COMM_HEAD().toArrayBuffer();
-            //byte[] resp_buf = pResp.toByteArray(tmp_bb);
+
+            //
             ByteBuffer head = tmp_bb;//ByteBuffer.allocate(8);
-            if (0 > qyRecvEx(pSock, head, 8, pTo.iRead)) return iErr;
+            if (0 > qyRecvEx(pSock, head, 0,8, pTo.iRead)) {
+                //
+                Log.d("at","qyRecvResp failed, qyRecvEx failed");
+                //
+                return iErr;
+            }
             head.flip();
             pResp.head.usCode = head.getShort();
             pResp.head.ucFlg = head.get();
@@ -1065,7 +1039,7 @@ public class qnmCommProc {
             ByteBuffer data = tmp_bb;//ByteBuffer.wrap(encBuf);
 //            data.limit(pResp.head.len);
             if (0 != pResp.head.len) {
-                if (0 > qyRecvEx(pSock, data, pResp.head.len,  pTo.iRead))
+                if (0 > qyRecvEx(pSock, data, 0,pResp.head.len,  pTo.iRead))
                     return iErr;
 
                 if (pSession.service.encType == CONST_qyEncType_qwm) {

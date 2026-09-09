@@ -19,7 +19,6 @@ import static com.qycx.base.qmcSharedObj.qyFuncs.getSharedObjByIndex;
 import static com.qycx.base.qmcVideoCapture.Consts.CONST_audioCompressors_lyra;
 import static com.qycx.base.qmcVideoCapture.qyFuncs.setCurSharedObjUsr_localAv;
 import static com.qycx.base.qmcVideoCapture_isCli.qyFuncs.newCapProcInfoAudioIndex;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendMedia;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_dual_permit;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_recvFile_saveas;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_recv_accept;
@@ -31,6 +30,7 @@ import static com.qycx.base.qnmCommProc_mis.Consts.MAX_mosaicMems_taskAv;
 import static com.qycx.base.qnmCommProc_mis.Consts.MAX_resourceMems_taskAv_conf;
 import static com.qycx.base.qnmCommProc_mis.Consts.MAX_resourceMems_taskAv_p2p;
 import static com.qycx.base.qnmMainFunc_isCli.qyFuncs.getChannelByType;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendMedia;
 import static com.qycx.base.qyCusResPublic.Consts.CONST_imTaskType_remoteAssist;
 import static com.qycx.base.qyCusResPublic.Consts.CONST_imTaskType_transferAvInfo;
 import static com.qycx.base.qyCusResPublic.Consts.CONST_policyAvLevel_1080p;
@@ -432,8 +432,12 @@ public class dlgTalk_procTask_transferAvInfo {
                                 }
                             }
                             if  (  transferAvInfo.confCfg.conf.conf_ucb100k!=0)  {
-                                avCompressor_reply.audio.common.head.ucCompressors=CONST_audioCompressors_lyra;
                                 //
+                                if  (  false  ) {
+                                    //
+                                    avCompressor_reply.audio.common.head.ucCompressors=CONST_audioCompressors_lyra;
+                                    //
+                                }
                             }
 
                             //

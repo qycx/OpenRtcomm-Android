@@ -24,13 +24,12 @@ import static com.qycx.base.qmcProc.isGroup;
 import static com.qycx.base.qmcProc.pauseTaskAv;
 import static com.qycx.base.qmcProc.resumeTaskAv;
 import static com.qycx.base.qmcTaskInfo.Consts.*;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_refreshRecentFriendsReq;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendMedia;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendReq;
-import static com.qycx.base.qnmCommProc.Consts.CONST_qyCmd_sendTask;
+
 import static com.qycx.base.qnmCommProc_mis.Consts.*;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_switchTransmissionMode;
 import static com.qycx.base.qnmMainFunc_isCli.qyFuncs.getChannelByType;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendMedia;
+import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendTask;
 import static com.qycx.base.qyCommProc_open.Consts.CONST_fourcc_I420;
 import static com.qycx.base.qyCusResHelp.qyFuncs.getResStr;
 import static com.qycx.base.qyCusResPublic.Consts.CONST_usRunningStatus_online;
@@ -42,6 +41,7 @@ import static com.qycx.base.qyWmComm.Consts.CONST_qyWm_postComm;
 import static com.qycx.base.qyWndContentType.Consts.*;
 import static com.qycx.base.showTaskStatusFunc.qyFuncs.showNotification;
 import static com.qycx.base.tmpFunc.qyFuncs.myGetTickCount;
+
 
 import org.greenrobot.eventbus.EventBus;
 
@@ -676,6 +676,13 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
             if  (  pProcInfo.bUse100k)  {
                 max_nLostVideo=40;
             }
+            //
+            //  这里为了测试，把max_nLostVideo设置很大
+            if  (  true  ) {
+                if (pProcInfo.cfg.debugStatusInfo.bTest_noLostVideo) {
+                    max_nLostVideo = 30;
+                }
+            }
 
             //
             if (m_var.m_talkAvVar.m_nErrs_hTalk_av_not_matched > 130 || m_nLostVideo > max_nLostVideo) {
@@ -690,7 +697,7 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
                     //
                     String str;
                     str = "m_nLostVideo (" + m_nLostVideo + ") > 10, autoCancel";
-                    showInfo_open.qyFuncs.showInfo_open(str);
+                    showInfo_open.qyFuncs.showInfo_open(0,0,"Note", str);
 
                     //
                     this.doAutoCancel();
@@ -4162,7 +4169,11 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
 
     private final View.OnClickListener M_btn_av_Click = (View view) -> {
-        //Activity_dlgTalk_av owner = this.mOwner_wnd;
+
+        //
+        showInfo_open.qyFuncs.showInfo_open(0,0,"","btn_av_Click");
+
+        //
         ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         CIsTalker talker = findIsTalker(pProcInfo.pMisCnt,talker_ui64Id);

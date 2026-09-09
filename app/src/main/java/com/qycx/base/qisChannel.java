@@ -38,10 +38,12 @@ public class qisChannel {
             //
             String whereStr  =  qyGetDesByType1(CONST_channelTypeTable, pChannel.uiType);
 
+            //
+            qnmMainFunc_isCli.qyFuncs.Param_bChannelOk param = new qnmMainFunc_isCli.qyFuncs.Param_bChannelOk();
 
             //
             if (pChannel.hThread_io != null) {
-                if (bChannelOk(pChannel,false)) {
+                if (bChannelOk(pChannel,param)) {
                     iErr = 0;
                     return iErr;
                 }
