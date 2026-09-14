@@ -122,16 +122,20 @@ public class QMC_cfg_debugStatusInfo {                                          
     public boolean bTest_noLostVideo;
 
     //
-    public boolean bBbg_traceRt_pOutputQBuf2_local_a;
-    public boolean bBbg_traceRt_pOutputQBuf2_local_v;
+    public boolean bDbgDetail_pOutputQBuf2_local_a;
+    public boolean bDbgDetail_pOutputQBuf2_local_v;
 
     //
-    public boolean bDbgDetail_keepAlive;
+    public boolean bDbgDetail_toShareAudio;
 
     //
     public boolean bDbgDetail_v_r;
 
     //
+    public boolean bDbgDetail_keepAlive;
+
+    //
+    public boolean bTraceRt_encA;
 
 }
 

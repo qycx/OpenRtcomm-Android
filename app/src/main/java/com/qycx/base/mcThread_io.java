@@ -1,7 +1,5 @@
 package com.qycx.base;
 
-import static com.qycx.anc.Consts.CONST_msgHead_n_len;
-import static com.qycx.anc.Consts.CONST_old_msgHead_n_len;
 import static com.qycx.anc.Consts.__USE_old_msgHead_n__;
 import static com.qycx.anc.ancCommProc_open.Consts.CONST_endFlg_usSeqNo;
 import static com.qycx.base.Consts.AUDIO_UPLOAD;
@@ -167,9 +165,9 @@ public class mcThread_io {
                 //byte  [] p1= new byte[2048];//[nSend];
 
                 //
-                int  headLen;
-                if(__USE_old_msgHead_n__)  headLen  =  CONST_old_msgHead_n_len;
-                else  headLen  =  CONST_msgHead_n_len;
+                //int  headLen1  =  22;
+                //if(__USE_old_msgHead_n__)  headLen  =  CONST_old_msgHead_n_len;
+                //else  headLen  =  CONST_msgHead_n_len;
 
                 //
                 qnmMainFunc_isCli.qyFuncs.Param_bChannelOk param_bChannelOk=new qnmMainFunc_isCli.qyFuncs.Param_bChannelOk();
@@ -547,7 +545,7 @@ public class mcThread_io {
                                 }
 
                                 //  这里有点错，因为head.dataLen是未加密的数据长度，加密后数据长度可能有变化
-                                pChannel.status.netStat.ui64MsgDataLenSent += headLen  +  byteBuffer.limit();
+                                pChannel.status.netStat.ui64MsgDataLenSent += pChannel.session.lastSnd_headLen  +  byteBuffer.limit();
                                 break;
                             }
                             case CONST_misMsgType_talk: {
@@ -593,7 +591,7 @@ public class mcThread_io {
                                     return;
                                 }
                                 //  2009/10/11
-                                pChannel.status.netStat.ui64MsgDataLenSent += headLen  +  byteBuffer.limit();
+                                pChannel.status.netStat.ui64MsgDataLenSent += pChannel.session.lastSnd_headLen  +  byteBuffer.limit();
                                 break;
                             }
                             case CONST_misMsgType_task:
@@ -734,6 +732,10 @@ public class mcThread_io {
                                                     Log.d("at", "snd: l1552: after call qySendMsg");
                                                 }
                                             }
+                                            if  (  pChannel.uiType==CONST_channelType_rtMedia)  {
+                                                //str = "rtMedia: send: tn "  +  head.uiTranNo  +  " sn" + head.usSeqNo;
+                                                //showInfo_open.qyFuncs.showInfo_open(0,0,"",str);
+                                            }
                                         }
 
                                         //
@@ -762,7 +764,7 @@ public class mcThread_io {
                                             //Log.d("qy",  "channel "  +  pChannel.uiType  +  " send "  + nSend  +  " code "  +  head.usCode);
                                         }
                                         //  2009/10/11
-                                        pChannel.status.netStat.ui64MsgDataLenSent += headLen  +  nSend;
+                                        pChannel.status.netStat.ui64MsgDataLenSent += pChannel.session.lastSnd_headLen  +  nSend;
                                         //
                                         //
                                         pChannel.status.dwTickCnt_lastEndSending = myGetTickCount64(null);   //  2011/01/23
@@ -1117,8 +1119,7 @@ public class mcThread_io {
 
                         //
                         int head_len;
-                        if (__USE_old_msgHead_n__) head_len = CONST_old_msgHead_n_len;
-                        else head_len = CONST_msgHead_n_len;
+                        head_len=pChannel.session.lastRecv_headLen;
                         //
                         pChannel.status.netStat.ui64MsgDataLenRecvd += head_len + msgHead.uiLen;
 
@@ -1166,7 +1167,7 @@ public class mcThread_io {
 
                         //
                         if  (  pChannel.uiType==CONST_channelType_media)  {
-                            Log.d("at","kkk");
+                            //Log.d("at","kkk l1173");
                         }
 
                         //

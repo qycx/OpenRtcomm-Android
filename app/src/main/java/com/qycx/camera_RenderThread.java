@@ -12,6 +12,7 @@ import android.opengl.Matrix;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
 
 import com.qycx.base.SimpleTexture;
 import com.qycx.base.camera.MyCamera;
@@ -96,6 +97,25 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
 
     //
     public int mCameraPreviewWidth, mCameraPreviewHeight;
+
+    //
+    //  2026/09/14: 摄像头断流自愈——看门狗 + 重建。
+    //  背景：camera2 设备断开/出错/静默断流（repeating request 失效、surface 失效等）
+    //  之后 onFrameAvailable 永远不再来，采集静默停止。三层防线：
+    //  ① MyCamera.onDisconnected/onError 直接发 CONST_msg_cameraLost 触发重建；
+    //  ② 看门狗每 5s 检查，距最后成功帧超 10s 自动重建（兜一切静默断流）；
+    //  ③ frameAvailable 的瞬时失败不再整线程 shutdown（防误杀）。
+    int m_reqW, m_reqH;                          // run() 里算好的申请尺寸，重建时复用
+    volatile long m_tick_lastFrameAvail = 0;     // 最后一次成功处理帧的时间戳（0=首帧未到）
+    volatile long m_tick_lastRebuild = 0;        // 上次触发重建的时间戳（防抖）
+    volatile long m_tick_surfaceReady = 0;       // surfaceAvailable 完成时间戳（首帧宽限用）
+    volatile boolean m_bCameraRestarting = false;// 重建中（openCamera 已提交、等 onOpened）
+    static final long WATCHDOG_INTERVAL_MS = 5000;
+    static final long WATCHDOG_NOFRAME_MS = 10000;
+    static final long REBUILD_DEBOUNCE_MS = 5000;
+    //  2026/09/14: 放在外部类——notifyCameraOpen（外部类方法）也要用，
+    //  内部类成员不会进入外部类作用域（简单名不可见，编译报"找不到符号"）。
+    static final int MSG_WATCHDOG = 10;
 
     //
     private EglCore mEglCore;
@@ -216,6 +236,10 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
 
 
 
+        //  2026/09/14: 记录申请尺寸，断流看门狗重建摄像头时复用同一套参数。
+        this.m_reqW = reqW;
+        this.m_reqH = reqH;
+
         //
         openCamera(reqW, reqH, reqFps, m_bFront);
 
@@ -286,6 +310,24 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
     public int notifyCameraOpen() {
 
         //
+        //  2026/09/14: 断流重建路径——onOpened 之后主流程不会再发 surfaceAvailable
+        //  （me_st/WindowSurface/mCameraTexture 都还在），这里直接走 finishSurfaceSetup
+        //  重启预览，采集即刻恢复。
+        if (this.m_bCameraRestarting) {
+            this.m_bCameraRestarting = false;
+            Log.d("atdx", "notifyCameraOpen: camera rebuilt, restart preview directly");
+            if (!this.m_bUse_camera1 && myCamera != null) {
+                //  刷新预览尺寸（同参数重选理论上一致，防 ROM 差异）
+                mCameraPreviewWidth = myCamera.mVideoSize.getWidth();
+                mCameraPreviewHeight = myCamera.mVideoSize.getHeight();
+            }
+            if (this.mCameraTexture != null) {
+                finishSurfaceSetup();
+            }
+            return 0;
+        }
+
+        //
         if (!this.m_bUse_camera1) {
             mCameraPreviewWidth = myCamera.mVideoSize.getWidth();
             mCameraPreviewHeight = myCamera.mVideoSize.getHeight();
@@ -298,9 +340,86 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
         //
         mReady = true;
 
+        //  2026/09/14: 首次就绪后启动无帧看门狗（handler 消息自续，looper 退出即停）。
+        this.mHandler.removeMessages(MSG_WATCHDOG);
+        this.mHandler.sendEmptyMessageDelayed(MSG_WATCHDOG, WATCHDOG_INTERVAL_MS);
+
         //
         return 0;
     }
+
+    //
+    //  2026/09/14: 无帧看门狗 tick——由 camera_RenderHandler 的 MSG_WATCHDOG 调用
+    //  （camera 线程）。距最后一次成功处理帧超过 WATCHDOG_NOFRAME_MS 即重建摄像头。
+    //  兜底一切静默断流：设备被回收、repeating request 失效、surface 失效等。
+    public void watchdogTick() {
+        if (this.m_bUse_camera1) return;              // camera1 路径维持原状不动
+
+        long now = SystemClock.uptimeMillis();
+
+        if (this.mCameraTexture == null) return;      // surfaceAvailable 尚未到达（首启时序由 initVideoCapDev 管）
+
+        if (this.m_tick_lastFrameAvail == 0) {
+            //  2026/09/14: 首帧从未到达——preview 起来但一直没出图（如 session
+            //  onConfigureFailed 静默失败、设备在 surface 就绪前丢失）。给启动链路
+            //  20s 宽限，超时即重建，避免"从启动起就采集不到"的死区。
+            if (this.m_tick_surfaceReady != 0 && now - this.m_tick_surfaceReady > 20000) {
+                Log.e("atdx", "watchdog: first camera frame never arrived (>20s after surface ready), rebuild camera");
+                rebuildCamera();
+            }
+            return;
+        }
+
+        if (this.m_bCameraRestarting) {
+            //  重建已提交但 onOpened 超 15s 不来（camera 服务异常）——强制再来一轮。
+            if (now - this.m_tick_lastRebuild > 15000) {
+                Log.e("atdx", "watchdog: rebuild pending >15s, force retry");
+                rebuildCamera();
+            }
+            return;
+        }
+
+        long noFrameMs = now - this.m_tick_lastFrameAvail;
+        if (noFrameMs > WATCHDOG_NOFRAME_MS) {
+            Log.e("atdx", "watchdog: no camera frame for " + noFrameMs + "ms, rebuild camera");
+            rebuildCamera();
+        }
+    }
+
+    //
+    //  2026/09/14: 重建摄像头（必须在 camera 线程调用：MSG_cameraLost / MSG_WATCHDOG
+    //  / MSG_SHUTDOWN 都在本线程 handler 处理）。5s 防抖防重建风暴；重建期间帧回调
+    //  自行丢弃。onOpened → notifyCameraOpen 走 restart 分支直接重启预览。
+    public void rebuildCamera() {
+        if (this.m_bUse_camera1) return;
+
+        long now = SystemClock.uptimeMillis();
+        long sinceLast = now - this.m_tick_lastRebuild;
+        if (this.m_tick_lastRebuild != 0 && sinceLast < REBUILD_DEBOUNCE_MS) {
+            //  防抖：太密集则推迟，避免 camera 服务异常时重建风暴。
+            this.mHandler.removeMessages(guiShare.Consts.CONST_msg_cameraLost);
+            this.mHandler.sendEmptyMessageDelayed(guiShare.Consts.CONST_msg_cameraLost,
+                    REBUILD_DEBOUNCE_MS - sinceLast);
+            return;
+        }
+        this.m_tick_lastRebuild = now;
+        this.m_bCameraRestarting = true;
+
+        try {
+            Log.d("atdx", "rebuildCamera: release old camera, lastFrame " +
+                    (this.m_tick_lastFrameAvail == 0 ? -1 : (now - this.m_tick_lastFrameAvail)) + "ms ago");
+            releaseCamera();
+            this.myCamera = new MyCamera(this.mHandler);
+            //  MyCamera.openCamera 是 3 参（宽/高/前后置）——fps 仅 camera1 路径使用
+            this.myCamera.openCamera(this.m_reqW, this.m_reqH, this.m_bFront);
+            Log.d("atdx", "rebuildCamera: openCamera submitted, waiting onOpened");
+        } catch (Exception e) {
+            Log.e("atdx", "rebuildCamera: exception " + e);
+            //  openCamera 抛异常=本轮没提交成功，允许看门狗下轮再试。
+            this.m_bCameraRestarting = false;
+        }
+    }
+
 
     /**
      * Waits until the render thread is ready to receive messages.
@@ -371,6 +490,8 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
             finishSurfaceSetup();
         }
         mCameraTexture.setOnFrameAvailableListener(this);
+        //  2026/09/14: 记录 surface 就绪时刻，看门狗首帧宽限判断用。
+        this.m_tick_surfaceReady = SystemClock.uptimeMillis();
     }
 
     /**
@@ -519,6 +640,12 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
     }
 
     public int m_loopCtrl  =  0;
+    //  2026/09/14: 瞬时失败连续计数——frameAvailable 返回值语义改为
+    //  0=成功 / 1=瞬时失败（打日志等下一帧）/ -1=致命（线程退出）。
+    //  之前任何一步失败都 sendShutdown 整线程退出=摄像头被释放无人重启。
+    int m_nTransientFail = 0;
+    static final int TRANSIENT_FAIL_LIMIT = 300;
+
     /**
      * Handles incoming frame of data from the camera.
      */
@@ -540,7 +667,21 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
         }
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         qmcSharedObj.QY_SHARED_OBJ pSharedObj = qmcSharedObj.qyFuncs.getSharedObjByIndex(pProcInfo, this.miIndex_sharedObj);
-        if (pSharedObj == null) return iErr;
+        if (pSharedObj == null) {
+            //  2026/09/14: 共享对象瞬时取不到（上游结构重建中）不该杀死整个采集线程。
+            //  连续超过 TRANSIENT_FAIL_LIMIT 次才判定致命。
+            this.m_nTransientFail++;
+            if (this.m_nTransientFail >= TRANSIENT_FAIL_LIMIT) {
+                Log.e("frameAvailable: pSharedObj null x" + this.m_nTransientFail + ", fatal");
+                return iErr;
+            }
+            if (this.m_nTransientFail % 30 == 1) {
+                Log.d("atdx", "frameAvailable: pSharedObj null x" + this.m_nTransientFail + " (transient)");
+            }
+            return 1;
+        }
+        //  取到共享对象即清瞬时计数
+        this.m_nTransientFail = 0;
 
         //
         m_loopCtrl  ++  ;
@@ -681,9 +822,10 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
                 }
 
                 if (0 != syncObj.sync("", pSharedObj.var.hMutex_syncEncFrame,"render.frameAvail.833")) {
-                    str = String.format("camera.frameAvail: sync failed");
+                    str = String.format("camera.frameAvail: sync failed (transient)");
                     Log.e(str);
-                    return iErr;
+                    this.m_nTransientFail++;
+                    return this.m_nTransientFail >= TRANSIENT_FAIL_LIMIT ? iErr : 1;
                 }
 
                 //
@@ -752,7 +894,9 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
         } catch (Exception e) {
             e.printStackTrace();
             Log.e(e.getLocalizedMessage());
-            return iErr;
+            //  2026/09/14: GL 处理异常多为瞬时（surface/EGL 抖动），连续超限才致命。
+            this.m_nTransientFail++;
+            return this.m_nTransientFail >= TRANSIENT_FAIL_LIMIT ? iErr : 1;
         }
 
         //
@@ -763,6 +907,9 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
         //this.tmpFrameBuffer.deleteEnv();
 
         //
+        //  2026/09/14: 记录最后成功帧时间戳，供无帧看门狗判断断流。
+        this.m_tick_lastFrameAvail = SystemClock.uptimeMillis();
+        this.m_nTransientFail = 0;
         iErr = 0;
 
 
@@ -1018,6 +1165,7 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
         private final static int MSG_ROTATE_VALUE = 7;
         private final static int MSG_POSITION = 8;
         private final static int MSG_REDRAW = 9;
+        //  MSG_WATCHDOG = 10 已上移到外部类（notifyCameraOpen 也要用）
 
         // This shouldn't need to be a weak , since we'll go away when the Looper quits,
         // but no real harm in it.
@@ -1155,11 +1303,28 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
                     renderThread.shutdown();
                     break;
                 case MSG_FRAME_AVAILABLE:
+                    //  2026/09/14: 0=成功 / 1=瞬时失败（等下一帧，不退出）/ -1=致命。
+                    //  之前任何非 0 都 sendShutdown，瞬时失败会误杀采集线程。
                     int ret = renderThread.frameAvailable();
                     if(ret < 0)
                     {
+                        Log.e("atdx", "frameAvailable fatal, shutdown camera thread");
                         sendShutdown();
                     }
+                    break;
+                case MSG_WATCHDOG:
+                    //  2026/09/14: 无帧看门狗——检查+自续
+                    renderThread.watchdogTick();
+                    sendEmptyMessageDelayed(MSG_WATCHDOG, renderThread.WATCHDOG_INTERVAL_MS);
+                    break;
+
+                case guiShare.Consts.CONST_msg_cameraLost:
+                    //  2026/09/14: MyCamera.onDisconnected/onError 触发的快速重建
+                    renderThread.rebuildCamera();
+                    break;
+
+                case guiShare.Consts.CONST_msg_cameraOpen:
+                    renderThread.notifyCameraOpen();
                     break;
                 case MSG_ZOOM_VALUE:
                     renderThread.setZoom(msg.arg1);
@@ -1177,10 +1342,6 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
                     boolean bRtt = true;
                     //
                     renderThread.draw(bRtt);
-                    break;
-
-                case guiShare.Consts.CONST_msg_cameraOpen:
-                    renderThread.notifyCameraOpen();
                     break;
 
                 default:

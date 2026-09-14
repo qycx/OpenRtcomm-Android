@@ -9,7 +9,6 @@ import static com.qycx.base.imCommType_defs.Consts.*;
 import static com.qycx.base.isProtocolFunc.qyFuncs.*;
 import static com.qycx.base.isTmpFunc.qyFuncs.*;//printMisMsg;
 import static com.qycx.base.postMsg2MgrFunc.qyFuncs.postMsg2Mgr_mc;
-import static com.qycx.base.procSendFunc.qyFuncs.procSendTaskProcReq;
 import static com.qycx.base.qmcCommFunc_mis.Consts.*;
 import static com.qycx.base.qmcVideoCapture.qyFuncs.qmcApplyForRemovingInvalidTasks;
 import static com.qycx.base.qnmCommProc.Consts.*;
@@ -429,6 +428,12 @@ public class qyMcMainDaemon_isCli_mgr {
                         //
                         Log.d("qy", "procMsgInput_mgr_resp: taskProcResp....");
                         //
+                        qnmCommProc_mis.TASK_PROC_RESP  taskProcResp = (qnmCommProc_mis.TASK_PROC_RESP) pContent;
+                        if  (  taskProcResp.usCmd_org==CONST_qyCmd_sendMedia)  {
+                            q2PostMsgAndTrigger(pMsgInput, pProcInfo.mediaQ2, "procMsgInput_mgr_resp.433");
+                            break;
+                        }
+
                     }
                     break;
 

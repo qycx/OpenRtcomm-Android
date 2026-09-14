@@ -633,11 +633,14 @@ public class mainWnd_procMsg {
                 bExists_locDataReq = true;
             }
             //
+            /*
             if  (  pProcInfo.cfg.debugStatusInfo.bTest_noMapExt)  {
                 bExists_locDataReq=false;
                 //
                 //Log.d("at","Test: bExists_locDataReq set to false");
+                showINfo_open(0,0,0,"Test: bExists_locDataReq set to false");
             }
+            */
 
             //
             if  (  tasksStatus.bTaskExists_av!=bTaskExists_av) {

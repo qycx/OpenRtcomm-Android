@@ -27,6 +27,9 @@ public class guiShare {
 
         //
         public final static int CONST_msg_cameraOpen = 10000;
+        //  2026/09/14: 摄像头设备断开/出错（onDisconnected/onError/openCamera 失败）。
+        //  之前这两个回调只 close+置 null，无人重启——采集静默停止。
+        public final static int CONST_msg_cameraLost = 10001;
 
         //
         public final static float CONST_fz_me = 1f - 0.000002f;

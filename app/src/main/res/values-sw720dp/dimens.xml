@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 平板顶部留白大幅缩小 -->
+    <dimen name="login_top_margin">60dp</dimen>
+    <dimen name="login_title_top_margin">0dp</dimen>
+</resources>

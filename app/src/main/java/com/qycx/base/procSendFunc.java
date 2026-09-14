@@ -707,13 +707,25 @@ public class procSendFunc {
         }
 
 
+        //
+        public static class  Param_sendTaskProcReq  {
+            //
+            public boolean  bNoVDownload;
+
+        };
+
+
         //  2014/08/28.
-        public static int procSendTaskProcReq(qmCommFunc_mis.MIS_CNT pMisCnt, short usCode, short usOp, long tStartTime_org, int uiTranNo_org, int uiContentType_org, int iTaskId, int uiTaskType, qnmCommProc_mis.QIS_RES_OBJ pDynBmp, int uiChannelType, boolean bOutputDirectly, String pHint, qnmCommProc_mis.MSGR_ADDR pAddr) {
+        public static int sendTaskProcReq(Param_sendTaskProcReq pParam, short usCode, short usOp, long tStartTime_org, int uiTranNo_org, int uiContentType_org, int iTaskId, int uiTaskType, qnmCommProc_mis.QIS_RES_OBJ pDynBmp, int uiChannelType, boolean bOutputDirectly, String pHint, qnmCommProc_mis.MSGR_ADDR pAddr) {
             int iErr = -1;
             ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
             ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();//(  MC_VAR_isCli  *  )pMisCnt.pProcInfoParam;
+            qmCommFunc_mis.MIS_CNT pMisCnt  =  pProcInfo.pMisCnt;
+
+            //
             int lenInBytes;
 
+            //
             qnmCommProc_mis.TASK_PROC_REQ taskProcReq = new qnmCommProc_mis.TASK_PROC_REQ();
             taskProcReq.uiType  =  CONST_imCommType_taskProcReq;
             taskProcReq.usOp=usOp;
@@ -724,9 +736,12 @@ public class procSendFunc {
             taskProcReq.uiTaskType  =  uiTaskType;
             //  pDynBmp
 
+            //
+            if  (  pParam!=null)  {
+                taskProcReq.ucbNoVDownload  =  (byte)(pParam.bNoVDownload  ?  1  :  0);
+            }
 
-
-
+            //
             lenInBytes=128;//sizeof(TASK_PROC_REQ);
 
             //

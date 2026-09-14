@@ -31,10 +31,13 @@ import static com.qycx.base.isTalkerQProc.findIsTalker;
 import static com.qycx.base.mcThreadProc_bgWall.qyFuncs_Droid.exitTalkerThread;
 import static com.qycx.base.qmcCommFunc_mis.qyFuncs.M_getActiveMemDesc;
 import static com.qycx.base.qmcTaskInfo.Consts.CONST_taskDataType_conf;
+import static com.qycx.base.qmcTaskInfo.qyFuncs.getQmcTaskInfoByIndex;
+import static com.qycx.base.qmcTaskInfo.qyFuncs.getQmcTaskInfoIndexBySth;
 import static com.qycx.base.qmcVideoCapture.qyFuncs.setCurSharedObjUsr_localAv;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_permitToSpeak;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_pleaseSpeak;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_pleaseStopSpeaking;
+import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_recv_applyForChkTaskAlive;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_recv_applyForOrgReq;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_recv_cancel;
 import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_send_cancel;
@@ -53,6 +56,7 @@ import static com.qycx.base.qnmCommProc_mis.qyFuncs.M_getMsgContent;
 import static com.qycx.base.qyComm.qyFuncs.isUcFlgResp;
 import static com.qycx.base.qyComm.qyFuncs.isUcFlgRouteTalkData;
 import static com.qycx.base.qyCommProc.Consts.CONST_qyShowType_qwmComm;
+import static com.qycx.base.qyCommProc.qyFuncs.bTaskAlive;
 import static com.qycx.base.qyDefs.Consts.CONST_objType_imGrp;
 import static com.qycx.base.qyDefs_open.Consts.CONST_imTaskStatus_acceptedByReceiver;
 import static com.qycx.base.qyDefs_open.Consts.CONST_imTaskStatus_applyToRecv;
@@ -1289,7 +1293,7 @@ public class dlgTalkProc {
                             }
                             return iErr;
                         }
-                        qmcTaskInfo.QMC_TASK_INFO pTaskInfo = (qmcTaskInfo.QMC_TASK_INFO) qmcTaskInfo.qyFuncs.getQmcTaskInfoByIndex(mainActivity.var_common.ctxCaller, pProcInfo, m_var.av.taskInfo.iIndex_taskInfo, "tmpHandler_showMsg_input_taskInteractionReq");
+                        qmcTaskInfo.QMC_TASK_INFO pTaskInfo = (qmcTaskInfo.QMC_TASK_INFO) getQmcTaskInfoByIndex(mainActivity.var_common.ctxCaller, pProcInfo, m_var.av.taskInfo.iIndex_taskInfo, "tmpHandler_showMsg_input_taskInteractionReq");
                         if (null == pTaskInfo) {
                             syncObj.Dispose();
                             if (m_var.av.taskInfo.bTaskExists)
@@ -1647,7 +1651,7 @@ public class dlgTalkProc {
                                 syncObj.Dispose();
                                 return iErr;
                             }
-                            qmcTaskInfo.QMC_TASK_INFO pTaskInfo = qmcTaskInfo.qyFuncs.getQmcTaskInfoByIndex(mainActivity.var_common.ctxCaller, pProcInfo, m_var.av.taskInfo.iIndex_taskInfo, "tmpHandler_showMsg_input_confKey");
+                            qmcTaskInfo.QMC_TASK_INFO pTaskInfo = getQmcTaskInfoByIndex(mainActivity.var_common.ctxCaller, pProcInfo, m_var.av.taskInfo.iIndex_taskInfo, "tmpHandler_showMsg_input_confKey");
                             if (null == pTaskInfo) {
                                 syncObj.Dispose();
                                 return iErr;
@@ -1765,6 +1769,32 @@ public class dlgTalkProc {
                                 askToRefreshLayout_mgr(talker);
                             }
 
+                            //
+                            //
+                            /*
+                            if (pProcInfo.m_pTalkExt.m_var.confCtrl.bNoVDownload != confKey.confTmpCtrl.ucbNoVDownload
+                                    || pProcInfo.m_pTalkExt.m_var.confCtrl.iTaskId != m_var.av.taskInfo.iTaskId)
+                            {
+                                //
+                                showInfo_open.qyFuncs.showInfo_open(0, 0, "", _T("th_showMsg_task_confLayoutStatus l10188: transmisstionMode changed"));
+                                //
+                                pProcInfo.m_pTalkExt.m_var.confCtrl.iTaskId = m_var.av.taskInfo.iTaskId;
+                                pProcInfo.m_pTalkExt.m_var.confCtrl.bNoVDownload = confKey.confTmpCtrl.ucbNoVDownload;
+                                //
+                                //
+                                //  relayout()。因为在sm版本里，要发生位置的变化. 同时要重新绘制一下
+                                //pProcInfo->m_pTalkGuiExt->refreshTransmissionMode(hDlg, &m_var);
+
+
+                            }
+
+                             */
+                            pProcInfo.m_pTalkExt.switchTransmissionMode(m_var.addr.idInfo.ui64Id,confKey.confTmpCtrl.ucbNoVDownload);
+
+
+
+
+                            //
                             break;
                         }
                         default:
@@ -1803,8 +1833,8 @@ public class dlgTalkProc {
             //
             int i;
 
-            int index_taskInfo = qmcTaskInfo.qyFuncs.getQmcTaskInfoIndexBySth(null, pProcInfo, iTaskId);
-            qmcTaskInfo.QMC_TASK_INFO pTaskInfo = qmcTaskInfo.qyFuncs.getQmcTaskInfoByIndex(null, pProcInfo, index_taskInfo, "");
+            int index_taskInfo = getQmcTaskInfoIndexBySth(null, pProcInfo, iTaskId);
+            qmcTaskInfo.QMC_TASK_INFO pTaskInfo = getQmcTaskInfoByIndex(null, pProcInfo, index_taskInfo, "");
             if (pTaskInfo == null) return iErr;
             qmcTaskInfo.QMC_taskData_common taskData = pTaskInfo.getTaskData();
             if (taskData == null) return iErr;
@@ -2084,6 +2114,57 @@ public class dlgTalkProc {
                         case CONST_imCommType_transferFileReq:
 
                             tmpHandler_showMsg_input_transferFileReq(talker, p1, pMsgParam, pContent);
+
+                            break;
+
+                        case  CONST_imCommType_taskProcResp:  {
+                            qnmCommProc_mis.TASK_PROC_RESP  taskProcResp = (  qnmCommProc_mis.TASK_PROC_RESP) pContent;
+                              if  (  taskProcResp.usOp_org==CONST_imOp_recv_applyForChkTaskAlive  )  {
+                                  if  (  m_var.av.taskInfo.bTaskExists)  {
+                                      if  (  m_var.av.taskInfo.tStartTime_org  ==  taskProcResp.tStartTime_org
+                                              &&  m_var.av.taskInfo.uiTranNo_org  ==  taskProcResp.uiTranNo_org  )
+                                      {
+                                          //Log.d("at","l21266");
+                                          //
+                                          int  index_taskInfo = getQmcTaskInfoIndexBySth(null,pProcInfo, m_var.av.taskInfo.iTaskId);
+                                          qmcTaskInfo.QMC_TASK_INFO pTaskInfo = (qmcTaskInfo.QMC_TASK_INFO)getQmcTaskInfoByIndex(null,pProcInfo, index_taskInfo,"");
+                                          if (null==pTaskInfo) {
+                                              break;
+                                          }
+
+                                          //
+                                          qmcTaskInfo.QMC_taskData_common taskDataCommon=pTaskInfo.getTaskData();
+                                          if  (  taskDataCommon==null)  {
+                                              break;
+                                          }
+                                          qnmCommProc_mis.MIS_MSGU pMsg1 = taskDataCommon.msgU;
+                                          if  (  pMsg1==null)  {
+                                              break;
+                                          }
+                                          if  (  pMsg1.uiType!=CONST_misMsgType_task)  {
+                                              break;
+                                          }
+                                          qnmCommProc_mis.MIS_MSG_TASK  pMsgTask1 = (  qnmCommProc_mis.MIS_MSG_TASK) pMsg1;
+
+                                          //
+                                          if  (  bTaskAlive(  taskProcResp.iStatus  )  )  {
+                                              //
+                                              //str =  "talker“  +  m_var.addr  +  task "  +  pMsgTask1.i %d is alive"  ),  m_var.addr.idInfo.ui64Id,  pMsg->task.iTaskId  );
+                                              str = "talker"  +  m_var.addr.idInfo.ui64Id  +  ": resp recvd， task"  +  pMsgTask1.iTaskId  +  " is alive";
+                                              showInfo_open.qyFuncs.showInfo_open(  0,  0,  "", str  );
+
+                                              //
+                                              //  mytime(  &pMsg->task.tStartTime_processed  );
+                                              pMsgTask1.tTime_alive  =  mytime(  );	//  2014/12/09
+                                          }
+
+                                      }
+                                  }
+                              }
+
+
+                        }
+
 
                             break;
 
@@ -2374,9 +2455,9 @@ public class dlgTalkProc {
                                         int size = 128;//sizeof(qnmCommProc_mis.MIS_MSG_TASK);
                                         qnmCommProc_mis.CMIS_MSGU pMsgTask_o = new qnmCommProc_mis.CMIS_MSGU();
 
-                                        int index_taskInfo = qmcTaskInfo.qyFuncs.getQmcTaskInfoIndexBySth(mainActivity.var_common.ctxCaller, pProcInfo, pMsg.iTaskId);
+                                        int index_taskInfo = getQmcTaskInfoIndexBySth(mainActivity.var_common.ctxCaller, pProcInfo, pMsg.iTaskId);
                                         if (index_taskInfo < 0) return iErr;
-                                        qmcTaskInfo.QMC_TASK_INFO pTaskInfo = qmcTaskInfo.qyFuncs.getQmcTaskInfoByIndex(mainActivity.var_common.ctxCaller, pProcInfo, index_taskInfo, "dlgTalk_onQyComm");
+                                        qmcTaskInfo.QMC_TASK_INFO pTaskInfo = getQmcTaskInfoByIndex(mainActivity.var_common.ctxCaller, pProcInfo, index_taskInfo, "dlgTalk_onQyComm");
                                         if (pTaskInfo == null) return iErr;
                                         qmcTaskInfo.QMC_taskData_common pTaskData = pTaskInfo.getTaskData();
                                         if (pTaskData == null) return iErr;
@@ -2591,6 +2672,33 @@ public class dlgTalkProc {
         }
 
 
+        //
+        // 从task里得到对应的talkerId
+        //
+        public static long task_getTalkerId(int  iTaskId)
+        {
+            ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+            ctxQmc.CCtxQmc pProcInfo  =  pQyMc.get_pProcInfo();
+
+            int  index_taskInfo  =  getQmcTaskInfoIndexBySth(null,pProcInfo,iTaskId);
+            if  (  index_taskInfo < 0  )  return  -1;
+            //
+            qmcTaskInfo.QMC_TASK_INFO pTaskInfo = getQmcTaskInfoByIndex(null,pProcInfo,index_taskInfo,"");
+            if  (  pTaskInfo==null)  return  -1;
+
+            qmcTaskInfo.QMC_taskData_common  pTaskData = pTaskInfo.getTaskData();
+            if  (  pTaskData==null)  return  -1;
+
+
+            qnmCommProc_mis.MIS_MSGU  pMsgU = pTaskData.msgU;
+            if  (  pMsgU.uiType!=CONST_misMsgType_task)  return  -1;
+            qnmCommProc_mis.MIS_MSG_TASK pMsgTask = (  qnmCommProc_mis.MIS_MSG_TASK) pMsgU;
+            return  pMsgTask.addr_logicalPeer.idInfo.ui64Id;
+
+
+        }
+
+
 
         //
         public static int dlgTalk_do_pleaseSpeak(long talker_ui64Id,long idInfo_from)
@@ -2722,6 +2830,12 @@ public class dlgTalkProc {
                 return;
             }
             dlgTalkProc.DLG_TALK_var m_var = pm_var;
+
+            //
+            if  (  m_var.av.taskInfo.bTaskExists)  {
+
+            }
+
 
 
             //

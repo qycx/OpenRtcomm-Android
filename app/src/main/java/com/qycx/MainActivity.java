@@ -1012,7 +1012,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         //
         if  (  pQyMc.appParams.bDbg)  {
             if  (  pProcInfo.cfg.debugStatusInfo.bDbg_startToBreak)  {
-                Log.d("at","kkk");
+                Log.d("at","kkk. l1015");
             }
         }
 
@@ -1283,6 +1283,8 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
 
         }
 
+        //
+        pProcInfo.do_mainWnd_OnTimer(0,0,0);
 
         //
         iErr = 0;

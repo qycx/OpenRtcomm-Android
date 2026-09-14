@@ -518,9 +518,11 @@ errLabel:
 	if  (  !pQ  )  return  -1;
 	
 	if  (  isQFull(  pQ  )  )  {
-		#ifdef  __DEBUG__
-				traceLogA(  (char*)"qPostMsg failed: %S is full",  pQ->cfg.name  );
-		#endif
+        //
+		#if  1  //def  __DEBUG__
+				traceLogA(  (char*)"qPostMsg failed: %S is full。 l522",  pQ->cfg.name  );
+        #endif
+        //
 		#ifdef  _UNICODE
 				TCHAR  tBuf[128];
 				//_sntprintf(  tBuf,  mycountof(  tBuf  ),  _T(  "qPostMsg failed: q is full. pid %d, threadId %d"  ),  GetCurrentProcessId(  ),  GetCurrentThreadId(  )  );

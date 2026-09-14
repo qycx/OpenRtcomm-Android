@@ -1,17 +1,26 @@
 package ext;
 
-import static com.qycx.base.isTalkerQProc.findIsTalker;
-import static com.qycx.base.setQmDbFuncs.qyFuncs.setQmDbFuncs_qm;
 
+import static com.qycx.base.dlgTalkProc.qyFuncs_Droid.task_getTalkerId;
+import static com.qycx.base.dlgTalkProc_help.qyFuncs_Droid.dlgTalk_canSpeak;
+import static com.qycx.base.isTalkerQProc.findIsTalker;
+import static com.qycx.base.qyMcMain_global.g.g_pQyMc;
+import static com.qycx.base.setQmDbFuncs.qyFuncs.setQmDbFuncs_qm;
+import static com.qycx.base.talkDraw.CTalkDraw.s_meOverlayText;
+
+import com.qycx.anc.TalkExtTmpl;
 import com.qycx.base.CIsTalker;
+import com.qycx.base.audioRecorder_android;
 import com.qycx.base.ctxCaller;
 import com.qycx.base.ctxQmc;
 import com.qycx.base.ctxQyMc;
+import com.qycx.base.dlgTalkProc;
 import com.qycx.base.genericQueue;
 import com.qycx.base.myDb;
 import com.qycx.base.postMsg2MgrFunc;
 import com.qycx.base.qmCommFunc_mis;
 import com.qycx.base.qmCommonDbFunc_mis;
+import com.qycx.base.qmcTaskInfo;
 import com.qycx.base.qnmCommProc_mis;
 import com.qycx.base.qyDefs;
 import com.qycx.base.qyMcMainObj;
@@ -41,6 +50,15 @@ public class ctxQmc_gui {
             }
             return 0;
         };
+
+
+        @Override
+        public TalkExtTmpl new_talkExt()
+        {
+            return new myTalkExt();
+        }
+
+
 
 
         @Override
@@ -83,7 +101,7 @@ public class ctxQmc_gui {
 
         @Override
         public CIsTalker tryToTalkToMessenger_any(long ui64Id, boolean bNeedNotShowWnd, boolean bActivateWnd) {
-            ctxQyMc.CCtxQyMc pQyMc = qyMcMain_global.g.g_pQyMc;
+            ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
             ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
             qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo.pMisCnt;
 
@@ -98,22 +116,101 @@ public class ctxQmc_gui {
 //            return 0;
         }
 
+        @Override
+        public int  do_talk_OnTimer(CIsTalker  talker)
+        {
+            ctxQyMc.CCtxQyMc pQyMc =  g_pQyMc;
+            ctxQmc.CCtxQmc pProcInfo=pQyMc.get_pProcInfo();
+
+            //
+            if  (  talker==null)  return  -1;
+            dlgTalkProc.DLG_TALK_var m_var=talker.m_var;
+            if  (  m_var==null)  return  -1;
+
+            if  (  !m_var.av.taskInfo.bTaskExists)  return -1;
+
+            boolean  bNoV;
+
+            String hint  = "";
+            bNoV = pProcInfo.m_pTalkExt.bNoVDownload(m_var.av.taskInfo.iTaskId);
+            if  (  bNoV) {
+                boolean canSpeak;
+                canSpeak = dlgTalk_canSpeak(m_var.addr.idInfo.ui64Id);
+                hint = canSpeak ? "(正在调看)" : "(未调看)";
+                //
+                audioRecorder_android.AudioCapDev_android p = (audioRecorder_android.AudioCapDev_android) pProcInfo.av.localAv.recordSoundProcInfo.u_android.pAudioCapDev;
+                if (p != null) {
+                    //
+                    String message = p.isMuted ? "麦克风已关" : "麦克风已开";
+                    hint += " " + message;
+                }
+            }
+            //
+            s_meOverlayText=hint;
+
+
+
+
+
+            //
+            return  0;
+        }
+
+        //
+        @Override public int do_mainWnd_OnTimer(Object  hMainWnd, Object pVar, int  nIDEvent)
+        {
+            int  i;
+            ctxQyMc.CCtxQyMc  pQyMc = g_pQyMc;
+            ctxQmc.CCtxQmc pProcInfo=this;
+            qmcTaskInfo.QMC_TASK_INFO pTaskInfo;
+
+
+            //
+            if  (  pQyMc.appParams.bDbg) {
+
+                //
+                //long lId = anc_getTalkerId();
+                for (i = 0; i < pProcInfo.cfg.usMaxCnt_taskInfos; i++) {
+                    pTaskInfo = getQmcTaskInfoByIndex(null, i, "getQmcTaskInfoBySth");
+                    if (!pTaskInfo.bUsed) continue;
+                    //
+                    long lId = task_getTalkerId(pTaskInfo.var.iTaskId);
+                    //
+                    Log.d("Test", "taskId " + pTaskInfo.var.iTaskId + ": talkerId is " + lId);
+                }
+
+            }
+
+
+            return  0;
+        }
+
+
         @Override public int  initVar_post(Object p0, Object p1, Object p2)
         {
             ctxQmc.CCtxQmc pBase = this;
             //
             if  (  pQyMc.appParams.bDbg) {
                 //
-                pBase.cfg.debugStatusInfo.bTest_noMapExt = true;
-                Log.d("at","test: noMapExt set to true");
+                if  (  false  ) {
+                    pBase.cfg.debugStatusInfo.bTest_noMapExt = true;
+                    Log.d("at", "test: noMapExt set to true");
+                }
                 //
-                pBase.cfg.debugStatusInfo.bTest_noLostVideo=true;
-                Log.d("at","test: noLostVideo set to true");
-                //
-                pBase.cfg.debugStatusInfo.bBbg_traceRt_pOutputQBuf2_local_a=true;
-                Log.d("at","test: traceRt_pOutputQBuf2_local_a set to true");
+                if  (  false  ) {
+                    pBase.cfg.debugStatusInfo.bTest_noLostVideo = true;
+                    Log.d("at", "test: noLostVideo set to true");
+                    //
+                    pBase.cfg.debugStatusInfo.bDbgDetail_pOutputQBuf2_local_a = true;
+                    Log.d("at", "test: traceRt_pOutputQBuf2_local_a set to true");
+                }
+
                 //
                 //pBase.cfg.debugStatusInfo.bDbgDetail_keepAlive=false;
+
+                //
+                pBase.cfg.debugStatusInfo.bDbgDetail_toShareAudio  =  false;
+
 
                 //
                 pBase.cfg.debugStatusInfo.bDbgDetail_v_r=true;

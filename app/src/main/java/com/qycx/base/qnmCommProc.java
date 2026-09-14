@@ -1026,9 +1026,9 @@ public class qnmCommProc {
                 return iErr;
             }
             head.flip();
-            pResp.head.usCode = head.getShort();
             pResp.head.ucFlg = head.get();
             pResp.head.reserved = head.get();
+            pResp.head.usCode = head.getShort();
             pResp.head.len = head.getInt();
 
 //            pResp.head.len = qyntohi(pResp.head.len);

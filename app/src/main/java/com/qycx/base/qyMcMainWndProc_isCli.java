@@ -18,6 +18,7 @@ import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_htmlContent;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_refreshRecentFriendsResp;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_taskInteractionReq;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_taskProcReq;
+import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_taskProcResp;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferAudioData;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferAvReplyInfo;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_transferFileReq;
@@ -31,7 +32,7 @@ import static com.qycx.base.mainWnd_procMsg.qyFuncs_Droid.mainWnd_procMsgInput_t
 import static com.qycx.base.mainWnd_procMsg.qyFuncs_Droid.mainWnd_procMsgInput_transferFileReq;
 import static com.qycx.base.postMsg2MgrFunc.qyFuncs.postMsgTask2Mgr_mc;
 import static com.qycx.base.prepare.qyFuncs_Droid.g_transes;
-import static com.qycx.base.procSendFunc.qyFuncs.procSendTaskProcReq;
+import static com.qycx.base.procSendFunc.qyFuncs.sendTaskProcReq;
 import static com.qycx.base.qmcCaProc_public.qyFuncs.send_xt;
 import static com.qycx.base.qmcTaskInfo.Consts.CONST_taskDataType_conf;
 import static com.qycx.base.qnmCommProc.Consts.CONST_stateType_players;
@@ -357,7 +358,7 @@ public class qyMcMainWndProc_isCli {
                                                 //
                                                 qnmCommProc_mis.MSGR_ADDR addr = new qnmCommProc_mis.MSGR_ADDR();
                                                 addr.idInfo.ui64Id = input.data.route.idInfo_from.ui64Id;
-                                                procSendTaskProcReq(pMisCnt, CONST_qyCmd_sendMedia, (short) CONST_imOp_recv_applyForOrgReq, pTaskProcReq.tStartTime_org, pTaskProcReq.uiTranNo_org, pTaskProcReq.uiContentType_org, 0, 0, null, 0, true, null, addr);
+                                                sendTaskProcReq(null, CONST_qyCmd_sendMedia, (short) CONST_imOp_recv_applyForOrgReq, pTaskProcReq.tStartTime_org, pTaskProcReq.uiTranNo_org, pTaskProcReq.uiContentType_org, 0, 0, null, 0, true, null, addr);
                                                 //
                                                 break;
                                             }
@@ -378,6 +379,11 @@ public class qyMcMainWndProc_isCli {
                                         }
                                     }
                                     break;
+                                    case  CONST_imCommType_taskProcResp:
+                                    {
+                                        int  ii   =  0;
+                                    }
+                                          break;
 
                                     case CONST_imCommType_confReq:
                                         bMsgProcessed = true;

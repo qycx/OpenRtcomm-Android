@@ -386,7 +386,7 @@ public class Fragment_msgList extends Fragment {
                         default:
                             //
                             if  (  pContent.uiType==CONST_imCommType_confReq)  {
-                                Log.d("at","kkk");
+                                Log.d("at","kkk. l389");
                             }
                             //
                             break;

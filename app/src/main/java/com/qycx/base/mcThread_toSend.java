@@ -1104,16 +1104,21 @@ public class mcThread_toSend {
                                           byte[] audio =  tmpVar.m_ctxThreadtoSend.a.tmp_audio_buf;//new byte[bufSize_decObj_a_mediaCodec_tmpDataBuf];
                                           //
                                           for  (  ; ;) {
+
+                                              //
                                               if (pTranInfo.nNodes_processed >= pProcInfo.cfg.uiMaxSendMsgs) {
                                                   break;
                                               }
 
                                               //
-                                              if  (  pProcInfo.cfg.debugStatusInfo.bBbg_traceRt_pOutputQBuf2_local_a  )  {
+                                              if  (  pProcInfo.cfg.debugStatusInfo.bDbgDetail_pOutputQBuf2_local_a  )
+                                              {
                                                   int n=pProcInfo.pOutputQBuf2_local_a.getQ2Nodes();
-                                                  String str = "th_toSendMedia l1104: before outputQBuf2_local_a getMsg. nQNodes "  +  n;
+                                                  String str = "th_toSendMedia l1116: local_a: to get 1st pkt. nQNodes "  +  n;
                                                   showInfo_open.qyFuncs.showInfo_open(0,0,"",str);
                                               }
+
+                                              //
                                               int tmpLen = 0;
                                               tmpLen  =  pProcInfo.pOutputQBuf2_local_a.q2GetMsg(head,audio,0,audio.length);
                                               //tmpLen = pTask.mixer.pOutputQBuf2.q2GetMsg(head, audio, 0, audio.length);
@@ -1168,12 +1173,12 @@ public class mcThread_toSend {
                                               //
                                               if  (  true ) {
                                                   //
-                                                  if  (  pQyMc.appParams.bDbg)  {
+                                                  if  (  pProcInfo.cfg.debugStatusInfo.bDbgDetail_pOutputQBuf2_local_a)  {
                                                       //
-                                                      int n = pProcInfo.pOutputQBuf2_local_a.getQ2Nodes();
-                                                      String str;
-                                                      str = "th_toSendMedia l1162: before outputQBuf2_local_a.getMsg, nQNodes "  +  n;
-                                                      showInfo_open.qyFuncs.showInfo_open(0,0,"",str);
+                                                      int nn = pProcInfo.pOutputQBuf2_local_a.getQ2Nodes();
+                                                      String str1;
+                                                      str1 = "th_toSendMedia l1179: local_a: to get 2nd pkt, nQNodes "  +  nn;
+                                                      showInfo_open.qyFuncs.showInfo_open(0,0,"",str1);
                                                   }
 
                                                   //  再取一个包
@@ -1405,6 +1410,7 @@ public class mcThread_toSend {
             return iErr;
         };
 
+        //
         public static class mcThreadProc_mis_toSend implements Runnable {
 
             qmCommFunc_mis.MIS_CHANNEL pChannel;
@@ -1445,7 +1451,7 @@ public class mcThread_toSend {
                 //
                 int loopCtrl = 0;
                 long lastTickCnt_chkKeepalive = 0;
-                qnmCommProc_mis.MIS_MSGU pMsg_o = null;
+                //qnmCommProc_mis.MIS_MSGU pMsg_o = null;
                 //
                 qnmCommProc_mis.MIS_MSG_TASK pMsgTask_o = null;
                 qnmCommProc_mis.MIS_MSG_REQ pMsgReq_o=null;
@@ -1470,7 +1476,7 @@ public class mcThread_toSend {
                 ctx.ctxCaller.dwThreadId = tmpFunc.qyFuncs.myGetCurrentThreadId();
                 ctx.ctxCaller.tNameBuf.tNameBuf = where_showInfo;
                 showInfo_open.qyFuncs.showInfo_open(0, where_showInfo, ("starts"));
-                pMsg_o = new qnmCommProc_mis.MIS_MSG_TASK();
+                //pMsg_o = new qnmCommProc_mis.MIS_MSG_TASK();
                 switch (pChannel.uiType) {
                     case CONST_channelType_rtMedia:
                         pMsgMixer = new qnmCommProc_mis.MIS_MSG_TASK();
@@ -1487,10 +1493,10 @@ public class mcThread_toSend {
                         Log.d(AUDIO_UPLOAD, "<stage2.39> pMsgMixer is set." + pMsgMixer.uiType);
                         //
                         if  (  pProcInfo.cfg.b_useQ2_toEncA) {
-                            pMsg_o.buffer = ByteBuffer.allocate(bufSize_transferAudioData);
+                            pMsgTask_o.buffer = ByteBuffer.allocate(bufSize_transferAudioData);
                         }
                         else  {
-                            pMsg_o.buffer = ByteBuffer.allocate(transferAudioData.buf.capacity()  +  2048);
+                            pMsgTask_o.buffer = ByteBuffer.allocate(transferAudioData.buf.capacity()  +  2048);
                         }
                         break;
                     case CONST_channelType_media:

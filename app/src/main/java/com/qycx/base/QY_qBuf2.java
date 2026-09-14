@@ -755,6 +755,11 @@ public class QY_qBuf2 {
                 //Log.d("qy","tmp_qGetMsg failed, pQ.uiQNodes == 0");
                 return -1;
             }
+            //
+            if  (  pQ.cfg.m_qType  ==  CONST_qType_encA)  {
+                //Log.d("at","encA.l760");
+            }
+            //
             if (pQ.uiQNodes + pQ.startIndex_memHead > pQ.cfg.uiMaxQNodes) {
                 //Log.d("qBuf.tmp_qGetMsg failed, err");
                 return -1;

@@ -13,7 +13,7 @@ public class parseCmdLine {
         bVal  =  BuildConfig.DEBUG;     //  没用
 
         //
-        if  (  true  )  {
+        if  (  false  )  {
             pParams.bSupport_lyra = true;
         }
 

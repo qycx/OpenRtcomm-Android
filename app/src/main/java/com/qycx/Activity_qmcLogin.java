@@ -232,8 +232,8 @@ public class Activity_qmcLogin extends qmcBaseActivity implements View.OnClickLi
 
         //
         if  (  true  ) {
-            servInitVal = "192.168.1.177";
-            usrNameInitVal = "yuwm03";
+            servInitVal = "104.208.73.5";
+            usrNameInitVal = "yuwm02";
             pwdInitVal = "123456";
         }
 

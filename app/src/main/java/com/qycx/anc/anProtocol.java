@@ -1,6 +1,7 @@
 package com.qycx.anc;
 
 import static com.qycx.anc.Consts.__USE_atbyte_short__;
+import static com.qycx.anc.ancCommProc_open.Consts.CONST_atCommFlg_head14;
 import static com.qycx.anc.ancCommProc_open.Consts.CONST_atCommFlg_msb;
 import static com.qycx.anc.ancCommProc_open.Consts.MAX_12bits;
 import static com.qycx.base.isProtocolFunc.Consts.cntof_ctx_uiStreamIds;
@@ -795,6 +796,53 @@ public class anProtocol {
 
         return 0;
     }
+
+    //
+    public static int  AT_MSG_HEAD14_hton(long  i64StartTime_base, qyMsgFunc.AT_MSG_HEAD_h pH, qyMsgFunc.AT_MSG_HEAD14_n pN )
+    {
+        //unsigned  char* tmp_p;
+        int  tmpLen;
+
+        //
+
+            byte  ucFlg = (byte)(pH.ucFlg | CONST_atCommFlg_head14);
+            pN.ucFlg_buf[0]=ucFlg;
+            //
+        byte[] bytes;
+        bytes = pN.ucCode_buf;
+        byte cCode = (byte)pH.usCode;
+        pN.ucCode_buf[0]=cCode;
+
+        //
+        int l3 = pH.uiLen;
+        athtonl3(l3, pN.uiLen3_buf);
+        //
+        int  l3_elapse = (int)(pH.i64StartTime - i64StartTime_base);
+        athtonl3(l3_elapse, pN.l3_elapse_buf);
+        //
+        //tmp_p = pN->uiTranNo_buf;
+        M_ton_long(pH.uiTranNo, pN.uiTranNo_buf);
+        //
+        //tmp_p = pN->usSeqNo_buf;
+        M_ton_short(pH.usSeqNo, pN.usSeqNo_buf);
+
+        //
+
+
+            //
+        pN.nBytes = 14;
+        if (!isUcFlgMoreData(pH.ucFlg)) {
+			 pN.nBytes -= 2;
+        }
+
+
+
+
+        //
+        return  0;
+    }
+
+
     //
     public static int  AT_MSG_HEAD22_hton(long   i64StartTime_base, qyMsgFunc.AT_MSG_HEAD_h pH, qyMsgFunc.AT_MSG_HEAD22_n pN)
     {

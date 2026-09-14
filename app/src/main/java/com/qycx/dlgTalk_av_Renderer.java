@@ -255,7 +255,21 @@ public class dlgTalk_av_Renderer extends Thread implements TextureView.SurfaceTe
             exitGL();
 
             //
-            if (!Fragment_dlgTalk_av2.sReleaseInCallback) {
+            //  2026/09/13 fix: 仅当 SurfaceTexture 已被销毁(onSurfaceTextureDestroyed 置 null)
+            //  或已被更换时才 release。bSurfaceTextureSizeChanged / needRestart 导致 doAnimation
+            //  返回时 ST 仍然存活，必须复用同一个 ST 重建 WindowSurface；否则下一轮
+            //  createWindowSurface 失败 -> mSurfaceTexture=null -> 死等 onSurfaceTextureAvailable，
+            //  渲染线程永久停滞，画面冻结。
+            boolean bStGone = true;
+            try (qySyncObj.CQySyncObj syncObj = new qySyncObj.CQySyncObj()) {
+                if (syncObj.sync("", this.hMutex, "render.afterAnim") == 0) {
+                    bStGone = (mSurfaceTexture == null || mSurfaceTexture != surfaceTexture);
+                }
+            } catch (Exception e) {
+                bStGone = true;
+            }
+            Log.d("atdx", "run: after doAnimation, bStGone=" + bStGone);
+            if (bStGone && !Fragment_dlgTalk_av2.sReleaseInCallback) {
                 //Log.i(TAG, "Releasing SurfaceTexture in renderer thread");
                 surfaceTexture.release();
             }
@@ -866,6 +880,7 @@ public class dlgTalk_av_Renderer extends Thread implements TextureView.SurfaceTe
                     //
                     //  不需要重启任务，因为现在用了fbo,
                     Log.d("anc", "doAnimation: bSurfaceTextureSizeChanged is true,break now");
+                    Log.d("atdx", "bSurfaceTextureSizeChanged -> break, expect recreate in run()");
 
                     break;
                 }
@@ -873,7 +888,7 @@ public class dlgTalk_av_Renderer extends Thread implements TextureView.SurfaceTe
                     if (m_var.m_talkAvVar.m_bDlgTalk_av_readyFor_talkDrawRestart) {
                         //
                         Log.d("anc","doAnimation will stop: m_bDlgTalk_av_readyFor_talkDrawRestart is true");
-                        //
+                        Log.d("atdx","needRestart&readyFor -> break (useFbo)");
                         m_var.m_talkAvVar.m_bDlgTalk_av_readyFor_talkDrawRestart = false;
                         m_var.m_talkAvVar.m_bTalkDraw_needRestart = false;
 

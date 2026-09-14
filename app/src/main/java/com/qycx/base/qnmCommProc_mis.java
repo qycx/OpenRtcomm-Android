@@ -2111,21 +2111,28 @@ public class qnmCommProc_mis {
          * 用来标识原始请求时干啥的
          */
         public int uiContentType_org;
+
+        //
+        public qyDefs.QY_MESSENGER_ID idInfo_imGrp_related = new qyDefs.QY_MESSENGER_ID();
+
         /**
          * 表明操作: 接受、拒绝、取消等等
          */
         public short usOp;
         public short usTaskProcObjType; // 已弃用
+
+        //
+        public byte ucbNoVDownload;  //单向双向
+
+        //
         public TaskProcReq_vStream vStream = new TaskProcReq_vStream(); // 应该无用
         public int uiTaskType; // 应该无用
         public TaskProcReq_viewDynBmp viewDynBmp = new TaskProcReq_viewDynBmp(); // 应该无用
         public Object pInternal = new Object(); // 应该无用
         public Object hWnd_task = new Object(); // 应该无用
 
-        public qyDefs.QY_MESSENGER_ID idInfo_imGrp_related = new qyDefs.QY_MESSENGER_ID();
-        public byte ucbNoVDownload;  //单向双向
 
-
+        //
         public byte[] toByteArray() {
             ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES * 6 + Short.BYTES * 2 + Long.BYTES + vStream.toByteArray().length +
                     viewDynBmp.toByteArray().length);
@@ -4604,6 +4611,17 @@ public class qnmCommProc_mis {
         }
     }
 
+
+    //
+    //
+    public static class ConfTmpCtrl{
+        //
+        public byte 									ucbNoVDownload;		//  2026/06/25
+
+    }		 ;
+
+
+
     /**
      * 会议关键信息包
      */
@@ -4645,7 +4663,12 @@ public class qnmCommProc_mis {
         public CONF_requesting_mems requestingMems = new CONF_requesting_mems();
         public ConfLayoutParam confLayoutParam = new ConfLayoutParam();
 
+        //
+        public ConfTmpCtrl  confTmpCtrl=new ConfTmpCtrl();
 
+
+        //
+        /*
         public byte[] toByteArray() {
             int size = Integer.BYTES + idInfo_imGrp_related.toByteArray().length + Short.BYTES * 2 + requestingMems.toByteArray().length + confLayoutParam.toByteArray().length;
             ByteBuffer buffer = ByteBuffer.allocateDirect(size);
@@ -4662,8 +4685,10 @@ public class qnmCommProc_mis {
             return buffer.array();
         }
 
+         */
+
         //
-        public byte ucbNoVDownload;
+        //public byte ucbNoVDownload;
     }
 
     public static class StatusConfLayoutParam extends IM_CONTENTU {
@@ -6334,6 +6359,11 @@ public class qnmCommProc_mis {
                                 return iErr;
                             break;
 
+                        case  CONST_qnmCfgId_ucbNoVDownload:
+                            if (0>(pContent.ucbNoVDownload=getFieldData_byte(pItem)))
+                                return  iErr;
+                            break;
+
                         //  2014/10/09
                         case CONST_qnmCfgId_uiTaskType: //  2009/09/11
                             if (-1 == (pContent.uiTaskType = getFieldData_long(pItem)))
@@ -7178,7 +7208,7 @@ public class qnmCommProc_mis {
                             }
                             break;
                         case CONST_qnmCfgId_ucbNoVDownload:
-                            if(0 >(pContent.ucbNoVDownload = getFieldData_byte(pItem))) {
+                            if(0 >(pContent.confTmpCtrl.ucbNoVDownload = getFieldData_byte(pItem))) {
                                 return iErr;
                             }
                             break;

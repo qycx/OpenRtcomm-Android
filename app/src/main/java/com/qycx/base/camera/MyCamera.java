@@ -2,6 +2,7 @@ package com.qycx.base.camera;
 
 
 import static com.qycx.base.guiShare.Consts.CONST_msg_cameraOpen;
+import static com.qycx.base.guiShare.Consts.CONST_msg_cameraLost;
 
 import android.Manifest;
 import android.content.Context;
@@ -176,20 +177,34 @@ public class MyCamera {
         CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
         try {
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
+                Log.e("MyCamera.openCamera: mCameraOpenCloseLock tryAcquire timeout");
                 return;
 
             }
+            //  2026/09/14 信号量泄漏修复：正常路径由 onOpened/onDisconnected/onError 回调
+            //  release；openCamera 自身失败（提前 return/抛异常）时回调不会来，必须自行
+            //  release——否则锁永久被占，之后每次 openCamera tryAcquire 都超时，摄像头
+            //  永远打不开（表现为"断流重建后再也没恢复"）。
+            boolean bSubmitted = false;
+            try {
             String[] cameraIdList = manager.getCameraIdList();
             //boolean bFront = true;
             String cameraId = selectCamera(manager, bFront);// manager.getCameraIdList()[0];
             //
+            if (cameraId == null) {
+                Log.e("MyCamera.openCamera: selectCamera null");
+                return;
+            }
             mCameraId = cameraId;
             //
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
             StreamConfigurationMap map = (StreamConfigurationMap) characteristics
                     .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-            mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-            if (map == null) return;
+                mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+                if (map == null) {
+                    Log.e("MyCamera.openCamera: SCALER_STREAM_CONFIGURATION_MAP null");
+                    return;
+                }
 
             if (mSensorOrientation == 90 || mSensorOrientation == 270) {
                 mVideoSize = new Size(height, width);
@@ -202,6 +217,7 @@ public class MyCamera {
 
             //
             if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                Log.e("MyCamera.openCamera: no CAMERA permission");
                 // TODO: Consider calling
                 //    ActivityCompat#requestPermissions
                 // here to request the missing permissions, and then overriding
@@ -212,9 +228,17 @@ public class MyCamera {
                 return;
             }
             manager.openCamera(cameraId, mStateCallback, null);
+            bSubmitted = true;
 
             //
             this.m_camera_isOpen = true;
+            } finally {
+                //  2026/09/14: openCamera 提交失败（异常/提前 return）时回调不会来，
+                //  这里自行释放；提交成功（bSubmitted=true）则由回调释放。
+                if (!bSubmitted) {
+                    mCameraOpenCloseLock.release();
+                }
+            }
 
             //
         } catch (CameraAccessException e) {
@@ -296,6 +320,7 @@ public class MyCamera {
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
+            Log.e("MyCamera.startPreview: CameraAccessException " + e);
         }
 
     }
@@ -313,7 +338,10 @@ public class MyCamera {
             //
             mPreviewSession.setRepeatingRequest(mPreviewBuilder.build(), null, mBackgroundHandler);
         } catch (CameraAccessException e) {
+            //  2026/09/14: repeating request 起不来=采集永远无帧。留日志，
+            //  由 camera_RenderThread 看门狗无帧超时兜底重建。
             e.printStackTrace();
+            Log.e("MyCamera.updatePreview: setRepeatingRequest failed " + e);
         }
     }
 
@@ -383,17 +411,31 @@ public class MyCamera {
         @Override
         public void onDisconnected(CameraDevice camera) {
             //throw new NotImplementedException();
+            //  2026/09/14: 之前只 close+置 null，无人重启——摄像头被系统回收/被其他
+            //  应用抢占/media server 重启后采集静默停止（"运行一段时间采集不到"主因）。
+            //  现在通知采集线程立即重建；mBackgroundHandler 即 camera_RenderHandler。
+            Log.e("MyCamera.onDisconnected: camera device lost, notify rebuild");
             owner.mCameraOpenCloseLock.release();
             camera.close();
             owner.mCameraDevice = null;
+            owner.m_camera_isOpen = false;
+            if (owner.mBackgroundHandler != null) {
+                owner.mBackgroundHandler.sendEmptyMessage(CONST_msg_cameraLost);
+            }
         }
 
         @Override
         public void onError(CameraDevice camera, int error) {
             //throw new NotImplementedException();
+            //  2026/09/14: 同 onDisconnected——加日志并触发重建，不再静默死亡。
+            Log.e("MyCamera.onError: error=" + error + ", notify rebuild");
             owner.mCameraOpenCloseLock.release();
             camera.close();
             owner.mCameraDevice = null;
+            owner.m_camera_isOpen = false;
+            if (owner.mBackgroundHandler != null) {
+                owner.mBackgroundHandler.sendEmptyMessage(CONST_msg_cameraLost);
+            }
         }
     }
 
@@ -416,6 +458,9 @@ public class MyCamera {
 
         @Override
         public void onConfigureFailed(CameraCaptureSession session) {
+            //  2026/09/14: 配置失败之前只弹 toast——session 没起来，采集永远无帧，
+            //  只能靠 camera_RenderThread 的看门狗兜底重建。打日志留痕。
+            Log.e("MyCamera.PreviewCaptureStateCallback.onConfigureFailed: session 配置失败");
             Context context = MyApplication.getContext()    ;
             {
 //                Toast.makeText(context, "Failed", Toast.LENGTH_SHORT).show();

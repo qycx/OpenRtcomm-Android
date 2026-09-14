@@ -771,7 +771,7 @@ public class qyMcMainMediaProc_encAudio {
                                             mem_o.copyFrom(mem_i);
                                             //
                                             //
-                                            if  (  pQyMc.appParams.bDbg)  {
+                                            if  (  pProcInfo1.cfg.debugStatusInfo.bDbgDetail_toShareAudio)  {
                                                 int  n  = pProcInfo1.pOutputQBuf2_local_a.getQ2Nodes();
                                                 String str;
                                                 str = "toShareAudio: outputQBuf2_local_a.postMsg nQNodes "  +  n;

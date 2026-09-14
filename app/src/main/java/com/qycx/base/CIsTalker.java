@@ -329,6 +329,10 @@ public class CIsTalker {
         }
 
         //
+        pProcInfo.do_talk_OnTimer(this);
+
+
+        //
         return  0;
     }
 

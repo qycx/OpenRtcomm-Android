@@ -313,6 +313,16 @@ public class decObj_mediaCodec extends DecMediaCodecCommon {
 
 
     //
+    //  2026/09/13: bDx 单向/双向切换会触发视频解码线程退出并立即重建。
+    //  旧 MediaCodec release 后，系统（尤其小米 ROM 的 ResourceManagerService）
+    //  异步清理未完成时立刻 createDecoderByType，会同步 reclaim 旧实例，
+    //  在 MiMediaCodecStub::DestroyImplInstance 的 dlclose 中崩溃（SIGTRAP）。
+    //  这里记录上次解码器销毁时刻，保证两次创建间隔至少 800ms，
+    //  首次创建不受影响。
+    static long s_tick_lastDecFramesEnd = 0;
+
+
+    //
     private void decFrames() throws IOException {
         MediaCodec decoder = null;
         CodecOutputSurface outputSurface = null;
@@ -343,6 +353,18 @@ public class decObj_mediaCodec extends DecMediaCodecCommon {
             // extractor.  It's very important to use the format from the extractor because
             // it contains a copy of the CSD-0/CSD-1 codec-specific data chunks.
             String mime = format.getString(MediaFormat.KEY_MIME);
+
+            //  2026/09/13: 距上次解码器销毁不足 800ms 则等待，规避小米 ROM
+            //  reclaim 旧 MediaCodec 实例时 dlclose 崩溃（详见 s_tick_lastDecFramesEnd 注释）
+            long tick_now = tmpFunc.qyFuncs.myGetTickCount(null);
+            if (s_tick_lastDecFramesEnd > 0) {
+                long lElapsed = tick_now - s_tick_lastDecFramesEnd;
+                if (lElapsed < 800) {
+                    Log.d("atdx", "decFrames: wait " + (800 - lElapsed) + "ms before createDecoder");
+                    tmpFunc.qyFuncs.mySleep((int) (800 - lElapsed));
+                }
+            }
+
             decoder = MediaCodec.createDecoderByType(mime);
             //
                 /* if (!qyFuncs_Droid.isHarmonyOSa())
@@ -392,6 +414,10 @@ public class decObj_mediaCodec extends DecMediaCodecCommon {
             stopBackgroundThread();
             showInfo_open.qyFuncs.showInfo_open("finally dec_exit");
             dec_exit();
+
+            //  2026/09/13: 记录解码器销毁时刻，供下次 decFrames 创建前等待
+            //  （规避小米 ROM reclaim 旧实例 dlclose 崩溃，见 decFrames 内注释）
+            s_tick_lastDecFramesEnd = tmpFunc.qyFuncs.myGetTickCount(null);
         }
     }
 

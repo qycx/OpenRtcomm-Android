@@ -95,6 +95,7 @@ public class qyCommFunc {
             tmpHead.usCode = (short) cmdCode;
             tmpHead.len = dataLen;
             ByteBuffer buffer = tmpHead.toArrayBuffer(tmp_bb);
+            //
             if (0 >= guiShare.GuiShare.pf_qySend.call(pSock,buffer.array(), 0,  8,  pTo.iWrite))
                 return iErr;
             if (0 != dataLen) {

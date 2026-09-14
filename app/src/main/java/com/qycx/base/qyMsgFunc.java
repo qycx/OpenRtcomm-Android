@@ -1,11 +1,12 @@
 
 package com.qycx.base;
 
-import static com.qycx.anc.Consts.CONST_msgHead_n_len;
+import static com.qycx.anc.anProtocol.AT_MSG_HEAD14_hton;
 import static com.qycx.anc.anProtocol.AT_MSG_HEAD22_hton;
 import static com.qycx.anc.anProtocol.INT24_MAX;
 import static com.qycx.anc.anProtocol.INT24_MIN;
 import static com.qycx.anc.anProtocol.atntohl3;
+import static com.qycx.anc.ancCommProc_open.Consts.CONST_atCommFlg_head14;
 import static com.qycx.base.commonSock.qyFuncs.qyRecvEx;
 import static com.qycx.base.commonSock_android.qyFuncs_Droid.qySend_android;
 import static com.qycx.base.qyComm.Consts.CONST_qyRc_user;
@@ -66,6 +67,9 @@ public class qyMsgFunc {
         public byte []                      usSeqNo_buf = new byte[2];
 
         //
+        public ByteBuffer head_buffer = ByteBuffer.allocate(14);
+        //
+        public int nBytes;
 
     }		 ;
 
@@ -248,6 +252,9 @@ public class qyMsgFunc {
             else pSession.usLastReqCode_i = pMsgHead.usCode;
 
             //
+            pSession.lastRecv_headLen  =  headLen;
+
+            //
             return data;
         }
 
@@ -259,6 +266,9 @@ public class qyMsgFunc {
             //
             ByteBuffer head_buffer  = null;
             int len  =  0;
+
+            //
+            ucFlg &= ~CONST_atCommFlg_head14;
 
             //
             do {
@@ -293,12 +303,36 @@ public class qyMsgFunc {
                     }
                 }
                 //
-                if (true) {
+                if (false) {
                     bHead14 = false;
                     Log.d("at", "Test: bHead14 set to false. l276");
                 }
                 //
                 if (bHead14) {
+                    AT_MSG_HEAD14_n tmpHead14_n = new AT_MSG_HEAD14_n();
+                    if (0 != AT_MSG_HEAD14_hton(pSession.service.i64StartTime_base, tmpHead, tmpHead14_n)) {
+                        break;
+                    }
+                    //
+                    head_buffer=tmpHead14_n.head_buffer;
+                    //
+                    head_buffer.put(tmpHead14_n.ucFlg_buf);
+                    head_buffer.put(tmpHead14_n.ucCode_buf);
+                    //
+                    head_buffer.put(tmpHead14_n.uiLen3_buf);
+                    //
+                    head_buffer.put(tmpHead14_n.l3_elapse_buf);
+                    head_buffer.put(tmpHead14_n.uiTranNo_buf);
+                    //
+                    if  ( isUcFlgMoreData(tmpHead14_n.ucFlg_buf[0])) {
+                        head_buffer.put(tmpHead14_n.usSeqNo_buf);
+                    }
+                    //
+                    head_buffer.flip();
+                    len=head_buffer.limit();
+
+                    //
+                    pSession.lastSnd_headLen  =  tmpHead14_n.nBytes;
 
                 } else {  //
                     AT_MSG_HEAD22_n tmpHead22_n = new AT_MSG_HEAD22_n();
@@ -325,6 +359,8 @@ public class qyMsgFunc {
                     head_buffer.flip();
                     len = head_buffer.limit();
 
+                    //
+                    pSession.lastSnd_headLen=tmpHead22_n.nBytes;
 
                 }
                 if  (  head_buffer==null)  {
@@ -353,6 +389,8 @@ public class qyMsgFunc {
                     return -1;
                 }
 
+
+                //
                 iErr = 0;
 
             } while(false);

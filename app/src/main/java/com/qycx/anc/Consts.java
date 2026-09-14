@@ -8,8 +8,8 @@ public class Consts {
     public static boolean  __USE_old_msgHead_n__  =  false;
 
     //
-    public static int  CONST_old_msgHead_n_len      =   24;
-    public static int CONST_msgHead_n_len  =  16;
+    //public static int  CONST_old_msgHead_n_len      =   24;
+    //public static int CONST_msgHead_n_len  =  22;       //  16;
 
 
     //

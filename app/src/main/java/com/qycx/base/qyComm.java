@@ -176,9 +176,11 @@ public class qyComm {
 
     //  2007/04/22,
     public static class QY_COMM_HEAD {
-        public short usCode;
         public byte ucFlg;
         public byte reserved;
+        //
+        public short usCode;
+        //
         public int len;
 
         public void memset0()
@@ -200,9 +202,9 @@ public class qyComm {
             //buffer=ByteBuffer.allocateDirect(8);
 
             //
-            buffer.putShort(usCode);
             buffer.put(ucFlg);
             buffer.put(reserved);
+            buffer.putShort(usCode);
             buffer.putInt(len);
             return buffer;
         }
@@ -263,6 +265,10 @@ public class qyComm {
         public int nTalks;                                //  与客户机交流的次数
         //
         public boolean bAdmin;                                //  2011/01/10
+
+        //
+        public int lastSnd_headLen;
+        public int lastRecv_headLen;
 
     }
 

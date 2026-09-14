@@ -18,7 +18,7 @@ import static com.qycx.base.imCommType_defs.Consts.*;
 import static com.qycx.base.isTalkerQProc.findIsTalker;
 import static com.qycx.base.postMsg2MgrFunc.qyFuncs.postMsg2Mgr_mc;
 import static com.qycx.base.postMsg2MgrFunc.qyFuncs.postMsgTask2Mgr_mc;
-import static com.qycx.base.procSendFunc.qyFuncs.procSendTaskProcReq;
+import static com.qycx.base.procSendFunc.qyFuncs.sendTaskProcReq;
 import static com.qycx.base.qmcProc.doChkTalkDraw;
 import static com.qycx.base.qmcProc.isGroup;
 import static com.qycx.base.qmcProc.pauseTaskAv;
@@ -41,6 +41,7 @@ import static com.qycx.base.qyWmComm.Consts.CONST_qyWm_postComm;
 import static com.qycx.base.qyWndContentType.Consts.*;
 import static com.qycx.base.showTaskStatusFunc.qyFuncs.showNotification;
 import static com.qycx.base.tmpFunc.qyFuncs.myGetTickCount;
+import static com.qycx.base.tmpFunc.qyFuncs.mytime;
 
 
 import org.greenrobot.eventbus.EventBus;
@@ -113,6 +114,7 @@ import com.qycx.base.imCommType_defs;
 import com.qycx.base.myDb;
 import com.qycx.base.myrecycleFunc;
 import com.qycx.base.postMsg2MgrFunc;
+import com.qycx.base.procSendFunc;
 import com.qycx.base.qmCommFunc_mis;
 import com.qycx.base.qmcProc;
 import com.qycx.base.qmcSharedObj;
@@ -618,13 +620,6 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
             qmCommFunc_mis.MIS_CNT  pMisCnt  =  pProcInfo.pMisCnt;
 
             //
-            /*
-            Activity_dlgTalk_av owner = this.mOwner_wnd;
-            if  (  owner==null) break;
-            if  (  owner.mOwner_hTalk==null)break;
-            Activity_dlgTalk talk = owner.mOwner_hTalk.get();
-            if(talk==null)break;
-             */
             //
             CIsTalker talk=findIsTalker(pMisCnt,this.talker_ui64Id);
             if  (  talk==null)  break;
@@ -648,18 +643,64 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
                 qmcTaskInfo.QMC_taskData_common taskData = pTaskInfo.getTaskData();
                 if (taskData == null) break;
 
+                qnmCommProc_mis.MIS_MSGU  pMsg1=taskData.msgU;
+                if  (  pMsg1==null)break;
+                if  (    pMsg1.uiType!=CONST_misMsgType_task )  {
+                    break;
+                }
+                qnmCommProc_mis.MIS_MSG_TASK pMsgTask1=(qnmCommProc_mis.MIS_MSG_TASK) pMsg1;
+
+                //
+                long tNow;
+                tNow = mytime();
+
+                //
+                int  iDiffInS  =  (int)(tNow - pMsgTask1.tTime_alive);
+                if  (  Math.abs(iDiffInS )  < 5  )  {
+                    m_nLostVideo=0;
+                    break;
+                }
+
+
 
                 //
                 long dwTickCnt = myGetTickCount(null);
                 long iElapseInMs_a = dwTickCnt - taskData.tmpStatus.lastTickCnt_dec_a;
                 long iElapseInMs_v  =  dwTickCnt  -  taskData.tmpStatus.lastTickCnt_dec_v;
+                //
+                if  (  Math.abs(iElapseInMs_v)<1000) {
+                    if (pProcInfo.m_pTalkExt.bNoVDownload(m_var.av.taskInfo.iTaskId)) {  //  提醒mcu不要下载视频了
+                        procSendFunc.qyFuncs.Param_sendTaskProcReq param_sendTaskProcReq=new procSendFunc.qyFuncs.Param_sendTaskProcReq();
+                        param_sendTaskProcReq.bNoVDownload= pProcInfo.m_pTalkExt.bNoVDownload(m_var.av.taskInfo.iTaskId);
+                        //
+                        qnmCommProc_mis.MSGR_ADDR addr = new qnmCommProc_mis.MSGR_ADDR();
+                        addr.idInfo.ui64Id = m_var.av.taskInfo.idInfo_starter.ui64Id;
+                        sendTaskProcReq(param_sendTaskProcReq, CONST_qyCmd_sendMedia, CONST_imOp_recv_applyForChkTaskAlive, m_var.av.taskInfo.tStartTime_org, m_var.av.taskInfo.uiTranNo_org, CONST_imCommType_transferAvInfo, 0, 0, null, 0, true, "", addr);
+
+                    }
+                }
+                else  {
+                    if (!pProcInfo.m_pTalkExt.bNoVDownload(m_var.av.taskInfo.iTaskId)) {  //  提醒mcu不要下载视频了
+                        procSendFunc.qyFuncs.Param_sendTaskProcReq param_sendTaskProcReq=new procSendFunc.qyFuncs.Param_sendTaskProcReq();
+                        param_sendTaskProcReq.bNoVDownload= pProcInfo.m_pTalkExt.bNoVDownload(m_var.av.taskInfo.iTaskId);
+                        //
+                        qnmCommProc_mis.MSGR_ADDR addr = new qnmCommProc_mis.MSGR_ADDR();
+                        addr.idInfo.ui64Id = m_var.av.taskInfo.idInfo_starter.ui64Id;
+                        sendTaskProcReq(param_sendTaskProcReq, CONST_qyCmd_sendMedia, CONST_imOp_recv_applyForChkTaskAlive, m_var.av.taskInfo.tStartTime_org, m_var.av.taskInfo.uiTranNo_org, CONST_imCommType_transferAvInfo, 0, 0, null, 0, true, "", addr);
+
+                    }
+                }
+                //
                 if (Math.abs(iElapseInMs_a) > 3000  &&  Math.abs(iElapseInMs_v)>3000)
                 {
                     //
                     if  (  true  ) {
+                        procSendFunc.qyFuncs.Param_sendTaskProcReq param_sendTaskProcReq=new procSendFunc.qyFuncs.Param_sendTaskProcReq();
+                        param_sendTaskProcReq.bNoVDownload= pProcInfo.m_pTalkExt.bNoVDownload(m_var.av.taskInfo.iTaskId);
+                        //
                         qnmCommProc_mis.MSGR_ADDR addr = new qnmCommProc_mis.MSGR_ADDR();
                         addr.idInfo.ui64Id = m_var.av.taskInfo.idInfo_starter.ui64Id;
-                        procSendTaskProcReq(pMisCnt, CONST_qyCmd_sendMedia, CONST_imOp_recv_applyForChkTaskAlive, m_var.av.taskInfo.tStartTime_org, m_var.av.taskInfo.uiTranNo_org, CONST_imCommType_transferAvInfo, 0, 0, null, 0, true, "", addr);
+                        sendTaskProcReq(param_sendTaskProcReq, CONST_qyCmd_sendMedia, CONST_imOp_recv_applyForChkTaskAlive, m_var.av.taskInfo.tStartTime_org, m_var.av.taskInfo.uiTranNo_org, CONST_imCommType_transferAvInfo, 0, 0, null, 0, true, "", addr);
                     }
 
                     //
@@ -672,7 +713,7 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
 
             //
-            int max_nLostVideo  =  10;
+            int max_nLostVideo  =  20;
             if  (  pProcInfo.bUse100k)  {
                 max_nLostVideo=40;
             }
@@ -1239,9 +1280,17 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         //
         SurfaceTexture st = null;// fg.m_st_test;
         //st=new SurfaceTexture(CTalkDraw.me_texId);
-        st = talkDraw.CTalkDraw.me_st;
+        //  2026/09/13 fix: me_st 由 talkDraw.init() 在 GL 渲染线程创建，而本函数跑在
+        //  主线程，两者存在时序竞争——渲染线程启动稍慢时 me_st 还是 null，之前直接
+        //  return 导致本次通话无本地视频（日志：initVideoCapDev failed, me_st is null）。
+        //  这里最多等 3 秒让渲染线程完成 init，而不是立刻放弃。
+        for (int i = 0; i < 30; i++) {
+            st = talkDraw.CTalkDraw.me_st;
+            if (st != null) break;
+            tmpFunc.qyFuncs.mySleep(100);
+        }
         if (st == null) {
-            Log.d("initVideoCapDev failed, me_st is null");
+            Log.d("initVideoCapDev failed, me_st is null (waited 3s)");
             return iErr;
         }
 
@@ -1328,6 +1377,16 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
             }
             fg.mCameraRenderThread = null;
 
+            //
+            //  2026/09/13 fix: 相机线程已完全退出，这里才是释放 me_st 的唯一安全位置。
+            //  此前 talkDraw.exit() 在渲染重启时提前 release，相机线程撞上已销毁的
+            //  mutex 导致 SIGABRT。me_texId 不在此处 glDeleteTextures（当前线程无对应
+            //  EGL 上下文），GL 纹理名随旧上下文销毁自然回收，下次通话 init() 重新生成。
+            if (talkDraw.CTalkDraw.me_st != null) {
+                talkDraw.CTalkDraw.me_st.release();
+                talkDraw.CTalkDraw.me_st = null;
+            }
+            talkDraw.CTalkDraw.me_texId = 0;
         }
 
 
@@ -3332,6 +3391,29 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         } else {
             btnLocalVideo.setImageResource(R.drawable.local_video);
 
+        }
+
+        return;
+    }
+
+    //
+    //  2026/09/13: bDx 切换时 me 会被渲染线程（talkDraw）自动显示/隐藏，
+    //  按钮图标需要与 bShow_localVideo 重新同步（主线程调用）。
+    public void syncLocalVideoIcon() {
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        if (pQyMc == null) return;
+        ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
+        if (pProcInfo == null) return;
+
+        CIsTalker talker = findIsTalker(pProcInfo.pMisCnt, this.talker_ui64Id);
+        if (talker == null) return;
+
+        if (btnLocalVideo == null) return;
+
+        if (talker.m_var.av.taskInfo.bShow_localVideo) {
+            btnLocalVideo.setImageResource(R.drawable.close_loacl_video);
+        } else {
+            btnLocalVideo.setImageResource(R.drawable.local_video);
         }
 
         return;

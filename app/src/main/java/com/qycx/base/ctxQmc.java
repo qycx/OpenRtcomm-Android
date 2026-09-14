@@ -59,6 +59,7 @@ import androidx.fragment.app.Fragment;
 import com.qycx.Activity_dlgTalk;
 import com.qycx.MainActivity;
 import com.qycx.MyApplication;
+import com.qycx.anc.TalkExtTmpl;
 import com.qycx.base.util.Log;
 import com.south.map.MapExtTmpl;
 
@@ -589,6 +590,9 @@ public class ctxQmc {
 
         //
         public MapExtTmpl m_pMapExt;
+        //
+        public TalkExtTmpl m_pTalkExt;
+
 
         //
         public qnmCommProc_mis.QY_COMM_AUTHINFO_MIS authInfo = new qnmCommProc_mis.QY_COMM_AUTHINFO_MIS();
@@ -763,10 +767,19 @@ public class ctxQmc {
         }
 
 
+        //
+        //virtual MapExtTmpl* new_mapExt();
+
+        public abstract TalkExtTmpl new_talkExt();
+        //virtual TalkGuiExtTmpl* new_talkGuiExt();
+        //virtual QmcExtTmpl* new_qmcExt();
+
+
         @Override
         public int setQmDbFuncs(int iDbType, myDb.QM_dbFuncs pDbFuncs) {
             return -1;
         }
+
 
 
         //
@@ -790,6 +803,12 @@ public class ctxQmc {
         //
         //abstract public Activity_dlgTalk tryToTalkToMessenger_any(long ui64Id, boolean bNeedNotShowWnd, boolean bActivateWnd, Object phWnd);
         abstract public CIsTalker tryToTalkToMessenger_any(long ui64Id, boolean bNeedNotShowWnd, boolean bActivateWnd);
+
+        //
+        abstract public int  do_talk_OnTimer(CIsTalker  hDlgTalk);
+        abstract public int  do_mainWnd_OnTimer(Object  hMainWnd, Object pVar, int  nIDEvent);
+
+
 
 
         //
@@ -1390,6 +1409,16 @@ public class ctxQmc {
             Log.d(str);
             showInfo_open.qyFuncs.showInfo_open(0, null,str);
 
+
+            //
+            if (pProcInfo.m_pTalkExt !=null) {
+                pProcInfo.m_pTalkExt = null;
+            }
+
+
+
+
+            //
             return 0;
         };
 
@@ -2020,6 +2049,12 @@ public class ctxQmc {
 
                 //
                 guiShare.GuiShare.pf_customSystem.call();
+
+                //
+                pProcInfo.m_pTalkExt = pProcInfo.new_talkExt();
+                pProcInfo.m_pTalkExt.m_var.pProcInfo = pProcInfo;
+
+
 
                 //
                 pProcInfo.initVar_post(0,0,0);
