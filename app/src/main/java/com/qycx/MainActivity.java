@@ -1712,6 +1712,12 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     private int splitDividerDragStartVideoH;
     /** 用户通过浮窗/分屏/全屏按钮选择的模式。 */
     private int floatingAvUserMode = FLOATING_AV_MODE_FLOAT;
+    /**
+     * 2026/09/14: 用户是否手动点过"浮窗/分屏/全屏"按钮。
+     * onConfigurationChanged 只有在用户没手动选过时才按方向重置默认布局——
+     * 否则竖屏选了"全屏"，一旋转就被横屏默认(分屏)覆盖，全屏状态丢失。
+     */
+    private boolean floatingAvUserModeTouched;
     /** 当前实际应用的布局模式（离开地图 Tab 时分屏/全屏会临时降为浮窗）。 */
     private int floatingAvDisplayMode = FLOATING_AV_MODE_FLOAT;
     private boolean floatingAvTabBarHidden;
@@ -1873,6 +1879,9 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             if (m_floatingAvShell.getVisibility() != View.VISIBLE) {
                 m_floatingAvShell.setVisibility(View.VISIBLE);
             }
+            //  2026/09/14: 新一次入会，复位"用户手动选过布局"标志——
+            //  本次会话再按方向给默认布局；用户之后再点浮窗/分屏/全屏才受保护。
+            floatingAvUserModeTouched = false;
             applyFloatingAvDisplayMode(getDefaultFloatingAvModeForOrientation());
 
             //
@@ -2052,7 +2061,10 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
             m_floatingAvShell.setVisibility(View.GONE);
         }
         if (m_btnFloatingAvFloat != null) {
-            m_btnFloatingAvFloat.setOnClickListener(v -> applyFloatingAvDisplayMode(FLOATING_AV_MODE_FLOAT));
+            m_btnFloatingAvFloat.setOnClickListener(v -> {
+                floatingAvUserModeTouched = true;
+                applyFloatingAvDisplayMode(FLOATING_AV_MODE_FLOAT);
+            });
         }
         if (m_btnFloatingAvSplit != null) {
             m_btnFloatingAvSplit.setOnClickListener(v -> {
@@ -2060,6 +2072,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                 if (pQyMc != null) {
                     ensureMapTabForFloatingAv(pQyMc);
                 }
+                floatingAvUserModeTouched = true;
                 applyFloatingAvDisplayMode(FLOATING_AV_MODE_SPLIT);
             });
         }
@@ -2069,6 +2082,7 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
                 if (pQyMc != null) {
                     ensureMapTabForFloatingAv(pQyMc);
                 }
+                floatingAvUserModeTouched = true;
                 applyFloatingAvDisplayMode(FLOATING_AV_MODE_FULL);
             });
         }
@@ -3228,7 +3242,9 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         // 竖屏浮窗、横屏分屏：旋转时按方向恢复默认视频布局，避免竖屏仍保持横屏分屏导致地图字号/布局异常
-        if (m_floatingView_fg != null && isOnMapTab()) {
+        // 2026/09/14: 用户手动点过"浮窗/分屏/全屏"则尊重用户选择，不再按方向重置——
+        // 否则竖屏"全屏"旋转到横屏会被强制降为分屏，全屏状态丢失。
+        if (m_floatingView_fg != null && isOnMapTab() && !floatingAvUserModeTouched) {
             floatingAvUserMode = getDefaultFloatingAvModeForOrientation();
         }
         notifyMapFragmentConfigurationChanged(newConfig);

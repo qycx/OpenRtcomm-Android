@@ -408,7 +408,11 @@ public class talkDraw {
             //  off2on 模式下 myDraw_off/myDraw_on 两个实例都会 init()，直接覆盖会
             //  (a) 泄漏上一份 (b) 让 camera_RenderThread 持有的 me_st 与静态引用失联；
             //  渲染线程重启(needRestart/尺寸变化)时也必须复用。
-            //  释放统一移到 Fragment_dlgTalk_av2.exitVideoCapDev()（相机线程 join 之后）。
+            //  2026/09/14 修正: 释放点不是 Fragment_dlgTalk_av2.exitVideoCapDev()——那个
+            //  函数在"旋转"的 pauseTaskAv 路径上也会被调用，而旋转不重建 GL 环境，
+            //  init() 不会重跑，提前 release 会导致 me_st 永远为 null、本地视频消失。
+            //  释放统一放在 Fragment_dlgTalk_av2.doClean()（mRenderer.exit() 之后，
+            //  即整条通话界面退出时）。
             if (me_st == null) {
                 int[] textureHandle = new int[1];
                 GLES20.glGenTextures(1, textureHandle, 0);

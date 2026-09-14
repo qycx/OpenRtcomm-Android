@@ -117,6 +117,13 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
     //  内部类成员不会进入外部类作用域（简单名不可见，编译报"找不到符号"）。
     static final int MSG_WATCHDOG = 10;
 
+    //  2026/09/14: 等相机就绪（onOpened→notifyCameraOpen）的最长时间。
+    //  之前 waitUntilReady 是 while(!mReady) 无限自旋，而它的调用者是主线程
+    //  （initVideoCapDev）——相机一旦没打开（CAMERA_IN_USE / 被泄漏的旧设备占着），
+    //  主线程就永久自旋：界面卡死 + 摄像头再也起不来，即"点旋转几次后打不开"。
+    //  这里给硬超时，超时返回 -1 由调用方收尾。
+    static final long WAIT_READY_TIMEOUT_MS = 8000;
+
     //
     private EglCore mEglCore;
     private WindowSurface mWindowSurface;
@@ -427,18 +434,35 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
      * Call from the UI thread.
      */
     public int waitUntilReady() {
-        //synchronized(mStartLock)
-        {
-            while (!mReady) {
-                //
-                if (mThreadEnd) return -1;
+        return waitUntilReady(WAIT_READY_TIMEOUT_MS);
+    }
 
-                //
-                try {
-                    //mStartLock.wait();
-                    tmpFunc.qyFuncs.mySleep(1);
-                } catch (Exception ie) { /* not expected */ }
+    /**
+     * 2026/09/14: 带超时的 waitUntilReady。
+     * <p>
+     * mReady 只在 notifyCameraOpen()（相机 onOpened 回调链）里置位；相机没打开就
+     * 永远不来。旧实现无限自旋，而调用方是主线程——一旦发生就是"界面卡死 + 摄像头
+     * 打不开"的永久故障。这里超时即返回 -1，由 initVideoCapDev 收掉本次线程后
+     * 交给下一轮重试/看门狗。
+     */
+    public int waitUntilReady(long timeoutMs) {
+        long deadline = SystemClock.uptimeMillis() + timeoutMs;
+        while (!mReady) {
+            //
+            if (mThreadEnd) return -1;
+
+            //
+            if (SystemClock.uptimeMillis() > deadline) {
+                Log.e("atdx", "waitUntilReady: timeout(" + timeoutMs + "ms), camera not ready. mCameraDevice="
+                        + ((myCamera == null || myCamera.mCameraDevice == null) ? "null" : "ok"));
+                return -1;
             }
+
+            //
+            try {
+                //mStartLock.wait();
+                tmpFunc.qyFuncs.mySleep(1);
+            } catch (Exception ie) { /* not expected */ }
         }
 
         return 0;
@@ -465,6 +489,13 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
     public void surfaceAvailable(SurfaceTexture st, boolean newSurface) {
         //Surface surface = holder.getSurface();
         //mWindowSurface = new WindowSurface(mEglCore, surface, false);
+        //
+        //  2026/09/14: 防重复调用泄漏——同一线程第二次收到 surfaceAvailable 时，
+        //  先把上一轮的 GL 资源收掉，再建新的。
+        if (mWindowSurface != null || mCameraTexture != null) {
+            Log.e("atdx", "surfaceAvailable: previous surface resources still alive, release first");
+            releaseGl();
+        }
         mWindowSurface = new WindowSurface(mEglCore, st);
         //
         mWindowSurface.makeCurrent();
@@ -508,6 +539,15 @@ public class camera_RenderThread extends Thread implements SurfaceTexture.OnFram
         }
 
         //
+        //  2026/09/14: 之前只放 WindowSurface / texProgram，mCameraTexture 从来没放过。
+        //  每次重建（旋转 pause/resume、看门狗重建）都会 new 一个 SurfaceTexture +
+        //  一个 GL texture，全泄漏——泄漏几个后相机会因为 BufferQueue/显存分配失败而
+        //  再也打不开。这里补上释放。
+        if (mCameraTexture != null) {
+            mCameraTexture.setOnFrameAvailableListener(null);
+            mCameraTexture.release();
+            mCameraTexture = null;
+        }
         if (mWindowSurface != null) {
             mWindowSurface.release();
             mWindowSurface = null;

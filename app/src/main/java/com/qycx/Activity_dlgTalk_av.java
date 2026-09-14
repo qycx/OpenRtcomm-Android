@@ -117,6 +117,10 @@ public class Activity_dlgTalk_av extends BaseActivity implements PopupWindow.OnD
     //
     private long lastRotationTime = 0;
     private static final long MIN_ROTATION_INTERVAL = 1000;
+    //  2026/09/14: 旋转触发的"关相机+重开"最小间隔（与 Fragment_dlgTalk_av2 同一策略）。
+    //  连点旋转时不要排出多次 pause/resume，否则上一台相机没放开就重开 → CAMERA_IN_USE。
+    private static final long ROTATION_RESTART_MIN_INTERVAL_MS = 1500;
+    private long tickLastRestartCameraForRotation = 0;
     private MeetingStatusCenter messageCenter;
     boolean up = true;
 
@@ -396,6 +400,20 @@ public class Activity_dlgTalk_av extends BaseActivity implements PopupWindow.OnD
             m_var.av.taskInfo.bNeedRestart_camera=false;
             //
             if  (  m_var.av.taskInfo.bTaskExists)  {
+                //  2026/09/14: 旋转重开相机的最小间隔节流。连点"屏幕旋转"会连着来好几次
+                //  onConfigurationChanged → 每次都是 pause(关相机)+resume(立刻开相机)，
+                //  上一台设备还没被 camera 服务放开就又去 open → CAMERA_IN_USE，之后
+                //  再也打不开。这里与 Fragment_dlgTalk_av2.restartLocalCameraForHostRotation
+                //  用同一套节流策略，密集连点只保留最后一次。
+                long tickNow = tmpFunc.qyFuncs.myGetTickCount(null);
+                if (tickLastRestartCameraForRotation != 0
+                        && tickNow - tickLastRestartCameraForRotation < ROTATION_RESTART_MIN_INTERVAL_MS) {
+                    Log.e("atdx", "onConfigurationChanged: rotate restart throttled("
+                            + (tickNow - tickLastRestartCameraForRotation) + "ms), skip");
+                    return;
+                }
+                tickLastRestartCameraForRotation = tickNow;
+                //
                 Object  hWnd  = hTalk;
                 int  iWndType  =  CONST_qyWndContentType_talker;
                 //

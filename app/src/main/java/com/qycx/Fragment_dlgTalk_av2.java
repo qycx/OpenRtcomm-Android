@@ -288,6 +288,10 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
     private ImageView ivVoiceVideoSwitcher;
 
     camera_RenderThread mCameraRenderThread;
+    //  2026/09/14: 旋转重启相机的最小间隔——连点旋转时不要排出多次 pause/resume
+    //  （每次都关相机再开，撞在一起就是 CAMERA_IN_USE）。
+    static final long ROTATION_RESTART_MIN_INTERVAL_MS = 1500;
+    long m_tick_lastRotationCameraRestart = 0;
     //
     public int mSensorOrientation;
     public NetConnectStatus mNetStatus;
@@ -1259,10 +1263,23 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         if (m_var.av.taskInfo.bTaskExists) bFront = !m_var.av.taskInfo.bUse_backCamera;
         pCapBmp.m_bFront = bFront;
 
+        //  2026/09/14: 建新线程前先把旧线程收干净。旧实现直接给 mCameraRenderThread
+        //  赋值覆盖，一旦上一次没走 exitVideoCapDev（失败路径/时序错位），旧线程就
+        //  带着"还开着的 CameraDevice"永久留在后台——之后每次 openCamera 都拿到
+        //  CAMERA_IN_USE，表现就是"点几次旋转后摄像头再也打不开"。
+        if (fg.mCameraRenderThread != null) {
+            Log.e("atdx", "initVideoCapDev: previous render thread still alive, exit it first");
+            exitVideoCapDev(hWnd, iWndContentType);
+        }
+
         fg.mCameraRenderThread = new camera_RenderThread(fg.mMainHandler, m_var.m_share_eglContext, pCapBmp.iIndex_sharedObj, bFront, surfaceOrientation);
         fg.mCameraRenderThread.start();
         //
         if (0 != fg.mCameraRenderThread.waitUntilReady()) {
+            //  2026/09/14: 相机没就绪（超时/线程已结束）——把刚建的线程收掉再返回，
+            //  不能把它连同摄像头一起丢在这儿（旧逻辑直接 return，线程+相机全泄漏）。
+            Log.e("atdx", "initVideoCapDev: camera not ready, shutdown the new render thread");
+            stopCameraRenderThread(fg);
             return iErr;
         }
         //
@@ -1291,6 +1308,8 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         }
         if (st == null) {
             Log.d("initVideoCapDev failed, me_st is null (waited 3s)");
+            //  2026/09/14: 同样先收线程，别把相机丢在后台。
+            stopCameraRenderThread(fg);
             return iErr;
         }
 
@@ -1331,6 +1350,41 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         return iErr;
     }
 
+    /**
+     * 2026/09/14: 停掉并等待相机渲染线程退出，然后置空引用。
+     * <p>
+     * 与 exitVideoCapDev 的区别：不释放 talkDraw 的 me_st（那是"整条通话链路退出"才做的事）。
+     * 用在"换新线程前先收旧的"和"新线程没起来时的收尾"两处，避免旧线程带着
+     * 还开着的 CameraDevice 留在后台 → 之后 openCamera 一直 CAMERA_IN_USE。
+     * <p>
+     * join 带超时：相机线程若卡在关相机路径上，也不能把调用方（主线程）拖死。
+     */
+    private static void stopCameraRenderThread(Fragment_dlgTalk_av2 fg) {
+        if (fg == null || fg.mCameraRenderThread == null) {
+            return;
+        }
+        camera_RenderThread.camera_RenderHandler rh = fg.mCameraRenderThread.getHandler();
+        if (rh != null) {
+            rh.sendShutdown();
+        } else {
+            Log.e("atdx", "stopCameraRenderThread: handler is null, camera thread may not be ready");
+        }
+
+        long deadline = myGetTickCount(null) + 4000;
+        while (fg.mCameraRenderThread.isAlive() && myGetTickCount(null) < deadline) {
+            try {
+                fg.mCameraRenderThread.join(200);
+            } catch (Exception e) {
+                e.printStackTrace();
+                break;
+            }
+        }
+        if (fg.mCameraRenderThread.isAlive()) {
+            Log.e("atdx", "stopCameraRenderThread: camera thread still alive after 4s, give up join");
+        }
+        fg.mCameraRenderThread = null;
+    }
+
     public static int exitVideoCapDev(Object hWnd, int iWndContentType) {
         int iErr = -1;
 
@@ -1366,28 +1420,26 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         }
 
         if (fg.mCameraRenderThread != null) {
-            camera_RenderThread.camera_RenderHandler rh = fg.mCameraRenderThread.getHandler();
-            if (rh != null) {
-                rh.sendShutdown();
-            }
-            try {
-                fg.mCameraRenderThread.join();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            fg.mCameraRenderThread = null;
-
-            //
-            //  2026/09/13 fix: 相机线程已完全退出，这里才是释放 me_st 的唯一安全位置。
-            //  此前 talkDraw.exit() 在渲染重启时提前 release，相机线程撞上已销毁的
-            //  mutex 导致 SIGABRT。me_texId 不在此处 glDeleteTextures（当前线程无对应
-            //  EGL 上下文），GL 纹理名随旧上下文销毁自然回收，下次通话 init() 重新生成。
-            if (talkDraw.CTalkDraw.me_st != null) {
-                talkDraw.CTalkDraw.me_st.release();
-                talkDraw.CTalkDraw.me_st = null;
-            }
-            talkDraw.CTalkDraw.me_texId = 0;
+            //  2026/09/14: 停线程的逻辑抽成 stopCameraRenderThread（带就绪/超时保护），
+            //  initVideoCapDev 的失败路径也复用它——保证任何路径下都不会把
+            //  "还开着摄像头的渲染线程"丢在后台。
+            stopCameraRenderThread(fg);
         }
+
+        //
+        //  2026/09/14 fix（"旋转几次后本地视频消失"的真正根因）:
+        //  这里曾于 09/13 在相机线程退出后 release me_st 并清 me_texId。但
+        //  exitVideoCapDev 不只被"整条通话退出"调用——旋转时的
+        //  onConfigurationChanged → pauseTaskAv 走的也是它。而 me_st 的唯一重建点是
+        //  talkDraw.init()（GL 渲染环境创建时），本 Activity/宿主声明了
+        //  configChanges="orientation|screenSize"，旋转不重建 Activity/GLSurfaceView，
+        //  init() 不会再执行 → me_st 永远为 null → initVideoCapDev 轮询 3s 后失败 →
+        //  主动 closeCamera → 本地视频窗口空白。
+        //  实测日志（2026-09-14 14:29）：
+        //    pauseTaskAv → shutdown/closeCamera → openCamera 成功 →
+        //    initVideoCapDev failed, me_st is null (waited 3s) → closeCamera
+        //  正确做法：me_st/me_texId 的生命周期与 GL 渲染环境绑定（init 创建、
+        //  doClean 释放），而不是与相机线程绑定。这里只停线程，不再释放。
 
 
         iErr = 0;
@@ -2169,6 +2221,18 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         if (v == null || v.av == null || !v.av.taskInfo.bTaskExists) {
             return;
         }
+        //  2026/09/14: 连点旋转会排出多次 pause/resume（MainActivity 侧是 320ms 延迟
+        //  再调过来，而一次"关相机+重开"本身要几百 ms 到几秒），叠在一起就等于
+        //  "上一台相机还没被 camera 服务放开就又去 open" → CAMERA_IN_USE。
+        //  这里做最小间隔节流，密集连点只保留最后一次。
+        long now = myGetTickCount(null);
+        if (m_tick_lastRotationCameraRestart != 0
+                && now - m_tick_lastRotationCameraRestart < ROTATION_RESTART_MIN_INTERVAL_MS) {
+            Log.e("atdx", "restartLocalCameraForHostRotation: throttled("
+                    + (now - m_tick_lastRotationCameraRestart) + "ms), skip");
+            return;
+        }
+        m_tick_lastRotationCameraRestart = now;
         pauseTaskAv(this, CONST_fgType_talk_av2, false, "map host rotation settled");
         resumeTaskAv(this, CONST_fgType_talk_av2, "map host rotation settled");
         doChkTalkDraw(v);
@@ -4400,6 +4464,21 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
             }
             mRenderer = null;// (dlgTalk_av_Renderer)h;
         }
+
+        //
+        //  2026/09/14: me_st/me_texId 的真正释放点。放在这里的原因：
+        //  (1) 渲染器已完全退出（GL 渲染环境随之销毁），相机线程也早已由
+        //      exitTaskAv/exitVideoCapDev 停掉，此时 release 不会撞上还在使用
+        //      me_st 的相机线程（09/13 那次 SIGABRT 的成因）；
+        //  (2) doClean 只在整条通话界面退出（onDestroyView）时调用，旋转的
+        //      pause/resume 不会走到这里——me_st 得以跨旋转复用，这正是修复
+        //      "旋转后 initVideoCapDev 因 me_st 为 null 而失败"的关键。
+        //  详见 exitVideoCapDev 里的说明。
+        if (talkDraw.CTalkDraw.me_st != null) {
+            talkDraw.CTalkDraw.me_st.release();
+            talkDraw.CTalkDraw.me_st = null;
+        }
+        talkDraw.CTalkDraw.me_texId = 0;
         return 0;
     }
 
