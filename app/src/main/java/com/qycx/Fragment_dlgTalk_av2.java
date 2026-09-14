@@ -434,6 +434,7 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
         //
         //Log.d("anc","fg_av2:timer called "  +  mLoopCtrl);
+        //showInfo_open.qyFuncs.showInfo_open(0,0,"anc","fg_av2:timer called "  +  mLoopCtrl);
 
         //
         int nInterval = 3;
@@ -481,9 +482,12 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         // GridView gridView = m_gv_confMemList; // 不再依赖 GridView 的可视范围
 
         ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
-        // ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo(); // 如果需要 logging 可以留着
+        ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo(); // 如果需要 logging 可以留着
 
-        Log.d("anc", "confMem_startToRefresh: Start to retrieve all members status (" + m_confMems.size() + ")");
+        //
+        if  (  pProcInfo.cfg.debugStatusInfo.bDbgDetail_refreshRecentFriends) {
+            showInfo_open.qyFuncs.showInfo_open(0, 0, "anc", "confMem_startToRefresh: Start to retrieve all members status (" + m_confMems.size() + ")");
+        }
 
         // 2. 初始化请求包
         qnmCommProc_mis.REFRESH_RECENTFRIENDS_REQ rrr = new qnmCommProc_mis.REFRESH_RECENTFRIENDS_REQ();
@@ -553,7 +557,9 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         qmCommFunc_mis.MIS_CNT pMisCnt=pProcInfo.pMisCnt;
 
         //
-        Log.d("anc","confMem_refreshState called");
+        if  (  pProcInfo.cfg.debugStatusInfo.bDbgDetail_refreshRecentFriends) {
+            showInfo_open.qyFuncs.showInfo_open(0, 0, "anc", "confMem_startToRefreshRecentFriends called");
+        }
 
         //
         do {
@@ -4065,6 +4071,31 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         up_way_status();
 
     }
+
+    //
+    public int fg_OnQyComm(qnmCommProc_mis.MIS_MSGU pMsgU)
+    {
+        if  (  pMsgU==null)  return  -1;
+
+        if (  pMsgU instanceof qnmCommProc_mis.MIS_MSG_INPUT) {
+            qnmCommProc_mis.MIS_MSG_INPUT pMsgInput  =(qnmCommProc_mis.MIS_MSG_INPUT)pMsgU;
+
+            qnmCommProc_mis.IM_CONTENTU pContent = pMsgInput.data.buf;
+            ;
+
+            switch (pContent.uiType) {
+                case CONST_imCommType_refreshRecentFriendsResp:
+                    procRefreshRecentFriendsResp((qnmCommProc_mis.REFRESH_RECENTFRIENDS_RESP) pContent);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        //
+        return  0;
+    }
+
 
     //
     public int procRefreshRecentFriendsResp(qnmCommProc_mis.REFRESH_RECENTFRIENDS_RESP resp)

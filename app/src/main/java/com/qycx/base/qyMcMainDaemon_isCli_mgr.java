@@ -451,16 +451,24 @@ public class qyMcMainDaemon_isCli_mgr {
                             return iErr;
                         }
                         break;
-                    case  CONST_imCommType_refreshRecentFriendsResp:
+                    case  CONST_imCommType_refreshRecentFriendsResp: {
                         //
-                        if  (  !isRcOk(  pMsgInput.usCode  )  )  return  iErr;
+                        if (!isRcOk(pMsgInput.usCode)) return iErr;
                         //
-                        if  (  0!=qPostMsg(  pMsgInput,  pQyMc.gui.processQ)) {
+                        qnmCommProc_mis.REFRESH_RECENTFRIENDS_RESP resp = (qnmCommProc_mis.REFRESH_RECENTFRIENDS_RESP ) pMsgInput.data.buf;
+
+                        //
+                        if (pProcInfo.cfg.debugStatusInfo.bDbgDetail_refreshRecentFriends) {
+                            showInfo_open.qyFuncs.showInfo_open(0, 0, "input_mgr_resp", "get recentFriendsResp. " + resp.usCnt);
+                        }
+
+                        //
+                        if (0 != qPostMsg(pMsgInput, pQyMc.gui.processQ)) {
                             return iErr;
                         }
                         //
                         guiShare.GuiShare.pf_PostMessage.call(pQyMc.gui.hMainWnd, CONST_qyWm_postComm, CONST_qyWmParam_msgArrive, 0);
-
+                    }
                     break;
 
                     //

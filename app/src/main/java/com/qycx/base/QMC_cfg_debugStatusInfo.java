@@ -132,6 +132,10 @@ public class QMC_cfg_debugStatusInfo {                                          
     public boolean bDbgDetail_v_r;
 
     //
+    public boolean bDbgDetail_refreshRecentFriends;
+
+
+    //
     public boolean bDbgDetail_keepAlive;
 
     //

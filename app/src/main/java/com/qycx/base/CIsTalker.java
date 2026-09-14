@@ -1,6 +1,7 @@
 package com.qycx.base;
 
 import static com.qycx.base.avCallProc.talk_doAvCall;
+import static com.qycx.base.dlgTalkProc.qyFuncs_Droid.dlgTalk_OnQyComm;
 import static com.qycx.base.dlgTalkProc.qyFuncs_Droid.isTalkerShadowMgr;
 import static com.qycx.base.dlgTalkProc.qyFuncs_Droid.tmpHandler_showMsg_input;
 import static com.qycx.base.dlgTalkProc.qyFuncs_Droid.tmpHandler_showMsg_talk;
@@ -555,6 +556,12 @@ public class CIsTalker {
 
                     }
                     break;
+                    case  imCommType_defs.Consts.CONST_imCommType_refreshRecentFriendsResp:  {
+                        //
+                          this.talker_OnQyComm(m_var,0,pMsg);
+
+                          }
+                          break;
                     default:
                         break;
                 }
@@ -745,6 +752,35 @@ public class CIsTalker {
         return 0;
     }
 
+    //
+    public int talker_OnQyComm(dlgTalkProc.DLG_TALK_var m_var, Object p1, qnmCommProc_mis.MIS_MSGU pMsgU) {
+
+        CIsTalker talker = this;
+
+        int i;
+        for  (  i =  0;  i  <  talker.mems.length;i++)  {
+            qmCommFunc_mis.IsTalkUsage mem = talker.mems[i];
+            if  (  mem==null)continue;
+            if  (  mem.obj_usr==null) continue;;
+            if  ( mem.obj_usr instanceof  Activity_dlgTalk)  {
+                Activity_dlgTalk hTalk = (Activity_dlgTalk) mem.obj_usr;
+                //tmpHandler_showMsg_input(hTalk,m_var,p1,pMsgParam);
+                //hTalk.gui_procMsg()
+                dlgTalk_OnQyComm(hTalk,0,pMsgU);
+            }
+            if  (  mem.obj_usr instanceof MainActivity) {
+                int  ii  =  0;
+                MainActivity mainWnd = (MainActivity) mem.obj_usr;
+                if  (  mainWnd.m_floatingView_fg!=null)  {
+                    if  (  mainWnd.m_floatingView_fg instanceof Fragment_dlgTalk_av2) {
+                        Fragment_dlgTalk_av2 fg_av2 = (Fragment_dlgTalk_av2)mainWnd.m_floatingView_fg;
+                        fg_av2.fg_OnQyComm(pMsgU);
+                    }
+                }
+            }
+        }
+        return 0;
+    }
 
 
 

@@ -216,6 +216,12 @@ public class ctxQmc_gui {
                 pBase.cfg.debugStatusInfo.bDbgDetail_v_r=true;
                 Log.d("at","test: bDbgDetail_v_r set to true");
 
+                //
+                if  (  true  )  {
+                    pBase.cfg.debugStatusInfo.bDbgDetail_refreshRecentFriends=true;
+                    Log.d("at","test: bDbgDetail_refreshRecentFriends set to true");
+                }
+
             }
 
             //

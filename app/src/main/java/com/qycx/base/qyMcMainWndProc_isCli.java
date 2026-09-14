@@ -439,9 +439,16 @@ public class qyMcMainWndProc_isCli {
                                         idInfo_peer.ui64Id = pProcInfo.m_peerId_toShowConfMem;
                                         if (idInfo_peer.ui64Id == 0) break;
                                         //
+                                        CIsTalker talker = findIsTalker(pMisCnt,idInfo_peer.ui64Id);
+                                        if  (  talker==null)  break;
+                                        talker.gui_procMsg(input);
+                                        //
+                                        /*
                                         hWnd = guiShare.GuiShare.pf_findTalker.call(pQyMc, pMisCnt, idInfo_peer);
                                         if (hWnd == null) break;
                                         dlgTalk_OnQyComm(hWnd, wParam, input);
+
+                                         */
 
                                     }
                                     //

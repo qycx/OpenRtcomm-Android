@@ -392,7 +392,7 @@ public class ctxQyMc {
 
                 //
                 pQyMc.statusServInitVal  =  "192.168.1.15";
-               // pQyMc.statusServInitVal  =  "192.168.1.108";
+               //pQyMc.statusServInitVal  =  "192.168.100.139";
 
 
                 //
@@ -418,8 +418,10 @@ public class ctxQyMc {
             int i;
             int dwThreadDaemonId;                     //ÓÃÓÚºóÌ¨Ë¢ÐÂ£¬ÔÝ²»Ê¹ÓÃ
 
+            //
             qnmCommProc.qyFuncs.getQyEnv(null, pQM.env);
 
+            //
             do {
                 //
                 //TCHAR* pCmdLine; pCmdLine = GetCommandLine();
