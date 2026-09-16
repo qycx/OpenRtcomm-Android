@@ -645,7 +645,7 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
             }
 
             //
-            qmcTaskInfo.QMC_TASK_INFO pTaskInfo = qmcTaskInfo.qyFuncs.getQmcTaskInfoByIndex(null, pProcInfo, m_var.m_talkAvVar.m_index_taskInfo1, "");
+            qmcTaskInfo.QMC_TASK_INFO pTaskInfo = qmcTas/kInfo.qyFuncs.getQmcTaskInfoByIndex(null, pProcInfo, m_var.m_talkAvVar.m_index_taskInfo1, "");
             if (pTaskInfo == null) {
                 m_nLostVideo  ++  ;
             }
@@ -660,16 +660,6 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
                 }
                 qnmCommProc_mis.MIS_MSG_TASK pMsgTask1=(qnmCommProc_mis.MIS_MSG_TASK) pMsg1;
 
-                //
-                long tNow;
-                tNow = mytime();
-
-                //
-                int  iDiffInS  =  (int)(tNow - pMsgTask1.tTime_alive);
-                if  (  Math.abs(iDiffInS )  < 5  )  {
-                    m_nLostVideo=0;
-                    break;
-                }
 
 
 
@@ -700,6 +690,18 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
                     }
                 }
+
+                //
+                long tNow;
+                tNow = mytime();
+
+                //
+                int  iDiffInS  =  (int)(tNow - pMsgTask1.tTime_alive);
+                if  (  Math.abs(iDiffInS )  < 5  )  {
+                    m_nLostVideo=0;
+                    break;
+                }
+
                 //
                 if (Math.abs(iElapseInMs_a) > 3000  &&  Math.abs(iElapseInMs_v)>3000)
                 {
