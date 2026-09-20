@@ -119,8 +119,107 @@ public class atFuncs {
         return 0;
     }
 
+
+
     //////////////////////////////////////////////////////////////////////
 
+    public static int sendToRefreshRecentFriends_new(qnmCommProc_mis.REFRESH_RECENTFRIENDS_REQ rrr, String hint) {
+        //
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
+        qmCommFunc_mis.MIS_CNT pMisCnt = pProcInfo.pMisCnt;
+
+        //
+        Log.d("anc", "sendToRefreshRecentFriends called " + hint);
+
+        //
+        do {
+
+            //
+
+
+
+            //
+            int len = 10;
+            //len  =  offsetof(  REFRESH_RECENTFRIENDS_REQ,  mems  )  +  req.usCnt  *  sizeof(  req.mems[0]  );
+
+            //
+            int uiMisMsgType = CONST_misMsgType_req;
+            byte ucFlg = 0;
+            short usCode = CONST_qyCmd_refreshRecentFriendsReq;
+
+
+            //MACRO_prepareForTran();
+            long tStartTime;
+            int uiTranNo;
+            short usSeqNo = 0;
+            int dataLen = len;
+            //
+            tStartTime = tmpFunc.qyFuncs.mytime();
+            uiTranNo = qy_getuiNextTranNo.qyFuncs.getuiNextTranNo.call();
+
+
+            //
+            qnmCommProc_mis.MIS_MSG_REQ req = new qnmCommProc_mis.MIS_MSG_REQ();
+            //req.buffer = ByteBuffer.allocate(bufSize_transferVideoData);
+            req.buffer = ByteBuffer.allocate(cntof_imHtmlContent_wBuf);
+            req.uiType = uiMisMsgType;
+            req.ucFlg = ucFlg;
+            req.usCode = usCode;
+            req.tStartTime = tStartTime;
+            req.uiTranNo = uiTranNo;
+            req.usSeqNo = usSeqNo;
+            //req.lenInBytes = dataLen;
+            req.data = rrr;
+
+            {
+                //qnmCommProc_mis.REFRESH_RECENTFRIENDS_REQ rrr  =  (qnmCommProc_mis.REFRESH_RECENTFRIENDS_REQ) data;
+                req.buffer.putInt(rrr.uiType);
+                byte ucReqType = 0;
+                req.buffer.put(ucReqType);
+                req.buffer.putLong(rrr.tLastRefreshedTime_misServ);
+                req.buffer.putShort(rrr.usCnt);
+                //
+                int i;
+                for (i = 0; i < rrr.usCnt; i++) {
+                    req.buffer.putLong(rrr.mems[i].ui64Id);
+                    req.buffer.putLong(rrr.mems[i].tLastRefreshedTime_misServ);
+                }
+                //
+            }
+            //
+            req.lenInBytes = req.buffer.position();
+
+
+            //
+            qmCommFunc_mis.MIS_CHANNEL pChannel = getChannelByType(pMisCnt, 0);
+            postMsg2OutputQ_mc(pMisCnt, req, 10, pChannel);
+
+            //
+            pProcInfo.m_lastTickCnt_sendToRefreshRecentFriends = myGetTickCount(null);
+
+            //
+        } while (false);
+
+        //
+        return 0;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /////////////////////////////////////////////////////
 
     // 从 assets 目录复制文件到指定目录
     // atFuncs.java

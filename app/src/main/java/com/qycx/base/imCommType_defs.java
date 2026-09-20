@@ -4,10 +4,10 @@
 package com.qycx.base;
 
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCommType_base;
-import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCommType_mem;
-import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCommType_msgRoute;
-import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCommType_transferAudioData;
-import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCommType_transferVideoData;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_mem;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_msgRoute;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_transferAudioData;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_transferVideoData;
 
 public class imCommType_defs
 {
@@ -34,18 +34,20 @@ public static class Consts
                                                                                     //  public final static int 		CONST_imCommType_streamContent						=(  CONST_imCommType_base  +  3  );		//  2007/08/01	//  2011/01/29
 
     //
-    public final static int CONST_imCommType_msgRoute = CONST_ancCommType_msgRoute;//(CONST_imCommType_base + 4);       //  2007/11/29
+    public final static int CONST_imCommType_msgRoute = CONST_anCommType_msgRoute;//(CONST_imCommType_base + 4);       //  2007/11/29
 
     //
     public final static int CONST_imCommType_dataContent = (CONST_imCommType_base + 5);        //  2008/01/26, 
     public final static int CONST_imCommType_lStream = (CONST_imCommType_base + 6);        //  2008/04/01, 
+
+    //
 
 
 
     //  
     public final static int CONST_imCommType_auth = (CONST_imCommType_base + 100);     //  2007/08/01
     public final static int CONST_imCommType_authResp = (CONST_imCommType_base + 101);     //  
-    public final static int CONST_imCommType_mem = CONST_ancCommType_mem;//(CONST_imCommType_base + 102);      //
+    public final static int CONST_imCommType_mem = CONST_anCommType_mem;//(CONST_imCommType_base + 102);      //
     public final static int CONST_imCommType_struct = (CONST_imCommType_base + 103);       //  2014/11/09
                                                                                     //
     public final static int CONST_imCommType_getCfgsReq = (CONST_imCommType_base + 110);       //  2011/01/30
@@ -95,10 +97,10 @@ public static class Consts
     //
     public final static int CONST_imCommType_transferAvInfo = (CONST_imCommType_base + 405);            //  2008/03/15, task通道？收到来电，发起呼叫
     public final static int CONST_imCommType_transferAvReplyInfo = (CONST_imCommType_base + 406);       //  2008/03/16, task通道? 点击接受或者回应的信令
-    public final static int CONST_imCommType_transferVideoData = CONST_ancCommType_transferVideoData;   //  (CONST_imCommType_base + 407);        //  2008/03/15, 视频通道,  视频数据
+    public final static int CONST_imCommType_transferVideoData = CONST_anCommType_transferVideoData;   //  (CONST_imCommType_base + 407);        //  2008/03/15, 视频通道,  视频数据
     public final static int CONST_imCommType_transferVideoDataResp = (CONST_imCommType_base + 408);     //  2008/03/15, 实际上没用上？
                                                                                                         //
-    public final static int CONST_imCommType_transferAudioData = CONST_ancCommType_transferAudioData;   // (CONST_imCommType_base + 411);        //  2008/04/16, 音频通道，音频数据包
+    public final static int CONST_imCommType_transferAudioData = CONST_anCommType_transferAudioData;   // (CONST_imCommType_base + 411);        //  2008/04/16, 音频通道，音频数据包
     public final static int CONST_imCommType_transferAudioDataResp = (CONST_imCommType_base + 412);     //  2008/04/21,  实际上没用上？
 
     public final static int CONST_imCommType_remoteAssistReq = (CONST_imCommType_base + 420);           //  2008/11/15,

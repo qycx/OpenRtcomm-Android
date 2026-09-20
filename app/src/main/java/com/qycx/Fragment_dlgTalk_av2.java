@@ -645,7 +645,7 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
             }
 
             //
-            qmcTaskInfo.QMC_TASK_INFO pTaskInfo = qmcTas/kInfo.qyFuncs.getQmcTaskInfoByIndex(null, pProcInfo, m_var.m_talkAvVar.m_index_taskInfo1, "");
+            qmcTaskInfo.QMC_TASK_INFO pTaskInfo = qmcTaskInfo.qyFuncs.getQmcTaskInfoByIndex(null, pProcInfo, m_var.m_talkAvVar.m_index_taskInfo1, "");
             if (pTaskInfo == null) {
                 m_nLostVideo  ++  ;
             }

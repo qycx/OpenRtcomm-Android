@@ -1,6 +1,6 @@
 package com.qycx.base;
 
-import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCommType_transferAudioData;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_transferAudioData;
 import static com.qycx.anc.ancKeepalive.sendKeepaliveReq;
 import static com.qycx.base.Consts.*;
 import static com.qycx.base.QYThreadCtx.getCtxThreadTmpVar;

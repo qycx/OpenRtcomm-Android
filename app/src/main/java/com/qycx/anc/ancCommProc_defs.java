@@ -27,6 +27,8 @@ public class ancCommProc_defs {
         public final static short CONST_ancCfgId_messengerId = 6;      //(CONST_qnmCfgId_base_common + 2650);             //  2008/05/27
 
         //
+
+        //
         public final static short CONST_ancCfgId_uiTranNo_openAvDev  =  20;
         public final static short CONST_ancCfgId_usCnt              =  21;
 
@@ -54,11 +56,13 @@ public class ancCommProc_defs {
         //  这里定义普通的cfgId CONST_qncCfgId_base_common  +  n
 
         //  这里定义最重要的ancCommType < 256
-        public final static int CONST_ancCommType_msgRoute = 1;//(CONST_imCommType_base + 4);       //  2007/11/29
-        public final static int CONST_ancCommType_mem = 2;
+        public final static int CONST_anCommType_msgRoute = 1;//(CONST_imCommType_base + 4);       //  2007/11/29
+        public final static int CONST_anCommType_mem = 2;
         //
-        public final static int CONST_ancCommType_transferAudioData  =  4;  //
-        public final static int CONST_ancCommType_transferVideoData  =  5;  //
+        public final static int CONST_anCommType_transferAudioData  =  4;  //
+        public final static int CONST_anCommType_transferVideoData  =  5;  //
+
+        public final static int CONST_anCommType_refreshRecentFriendsReq1  =  8;   //
 
 
 

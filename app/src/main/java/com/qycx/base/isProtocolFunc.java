@@ -2,9 +2,9 @@
 package com.qycx.base;
 
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCfgId_conf_ui64Id;
-import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCommType_mem;
-import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCommType_transferAudioData;
-import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCommType_transferVideoData;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_mem;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_transferAudioData;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_transferVideoData;
 import static com.qycx.anc.anProtocol.atData2Stream;
 import static com.qycx.anc.anProtocol.atStream2Data;
 import static com.qycx.anc.anProtocol.atntohCfgItem;
@@ -1850,7 +1850,7 @@ public class isProtocolFunc {
                         break;
                     }
                     break;
-                case  CONST_ancCommType_mem:
+                case  CONST_anCommType_mem:
 
                     if (tmp_cfgId == CONST_qnmCfgId_start) {
                         pObj.tmp_usCnt_mems++;
@@ -2571,7 +2571,7 @@ public class isProtocolFunc {
             //
             if  (  true )  {
                 switch  (  pContent.uiType)  {
-                    case  CONST_ancCommType_transferAudioData:
+                    case  CONST_anCommType_transferAudioData:
 
                         //
                     {
@@ -3822,13 +3822,13 @@ public class isProtocolFunc {
 
                 //
                 switch (uiContentType) {
-                    case CONST_ancCommType_transferAudioData:
+                    case CONST_anCommType_transferAudioData:
                         if  (  true  ) {
                             //Log.d("anc", "ntoh: tad");
                         }
                         break;
                         //
-                    case  CONST_ancCommType_transferVideoData:
+                    case  CONST_anCommType_transferVideoData:
                           break;
                           //
                     default:
