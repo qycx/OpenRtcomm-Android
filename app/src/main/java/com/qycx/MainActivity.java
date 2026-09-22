@@ -2,9 +2,12 @@ package com.qycx;
 
 import com.south.map.ui.Fragment_map;
 
+import static com.qycx.Fragment_dlgTalk_av2.g_bUse_anRefreshRecentFriends_new;
 import static com.qycx.anc.Consts.Str_use100k_bDj;
 import static com.qycx.anc.Consts.Str_use100k_ifP2p;
-import static com.qycx.anc.atFuncs.sendToRefreshRecentFriends;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_refreshRecentFriendsReq1;
+import static com.qycx.anc.atFuncs.sendToRefreshRecentFriends_new;
+import static com.qycx.anc.atFuncs.sendToRefreshRecentFriends_old;
 import static com.qycx.base.avCallProc.act_toAvCall;
 import static com.qycx.base.avCallProc.addTo_tmpTools;
 import static com.qycx.base.avCallProc.doTask_av_accept;
@@ -1200,11 +1203,19 @@ public class MainActivity extends qmcBaseActivity implements View.OnClickListene
         if  (  pProcInfo.av.talk.bChannelReady)  {
             long iDiffInMs = tickCnt - pProcInfo.m_lastTickCnt_sendToRefreshRecentFriends;
             if  (  Math.abs(iDiffInMs)  >  10000)  {
-                qnmCommProc_mis.REFRESH_RECENTFRIENDS_REQ rrr = new qnmCommProc_mis.REFRESH_RECENTFRIENDS_REQ();
-                rrr.uiType = CONST_imCommType_refreshRecentFriendsReq;
                 //
-                sendToRefreshRecentFriends(rrr,"mainWnd.send to refresh online state");
-
+                if  (  g_bUse_anRefreshRecentFriends_new)  {
+                    qnmCommProc_mis.AnRefreshRecentFriendsReq1_h rrr = new qnmCommProc_mis.AnRefreshRecentFriendsReq1_h();
+                    rrr.uiType=CONST_anCommType_refreshRecentFriendsReq1;
+                    //
+                    sendToRefreshRecentFriends_new(rrr,"mainWnd.send to refresh online state");
+                }
+                else {
+                    qnmCommProc_mis.REFRESH_RECENTFRIENDS_REQ rrr = new qnmCommProc_mis.REFRESH_RECENTFRIENDS_REQ();
+                    rrr.uiType = CONST_imCommType_refreshRecentFriendsReq;
+                    //
+                    sendToRefreshRecentFriends_old(rrr, "mainWnd.send to refresh online state");
+                }
             }
 
 

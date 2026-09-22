@@ -3,7 +3,9 @@ package com.qycx;
 import static com.qycx.anc.Consts.CONST_confMemType_grpMem;
 import static com.qycx.anc.Consts.CONST_confMemType_speaker;
 import static com.qycx.anc.Consts.CONST_usConfType_emergencyCommand;
-import static com.qycx.anc.atFuncs.sendToRefreshRecentFriends;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_refreshRecentFriendsReq1;
+import static com.qycx.anc.atFuncs.sendToRefreshRecentFriends_new;
+import static com.qycx.anc.atFuncs.sendToRefreshRecentFriends_old;
 import static com.qycx.base.Consts.CONST_channelType_media;
 import static com.qycx.base.Consts.IO_TAG;
 import static com.qycx.base.avCallProc.doTask_av_accept;
@@ -474,6 +476,7 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
 
     //////////////////////
+    public static boolean g_bUse_anRefreshRecentFriends_new  =  false;  //true;
 
     //
     int confMem_startToRefreshRecentFriends_all() {
@@ -481,6 +484,12 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         if (m_confMems == null || m_confMems.isEmpty()) return -1;
         // GridView gridView = m_gv_confMemList; // 不再依赖 GridView 的可视范围
 
+        //
+        if (  g_bUse_anRefreshRecentFriends_new) {
+            return confMem_startToRefreshRecentFriends_all_new();
+        }
+
+        //
         ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo(); // 如果需要 logging 可以留着
 
@@ -522,7 +531,7 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
             // 如果当前包已满，立即发送
             if (rrr.usCnt >= maxPerBatch) {
                 // 调用 atFuncs 发送
-                atFuncs.sendToRefreshRecentFriends(rrr, "Batch_" + batchIndex);
+                atFuncs.sendToRefreshRecentFriends_old(rrr, "Batch_" + batchIndex);
                 batchIndex++;
 
                 // 重置请求包，准备下一批
@@ -535,7 +544,7 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         // 6. 发送剩余的数据 (尾包)
         // 循环结束后，如果 rrr 中还有未发送的数据 (cnt > 0)，发送最后一批
         if (rrr.usCnt > 0) {
-            atFuncs.sendToRefreshRecentFriends(rrr, "Batch_Last");
+            atFuncs.sendToRefreshRecentFriends_old(rrr, "Batch_Last");
         }
 
         return 0;
@@ -552,6 +561,12 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         GridView gridView = m_gv_confMemList;
         if  (  gridView==null)  return -1;
 
+        //
+        if  (  g_bUse_anRefreshRecentFriends_new)  {
+            return  confMem_startToRefreshRecentFriends_new();
+        }
+
+        //
         ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
         qmCommFunc_mis.MIS_CNT pMisCnt=pProcInfo.pMisCnt;
@@ -603,7 +618,148 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
 
             //
-            sendToRefreshRecentFriends(rrr,"confMem_startToRefresh.l520");
+            sendToRefreshRecentFriends_old(rrr,"confMem_startToRefresh.l520");
+
+
+
+            //
+        } while (false);
+
+        //
+        return  0;
+    }
+
+    //////////////////////////////////////////////////////////////////
+
+    int confMem_startToRefreshRecentFriends_all_new() {
+        // 1. 基础检查
+        if (m_confMems == null || m_confMems.isEmpty()) return -1;
+        // GridView gridView = m_gv_confMemList; // 不再依赖 GridView 的可视范围
+
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo(); // 如果需要 logging 可以留着
+
+        //
+        if  (  pProcInfo.cfg.debugStatusInfo.bDbgDetail_refreshRecentFriends) {
+            showInfo_open.qyFuncs.showInfo_open(0, 0, "anc", "confMem_startToRefresh: Start to retrieve all members status (" + m_confMems.size() + ")");
+        }
+
+        // 2. 初始化请求包
+        qnmCommProc_mis.AnRefreshRecentFriendsReq1_h rrr = new qnmCommProc_mis.AnRefreshRecentFriendsReq1_h();
+        rrr.uiType = CONST_anCommType_refreshRecentFriendsReq1;
+        rrr.usCnt = 0; // 当前包计数器
+
+        // 获取单个包最大容量 (取决于 mems 数组的长度，通常在结构体定义中固定，例如 20 或 50)
+        int maxPerBatch = rrr.mems.length;
+        int batchIndex = 0; // 用于日志显示的批次号
+
+        // 3. 遍历完整列表
+        for (int i = 0; i < m_confMems.size(); i++) {
+            ConfMember mem = m_confMems.get(i);
+            if (mem == null) continue;
+
+            // 过滤条件：
+            // A. 跳过发言人 (ConfMemType_speaker)，因为发言人状态由 AV 流决定
+            // B. 跳过无效 ID (如 footer "没有更多了")
+            if (mem.iConfMemType == CONST_confMemType_speaker || mem.ui64Id == 0) {
+                continue;
+            }
+
+            // 4. 将成员加入当前包
+            if (rrr.usCnt < maxPerBatch) {
+                rrr.mems[rrr.usCnt].ui64Id = mem.ui64Id;
+                // 如果需要记录上次刷新时间，可以在这里赋值
+                // rrr.mems[rrr.usCnt].tLastRefreshedTime_misServ = mem.tLastRefreshedTickCnt;
+                rrr.usCnt++;
+            }
+
+            // 5. 检查是否满包
+            // 如果当前包已满，立即发送
+            if (rrr.usCnt >= maxPerBatch) {
+                // 调用 atFuncs 发送
+                atFuncs.sendToRefreshRecentFriends_new(rrr, "Batch_" + batchIndex);
+                batchIndex++;
+
+                // 重置请求包，准备下一批
+                rrr = new qnmCommProc_mis.AnRefreshRecentFriendsReq1_h();
+                rrr.uiType = CONST_imCommType_refreshRecentFriendsReq;
+                rrr.usCnt = 0;
+            }
+        }
+
+        // 6. 发送剩余的数据 (尾包)
+        // 循环结束后，如果 rrr 中还有未发送的数据 (cnt > 0)，发送最后一批
+        if (rrr.usCnt > 0) {
+            atFuncs.sendToRefreshRecentFriends_new(rrr, "Batch_Last");
+        }
+
+        return 0;
+    }
+
+
+    int confMem_startToRefreshRecentFriends_new()
+    {
+        //
+        GridView gridView = m_gv_confMemList;
+        if  (  gridView==null)  return -1;
+
+        //
+
+
+
+        //
+        ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
+        qmCommFunc_mis.MIS_CNT pMisCnt=pProcInfo.pMisCnt;
+
+        //
+        if  (  pProcInfo.cfg.debugStatusInfo.bDbgDetail_refreshRecentFriends) {
+            showInfo_open.qyFuncs.showInfo_open(0, 0, "anc", "confMem_startToRefreshRecentFriends called");
+        }
+
+        //
+        do {
+            //
+            qnmCommProc_mis.AnRefreshRecentFriendsReq1_h rrr = new qnmCommProc_mis.AnRefreshRecentFriendsReq1_h();
+            rrr.uiType = CONST_anCommType_refreshRecentFriendsReq1;
+            //req.tLastRefreshedTime_misServ  =  pMisCnt->refreshRecentFriends.tLastRefreshedTime_misServ;
+
+            // 获取第一个和最后一个可见条目的位置
+            int firstVisiblePosition = gridView.getFirstVisiblePosition();
+            int lastVisiblePosition = gridView.getLastVisiblePosition();
+
+            // 遍历所有可见条目
+            for (int i = firstVisiblePosition; i <= lastVisiblePosition; i++) {
+                // 方法1：通过适配器获取数据
+                Object item = gridView.getAdapter().getItem(i);
+                //
+                ConfMember mem = m_confMems.get(i);
+                if (mem == null) break;
+                //
+                Log.d("anc", "可见条目 " + i + ": " + mem.ui64Id + " " + mem.desc);
+
+                //
+                if (mem.iConfMemType == CONST_confMemType_speaker) {  //  发言人肯定在线
+                    continue;
+                }
+
+                //
+                if (rrr.usCnt < rrr.mems.length) {
+                    rrr.mems[rrr.usCnt].ui64Id = mem.ui64Id;
+                    //req.mems[req.usCnt].tLastRefreshedTime_misServ = pQMemObj -> tLastRefreshedTickCnt_misServ;
+                    rrr.usCnt++;
+                }
+
+                //
+                continue;
+            }
+
+            //
+            if (0==rrr.usCnt) break;
+
+
+            //
+            sendToRefreshRecentFriends_new(rrr,"confMem_startToRefresh.l520");
 
 
 
@@ -616,6 +772,8 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
 
 
+
+    /////////////////////////////////////////////////////////////////////
 
     //
     int m_nLostVideo = 0;

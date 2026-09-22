@@ -1,6 +1,7 @@
 
 package com.qycx.base;
 
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_refreshRecentFriendsReq1;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCfgId_conf_ui64Id;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_mem;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_transferAudioData;
@@ -2605,6 +2606,32 @@ public class isProtocolFunc {
                     //
                     //
                     //break;
+                    case  CONST_anCommType_refreshRecentFriendsReq1:
+
+                    {
+                        qnmCommProc_mis.AnRefreshRecentFriendsReq1_h rrr = (qnmCommProc_mis.AnRefreshRecentFriendsReq1_h) pContent;
+
+                        //
+                        if (0 > (lenInBytes =AnRefreshRecentFriendsReq12Stream(pContent.uiType, (qnmCommProc_mis.AnRefreshRecentFriendsReq1_h) pContent, content_buffer))) {
+                            return iErr;
+                        }
+
+                        //
+                        ptr.limit(ptr.capacity());
+                        //
+                        ptr.put(content_buffer.array(), 0, lenInBytes);
+
+                        //
+                        //qyMemoryFunc.qyFuncs.mymemcpy(ptr,  simpleResp);
+                        lenInBytes += lenInBytes_addr;
+                        //iErr = 0;
+                        //return iErr;
+                        return  lenInBytes;
+
+                    }
+
+
+                          //break;
 
 
                     default:
@@ -4089,6 +4116,14 @@ public class isProtocolFunc {
                             return null;
                         }
                         break;
+                        //
+                    case  CONST_anCommType_refreshRecentFriendsReq1:
+                        pContent=new qnmCommProc_mis.AnRefreshRecentFriendsReq1_h();
+                        if  (  0>stream2Data(data,size,filterStream_is,tmpHandler_stream2AnRefreshRecentFriendsReq1,null,pContent)) {
+                            return null;
+                        }
+                        break;
+                        //
                     default: {
                         String str = "qyntohRouteTalkData failed: uiContentType " + uiContentType + " error";
                         Log.w(str);

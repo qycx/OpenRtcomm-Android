@@ -2,6 +2,7 @@
 package com.qycx.base;
 
 import static com.qycx.anc.Consts.__USE_old_msgHead_n__;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_refreshRecentFriendsReq1;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCfgId_usElapseInMs_fromLastPkt;
 import static com.qycx.base.imCommType_defs.Consts.*;
 import static com.qycx.base.isProtocolFunc.qyFuncs.commAuthInfo2Stream_mis;
@@ -13,6 +14,7 @@ import static com.qycx.base.isProtocolFunc.qyFuncs.getFieldData_long;
 import static com.qycx.base.isProtocolFunc.qyFuncs.getFieldData_short;
 import static com.qycx.base.isProtocolFunc.qyFuncs.getFieldData_str;
 import static com.qycx.base.isProtocolFunc.qyFuncs.getFieldData_wStr;
+import static com.qycx.base.isProtocolFunc.qyFuncs.procLocReqU2Stream;
 import static com.qycx.base.isProtocolFunc.qyFuncs.tmp_htonAvStream;
 import static com.qycx.base.isProtocolFunc.qyFuncs.tmp_htonMuxStreamsCfg;
 import static com.qycx.base.isProtocolFunc.qyFuncs.tmp_ntohAvStream;
@@ -95,53 +97,56 @@ public class qnmCommProc_mis {
         public final static int CONST_misMsgType_resp = (CONST_misMsgType_base + 31);  //  iocp·
         public final static int CONST_misMsgType_talk = (CONST_misMsgType_base + 32);  //
         public final static int CONST_misMsgType_task = (CONST_misMsgType_base + 33);  //
+
         //
+        public final static  int CONST_misMsgType_outputReq  =	(  CONST_misMsgType_base  +  150  );
+
         //
-        public final static int CONST_misMsgType_isSendOk = (CONST_misMsgType_base + 50);  //  iocp iocp tranNo. messenger outputQ iocp,tranNo starttime
-        public final static int CONST_misMsgType_sendOk = (CONST_misMsgType_base + 51);    //  MGR tranNo. messenger iocp, tranNoºÍstarttime
+        public final static int CONST_misMsgType_outputTask = (CONST_misMsgType_base + 153);    //  robot
+
+
+        //
+        public final static int CONST_misMsgType_isSendOk = (CONST_misMsgType_base + 250);  //  iocp iocp tranNo. messenger outputQ iocp,tranNo starttime
+        public final static int CONST_misMsgType_sendOk = (CONST_misMsgType_base + 251);    //  MGR tranNo. messenger iocp, tranNoºÍstarttime
         //  mgr·
         //
-        public final static int CONST_misMsgType_sendFinished = (CONST_misMsgType_base + 52);  //  mgr
+        public final static int CONST_misMsgType_sendFinished = (CONST_misMsgType_base + 252);  //  mgr
         //
         //  public final static int		CONST_misMsgType_closeChannel					(  CONST_misMsgType_base  +  53  )	//  2007/12/20, QMemMessenge
-        public final static int CONST_misMsgType_closeChannelByCliIndex = (CONST_misMsgType_base + 53);    //  2007/12/20,
-        public final static int CONST_misMsgType_chkChannelByType_mgr = (CONST_misMsgType_base + 54);  //  2015/08/26,
+        public final static int CONST_misMsgType_closeChannelByCliIndex = (CONST_misMsgType_base + 253);    //  2007/12/20,
+        public final static int CONST_misMsgType_chkChannelByType_mgr = (CONST_misMsgType_base + 254);  //  2015/08/26,
         //
-        public final static int CONST_misMsgType_applyForWork = (CONST_misMsgType_base + 55);  //
+        public final static int CONST_misMsgType_applyForWork = (CONST_misMsgType_base + 255);  //
         //////
-        public final static int CONST_misMsgType_taskStatus = (CONST_misMsgType_base + 60);    //
-        public final static int CONST_misMsgType_imMsgRcd = (CONST_misMsgType_base + 61);  //
-        public final static int CONST_misMsgType_event = (CONST_misMsgType_base + 62); //
+        public final static int CONST_misMsgType_taskStatus = (CONST_misMsgType_base + 360);    //
+        public final static int CONST_misMsgType_imMsgRcd = (CONST_misMsgType_base + 361);  //
+        public final static int CONST_misMsgType_event = (CONST_misMsgType_base + 362); //
+
+        //  2008/05/26
+        public final static int CONST_misMsgType_grp = (CONST_misMsgType_base + 400);  //  ×éºÏ°ü¡£×éºÏ°üÓÐÊ±ºÜ´ó.²»Òª½«MIS_MSGUºÍ×éºÏ°ü»ìÆðÀ´¡£·ñÔò£¬Ó°ÏìÍ¨³£µÄMIS_MSGUµÄÄÚ´æ·ÖÅä¡£
 
         //  ÒÔÉÏÊÇ°üÀàÐÍ
-        public final static int CONST_misMsgType_talkingFriend_qmc = (CONST_misMsgType_base + 70); //	talkingFriendQ
-        public final static int CONST_misMsgType_recentFriend_qmc = (CONST_misMsgType_base + 71);  //	recentFriendQ
-        public final static int CONST_misMsgType_displayedElem_qmc = (CONST_misMsgType_base + 72); //
-        public final static int CONST_misMsgType_refreshContactsStatus_qmc = (CONST_misMsgType_base + 73); //  messenger display
-        public final static int CONST_misMsgType_refreshMeStatus_qmc = (CONST_misMsgType_base + 74);   //  diplay
-        public final static int CONST_misMsgType_applyForPlayer_qmc = (CONST_misMsgType_base + 75);    //
-        public final static int CONST_misMsgType_applyForChkChannels_qmc = (CONST_misMsgType_base + 76);   //
-        public final static int CONST_misMsgType_applyForRemovingInvalidTasks_qmc = (CONST_misMsgType_base + 77);  //  2009/09/10
-        public final static int CONST_misMsgType_applyForTalkerShadow_qmc = (CONST_misMsgType_base + 78);  //  2012/04/23. 由墙发起,请求dlgTalk生成一个影子窗口
+        public final static int CONST_misMsgType_talkingFriend_qmc = (CONST_misMsgType_base + 670); //	talkingFriendQ
+        public final static int CONST_misMsgType_recentFriend_qmc = (CONST_misMsgType_base + 671);  //	recentFriendQ
+        public final static int CONST_misMsgType_displayedElem_qmc = (CONST_misMsgType_base + 672); //
+        public final static int CONST_misMsgType_refreshContactsStatus_qmc = (CONST_misMsgType_base + 673); //  messenger display
+        public final static int CONST_misMsgType_refreshMeStatus_qmc = (CONST_misMsgType_base + 674);   //  diplay
+        public final static int CONST_misMsgType_applyForPlayer_qmc = (CONST_misMsgType_base + 675);    //
+        public final static int CONST_misMsgType_applyForChkChannels_qmc = (CONST_misMsgType_base + 676);   //
+        public final static int CONST_misMsgType_applyForRemovingInvalidTasks_qmc = (CONST_misMsgType_base + 677);  //  2009/09/10
+        public final static int CONST_misMsgType_applyForTalkerShadow_qmc = (CONST_misMsgType_base + 678);  //  2012/04/23. 由墙发起,请求dlgTalk生成一个影子窗口
 
         //
-        public final static int CONST_misMsgType_procVideo_qmc = (CONST_misMsgType_base + 80); //  2009/03/24
-        public final static int CONST_misMsgType_notifyTaskEnd_qmc = (CONST_misMsgType_base + 81); //  2009/04/28
-        public final static int CONST_misMsgType_procGps_qmc = (CONST_misMsgType_base + 82);   //  2012/04/20
+        public final static int CONST_misMsgType_procVideo_qmc = (CONST_misMsgType_base + 680); //  2009/03/24
+        public final static int CONST_misMsgType_notifyTaskEnd_qmc = (CONST_misMsgType_base + 681); //  2009/04/28
+        public final static int CONST_misMsgType_procGps_qmc = (CONST_misMsgType_base + 682);   //  2012/04/20
         //
-        public final static int CONST_misMsgType_getDaemonStatus = (CONST_misMsgType_base + 85);   //  2011/01/12
+
 
 
         /////////////////
-        //
-        public final static int CONST_misMsgType_outputTask = (CONST_misMsgType_base + 690);    //  robot
-
-        //
-        public final static  int CONST_misMsgType_outputReq  =	(  CONST_misMsgType_base  +  691  );
 
 
-        //  2008/05/26
-        public final static int CONST_misMsgType_grp = (CONST_misMsgType_base + 200);  //  ×éºÏ°ü¡£×éºÏ°üÓÐÊ±ºÜ´ó.²»Òª½«MIS_MSGUºÍ×éºÏ°ü»ìÆðÀ´¡£·ñÔò£¬Ó°ÏìÍ¨³£µÄMIS_MSGUµÄÄÚ´æ·ÖÅä¡£
 
         public final static int CONST_maxContactUpdateInfos_grp = 128;                                         //  2014/02/06
         public final static int CONST_maxContactUpdateInfos_grpMem = 2048;                                     //  2014/02/06
@@ -3262,7 +3267,52 @@ public class qnmCommProc_mis {
     };
 
 
+///////////////////////////////////////    //
 
+
+    //
+    public static class AnRefreshRecentFriendsReq1_h_tmpInternal  {
+            public  int  usCnt_mems;
+    };
+
+
+
+
+    //
+    public static class AnRefreshRecentFriendReq1_h						{									//  µ¥¸öÁªÏµÈËµÄË¢ÐÂÇëÇó
+        public long									ui64Id;
+        public long									tLastRefreshedTime_misServ;			//  ±íÃ÷¸ÃÁªÏµÈËÊÇÊ²Ã´Ê±¼ä£¨·þÎñÆ÷Ê±¼ä£©µÄ×´Ì¬
+    };
+
+    //
+
+
+
+    public static class AnRefreshRecentFriendsReq1_h extends IM_CONTENTU  {									//  ×ÜµÄÁªÏµÈËµÄË¢ÐÂÇëÇó
+        //unsigned  int										uiType;
+        public long											tLastRefreshedTime_misServ;			//  ÉÏ´ÎµÄË¢ÐÂ¹¤×÷µÄ·þÎñÆ÷Ê±¼ä¡£
+        public short									usCnt;
+        public AnRefreshRecentFriendReq1_h			[]				mems = new AnRefreshRecentFriendReq1_h[CONST_maxCnt_recentFriends];
+
+        //
+        public AnRefreshRecentFriendsReq1_h_tmpInternal  tmpInternal=new AnRefreshRecentFriendsReq1_h_tmpInternal();
+
+        //
+        public AnRefreshRecentFriendsReq1_h()
+        {
+            int i;
+            for  (  i =  0;  i<mems.length;i++)  {
+                mems[i]=new AnRefreshRecentFriendReq1_h();
+            }
+
+        }
+    };		 ;
+
+
+
+
+
+///////////////////////////////////////////
 
 
     //
@@ -8674,6 +8724,197 @@ public class qnmCommProc_mis {
         };
 
 
+        //
+        //////////////////////////////////////////////
+
+        public static int AnRefreshRecentFriendsReq12Stream(int uiStreamId, AnRefreshRecentFriendsReq1_h pReq, ByteBuffer ptr) {
+            int iErr = -1;
+            int i = 0;
+
+            int len = -1;
+
+            if (null == pReq) return -1;
+            if (null == ptr) return -1;
+            int total_len = 0;
+
+            //
+            if (0 > (len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_start, uiStreamId, 0, ptr)))
+                return iErr;
+            total_len += len;
+
+            //  qyShowInfo1(  CONST_qyShowType_debug,  (  ""  ),  (  ""  ),  0,  (  ""  ),  (  ""  ),  (  "    transferVideoData2stream: uiTranNo_openAvDev %d"  ),  pReq.uiTranNo_openAvDev  );
+
+
+            /*
+            if (0 != pReq.uiTranNo_openAvDev) {
+                if (0 > (len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_uiTranNo_openAudioDev, pReq.uiTranNo_openAvDev, 0, ptr)))
+                    return iErr;
+                total_len += len;
+            }
+
+             */
+
+
+            if (0 != pReq.usCnt) {
+
+                if (pReq.usCnt > pReq.mems.length) return iErr;
+
+                if (0 > (len = data2Stream(CONST_qyDataType_short, CONST_qnmCfgId_usCnt, pReq.usCnt, 0, ptr)))
+                    return iErr;
+                total_len += len;
+                //
+                for (i = 0; i < pReq.usCnt; i++) {
+                    AnRefreshRecentFriendReq1_h pMems[] = pReq.mems;//(TRANSFER_AUDIO_dataMemHead)pReq.buf_TRANSFER_AUDIO_dataMemHead_mems;
+                    AnRefreshRecentFriendReq1_h pMem = pMems[i];
+
+                    if (0 > (len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_start, CONST_imCommType_mem, 0, ptr)))
+                        return iErr;
+                    total_len += len;
+                    //
+
+                    //
+                    if (pMem.ui64Id != 0) {
+                        if (0 > (len = data2Stream(CONST_qyDataType_l64, CONST_qnmCfgId_messengerId, pMem.ui64Id, Long.BYTES, ptr)))
+                            return iErr;
+                        total_len += len;
+                    }
+
+                    /*
+                    //
+                    if (0 != pMem.uiTranNo_openAvDev) {   //  2013/08/04
+                        if (0 > (len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_uiTranNo_openAudioDev, pMem.uiTranNo_openAvDev, 0, ptr)))
+                            return iErr;
+                        total_len += len;
+                    }
+
+                     */
+
+
+
+
+                    if (0 > (len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_null, null, 0, ptr)))
+                        return iErr;
+                    total_len += len;
+                }
+
+            }
+
+
+
+            if (0 > (len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_null, null, 0, ptr)))
+                return iErr;
+            total_len += len;
+
+            iErr = 0;
+            if (0 == iErr) {
+
+            }
+            return total_len;
+
+        }
+
+        ;
+
+
+        public static isProtocolFunc.PF_handler_stream2Data tmpHandler_stream2AnRefreshRecentFriendsReq1 = (isProtocolFunc.CTX_stream2Data pCtx, Object p0, Object p1, int uiStreamId, qnmCommProc.QY_CFGITEM pItem) ->
+        {
+            int iErr = -1;
+            AnRefreshRecentFriendsReq1_h pContent = (AnRefreshRecentFriendsReq1_h)  p1;
+            if (null == pContent) {
+                return iErr;
+            }
+
+            int tmp_cfgId = pItem.cfgId;
+
+            switch (uiStreamId) {
+                case CONST_anCommType_refreshRecentFriendsReq1:
+                    switch (tmp_cfgId) {
+                        case CONST_qnmCfgId_start:
+                            pContent.uiType = uiStreamId;
+                            break;
+                            /*
+                        case CONST_qnmCfgId_uiTranNo_openAudioDev:
+                            if (-1 == (pContent.uiTranNo_openAvDev = getFieldData_long(pItem)))
+                            {
+                                Log.e("pContent.uiTranNo_openAvDev < 0");
+                                return iErr;
+                            }
+                            break;
+
+                             */
+
+                        case CONST_qnmCfgId_usCnt:
+                            if (0 > (pContent.usCnt = getFieldData_short(pItem)))
+                            {
+                                Log.e("pContent.usCnt < 0");
+                                return iErr;
+                            }
+                            if (pContent.usCnt > pContent.mems.length) {
+                                Log.e("pContent.usCnt  > CONST_maxTransferAvDataMems");
+                                return iErr;
+                            }
+                            break;
+
+                        default:
+                            break;
+                    }
+                    break;
+                case CONST_imCommType_mem: {
+                    AnRefreshRecentFriendReq1_h pMem = null;
+                    //
+                    if (pContent.tmpInternal.usCnt_mems >= pContent.mems.length) {
+                        Log.e("tmpHandler_stream2TransferAudioData failed: usCnt_mems is too big");
+                        return iErr;
+                    }
+                    //pMem = getMem.qyFuncs.getMem(pContent.mems, bufSize_TRANSFER_AUDIO_dataMemHead_mems, pContent.tmpInternal.usCnt_mems);
+                    pMem=pContent.mems[pContent.tmpInternal.usCnt_mems];
+                    if (pMem == null) {
+                        Log.e("pMem == null");
+                        return iErr;
+                    }
+                    switch (tmp_cfgId) {
+                        case CONST_qnmCfgId_messengerId: {
+                            if (0 > (pMem.ui64Id = getFieldData_l64(pItem)))
+                            {
+                                Log.e("pContent.uiTranNo_openAvDev < 0");
+                                return iErr;
+                            }
+                        }
+                        break;
+                        /*
+                        case CONST_qnmCfgId_uiTranNo_openAudioDev:      //  2013/08/04
+                            if (-1 == (pMem.uiTranNo_openAvDev = getFieldData_long(pItem)))
+                            {
+                                Log.e("pMem.uiTranNo_openAvDev < 0");
+                                return iErr;
+                            }
+                            break;
+
+                         */
+
+
+
+                        case CONST_qnmCfgId_null:
+                            pContent.tmpInternal.usCnt_mems++;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                break;
+                default:
+                    break;
+            }
+            iErr = 0;
+            return iErr;
+        };
+
+
+
+
+
+        //////////////////////////
+        //
         public static int transferAudioDataResp2Stream(int uiStreamId, TRANSFER_AUDIO_dataResp pReq, ByteBuffer ptr) {
             int iErr = -1;
             int i = 0;

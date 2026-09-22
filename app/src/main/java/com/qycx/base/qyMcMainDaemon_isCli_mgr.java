@@ -355,8 +355,8 @@ public class qyMcMainDaemon_isCli_mgr {
             if (!isUcFlgResp(pMsgInput.ucFlg)) return iErr;
 
             //
-            if  (  pMsgInput.uiTranNo==1024)  {
-                Log.d("at","1024");
+            if  (  pMsgInput.uiTranNo==1025)  {
+                Log.d("at","1025");
             }
 
             //
