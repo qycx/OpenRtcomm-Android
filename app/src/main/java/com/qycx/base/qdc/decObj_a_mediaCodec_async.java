@@ -264,7 +264,7 @@ public class decObj_a_mediaCodec_async extends DecMediaCodecCommon {
         //mymemset((byte[])pPkt_dec->head, 0, sizeof(qnmCommProc_mis.TRANSFER_AUDIO_dataMemHead));   //  2015/02/14
         qmcTransform.QY_TRANSFORM pTransform = (qmcTransform.QY_TRANSFORM) dm.m_qoi.cfg.a.pParent_transform;
 
-        pPkt_dec.head.idInfo.ui64Id = pTransform.audio.idInfo.ui64Id;
+        pPkt_dec.head.idInfo_ui64Id = pTransform.audio.idInfo.ui64Id;
         pPkt_dec.head.uiTranNo_openAvDev = pTransform.audio.ta.uiTranNo_openAvDev;
 
         //

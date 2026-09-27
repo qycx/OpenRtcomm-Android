@@ -173,7 +173,8 @@ public class getNextVPkt {
 
 
         //
-        public static qyCommProc_open.PF_getNextVPkt getNextVPkt=(Object pCurPkt_param, genericQueue.GENERIC_Q pInDataCacheQ, qyq2.QY_Q2 pVideoQ2)-> {
+        /*
+        public static qyCommProc_open.PF_getNextVPkt getNextVPkt1=(Object pCurPkt_param, genericQueue.GENERIC_Q pInDataCacheQ, qyq2.QY_Q2 pVideoQ2)-> {
             int iErr = -1;
 
             qnmCommProc_mis.myDRAW_VIDEO_DATA pCurPkt = (qnmCommProc_mis.myDRAW_VIDEO_DATA) pCurPkt_param;
@@ -235,6 +236,8 @@ public class getNextVPkt {
                     }
                 }
                 //
+                //  这里有问题，qGetMsg怎么用的数据缓存是toByteArray2(). 2026/09/23
+                //
                 int size =128;//sizeof(myDRAW_VIDEO_DATA);
                 if (0 != qGetMsg(pInDataCacheQ, pCurPkt.toByteArray2(), size)) {
                     Log.e("qy","getNextVPkt failed");
@@ -255,6 +258,8 @@ public class getNextVPkt {
 
             return iErr;
         };
+
+         */
 
 
         //

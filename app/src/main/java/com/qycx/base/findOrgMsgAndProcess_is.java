@@ -623,11 +623,11 @@ public class findOrgMsgAndProcess_is {
                             return iErr;
                         }
 
-                        if (pMem.idInfo.ui64Id == 0)
-                            pMem.idInfo.ui64Id = pMsgInput.data.route.idInfo_from.ui64Id;
+                        if (pMem.idInfo_ui64Id == 0)
+                            pMem.idInfo_ui64Id = pMsgInput.data.route.idInfo_from.ui64Id;
                         //
                         for (index_activeMems_from = 0; index_activeMems_from < videoConference.usCntLimit_activeMems_from; index_activeMems_from++) {
-                            if (pMem.idInfo.ui64Id == videoConference.activeMems_from[index_activeMems_from].avStream.idInfo.ui64Id
+                            if (pMem.idInfo_ui64Id == videoConference.activeMems_from[index_activeMems_from].avStream.idInfo.ui64Id
                                     && pMem.uiTranNo_openAvDev == videoConference.activeMems_from[index_activeMems_from].avStream.obj.tranInfo.audio.uiTranNo_openAvDev) {
                                 break;
                             }
@@ -848,8 +848,8 @@ public class findOrgMsgAndProcess_is {
                                             return iErr;
                                         }
 
-                                        if (pMem.idInfo.ui64Id == 0)
-                                            pMem.idInfo.ui64Id = pMsgInput.data.route.idInfo_from.ui64Id;
+                                        if (pMem.idInfo_ui64Id == 0)
+                                            pMem.idInfo_ui64Id = pMsgInput.data.route.idInfo_from.ui64Id;
 
                                         //
                                         if (0 == pMem.uiTranNo_openAvDev)
@@ -1459,8 +1459,8 @@ public class findOrgMsgAndProcess_is {
                             return iErr;
                         }
 
-                        if (pMem.idInfo.ui64Id == 0)
-                            pMem.idInfo.ui64Id = pMsgInput.data.route.idInfo_from.ui64Id;
+                        if (pMem.idInfo_ui64Id == 0)
+                            pMem.idInfo_ui64Id = pMsgInput.data.route.idInfo_from.ui64Id;
 
                         //
                         if (videoConference.usCntLimit_activeMems_from > videoConference.activeMems_from.length) {
@@ -1469,12 +1469,12 @@ public class findOrgMsgAndProcess_is {
                         }
 
                         for (index_activeMems_from = 0; index_activeMems_from < videoConference.usCntLimit_activeMems_from; index_activeMems_from++) {
-                            if (pMem.idInfo.ui64Id == videoConference.activeMems_from[index_activeMems_from].avStream.idInfo.ui64Id
+                            if (pMem.idInfo_ui64Id == videoConference.activeMems_from[index_activeMems_from].avStream.idInfo.ui64Id
                                     && pMem.uiTranNo_openAvDev == videoConference.activeMems_from[index_activeMems_from].avStream.obj.tranInfo.video.uiTranNo_openAvDev)
                                 break;
                         }
                         if (index_activeMems_from == videoConference.usCntLimit_activeMems_from) {
-                            str = String.format("findOrgMsg: video, conf" + pAddr.idInfo.ui64Id + ", from " + pMem.idInfo.ui64Id + ", can't get index_activeMems_from, skipped.");
+                            str = String.format("findOrgMsg: video, conf" + pAddr.idInfo.ui64Id + ", from " + pMem.idInfo_ui64Id + ", can't get index_activeMems_from, skipped.");
                             Log.e(str);
                             showInfo_open.qyFuncs.showInfo_open(0, null, str);
                             iErr = CONST_qyRet_cantGet_index_activeMems_from;
@@ -1713,8 +1713,8 @@ public class findOrgMsgAndProcess_is {
                                                     return iErr;
                                                 }
 
-                                                if (pMem.idInfo.ui64Id == 0)
-                                                    pMem.idInfo.ui64Id = pMsgInput.data.route.idInfo_from.ui64Id;
+                                                if (pMem.idInfo_ui64Id == 0)
+                                                    pMem.idInfo_ui64Id = pMsgInput.data.route.idInfo_from.ui64Id;
 
                                                 //
                                                 if (0 == pMem.uiTranNo_openAvDev)

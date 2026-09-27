@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId "com.qycx"
-        minSdk 24
+        minSdk 23
         targetSdk 34
         versionCode 810
         versionName "8.10"
@@ -25,6 +25,9 @@ android {
             keyPassword System.getenv("QY_KEY_PASSWORD") ?: "CHANGE_ME_KEY_PASSWORD"
             storeFile file('qycx.jks')
             storePassword System.getenv("QY_STORE_PASSWORD") ?: "CHANGE_ME_STORE_PASSWORD"
+            enableV1Signing true
+            enableV2Signing true
+            enableV3Signing true
         }
         debug {
             keyAlias '1'

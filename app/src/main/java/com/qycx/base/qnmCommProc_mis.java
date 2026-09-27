@@ -984,7 +984,8 @@ public class qnmCommProc_mis {
     public static class TRANSFER_AUDIO_dataMemHead {
         //unsigned  short									usIndex_ii;							//  2013/07/18. 将被逐渐弃用
 
-        public qyDefs.QY_MESSENGER_ID idInfo = new qyDefs.QY_MESSENGER_ID();     //  会议时,发言人的id
+        //public qyDefs.QY_MESSENGER_ID idInfo = new qyDefs.QY_MESSENGER_ID();     //  会议时,发言人的id
+        public long idInfo_ui64Id;     // = new qyDefs.QY_MESSENGER_ID();     //  会议时,发言人的id
 
         //
         public int uiTranNo_openAvDev;    //  2013/08/04. 当会议参会人,断开会议,修改策略,重新参会时,需要有tn来标识不同的视频流,所以要加这个成员
@@ -1012,7 +1013,7 @@ public class qnmCommProc_mis {
         public int copyFrom(TRANSFER_AUDIO_dataMemHead src)
         {
             if  (  src  ==  null  )  return  -1;
-            this.idInfo.ui64Id = src.idInfo.ui64Id;
+            this.idInfo_ui64Id = src.idInfo_ui64Id;
             this.uiTranNo_openAvDev = src.uiTranNo_openAvDev;
             this.uiSampleTimeInMs = src.uiSampleTimeInMs;
             //
@@ -1032,7 +1033,7 @@ public class qnmCommProc_mis {
 
         public void memset0()
         {
-            this.idInfo.ui64Id = 0;
+            this.idInfo_ui64Id = 0;
             this.uiTranNo_openAvDev = 0;
             this.uiSampleTimeInMs = 0;
             this.usElapseInMs_fromLastPkt=0;
@@ -1044,13 +1045,14 @@ public class qnmCommProc_mis {
 
         }
 
+        /*
         public byte[] toByteArray() {
-            int idInfoSize = idInfo.toByteArray().length;
+            int idInfoSize = Long.BYTES;//idInfo.toByteArray().length;
             int tmpInternalSize = tmpInternal.toByteArray().length;
             int bufferSize = idInfoSize + Integer.BYTES + tmpInternalSize + 3 * Integer.BYTES + 2 * Short.BYTES;
             ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
             buffer.putShort((short) idInfoSize);
-            buffer.put(idInfo.toByteArray());
+            buffer.putLong(idInfo_ui64Id);//.toByteArray());
             buffer.putInt(uiTranNo_openAvDev);
             buffer.putShort((short) tmpInternalSize);
             buffer.put(tmpInternal.toByteArray());
@@ -1060,6 +1062,8 @@ public class qnmCommProc_mis {
             buffer.putInt(uiLen);
             return buffer.array();
         }
+
+         */
 
     }
 
@@ -1244,7 +1248,8 @@ public class qnmCommProc_mis {
     public static class TRANSFER_VIDEO_dataMemHead {
         //unsigned  short									usIndex_ii;							//  2013/07/18. 将被逐步弃用
 
-        public qyDefs.QY_MESSENGER_ID idInfo = new qyDefs.QY_MESSENGER_ID();                             //  2009/05/31
+        //public qyDefs.QY_MESSENGER_ID idInfo = new qyDefs.QY_MESSENGER_ID();                             //  2009/05/31
+        public long idInfo_ui64Id;  // = new qyDefs.QY_MESSENGER_ID();                             //  2009/05/31
         //
         public int uiTranNo_openAvDev;                    //  2012/01/09
 
@@ -1282,7 +1287,7 @@ public class qnmCommProc_mis {
         public int copyFrom(TRANSFER_VIDEO_dataMemHead src)
         {
             if  (  src  ==  null  )  return  -1;
-            this.idInfo.ui64Id=src.idInfo.ui64Id;
+            this.idInfo_ui64Id=src.idInfo_ui64Id;
             this.uiTranNo_openAvDev=src.uiTranNo_openAvDev;
             this.uiSampleTimeInMs=src.uiSampleTimeInMs;
             //
@@ -1304,7 +1309,7 @@ public class qnmCommProc_mis {
         public void memset0()
         {
 
-            this.idInfo.ui64Id=0;
+            this.idInfo_ui64Id=0;
             this.uiTranNo_openAvDev=0;
             this.uiSampleTimeInMs=0;
             this.uiPts=0;
@@ -1316,12 +1321,13 @@ public class qnmCommProc_mis {
 
 
         //
+
         public byte[] toByteArray() {
-            byte[] buf1 = idInfo.toByteArray();
+            //byte[] buf1 = idInfo.toByteArray();
             byte[] buf2 = stat.toByteArray();
-            int bufferSize = buf1.length + Integer.BYTES * 3 + Byte.BYTES + buf2.length;
+            int bufferSize = Long.BYTES + Integer.BYTES * 3 + Byte.BYTES + buf2.length;
             ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
-            buffer.put(buf1);
+            buffer.putLong(idInfo_ui64Id);//buf1);
             buffer.putInt(uiTranNo_openAvDev);
             buffer.putInt(uiSampleTimeInMs);
             buffer.putInt(uiPts);
@@ -1330,6 +1336,8 @@ public class qnmCommProc_mis {
             buffer.put(buf2);
             return buffer.array();
         }
+
+
     }
 
     ;
@@ -1587,6 +1595,7 @@ public class qnmCommProc_mis {
 
         public qyMemoryFunc.QY_MEMORY memory = new qyMemoryFunc.QY_MEMORY();                                    //  2010/04/23
 
+
         public byte[] toByteArray2() {
             byte[] buf1 = input.toByteArray();
             byte[] buf2 = vpp.toByteArray();
@@ -1621,6 +1630,8 @@ public class qnmCommProc_mis {
             buffer.put(buf8);
             return buffer.array();
         }
+
+
     }
 
     ;
@@ -8111,8 +8122,8 @@ public class qnmCommProc_mis {
                     total_len += len;
 
                     //
-                    if (pMem.idInfo.ui64Id != 0) {           //  2009/05/31
-                        if (0 > (len = data2Stream(CONST_qyDataType_l64, CONST_qnmCfgId_messengerId, pMem.idInfo.ui64Id, Long.BYTES, ptr)))
+                    if (pMem.idInfo_ui64Id != 0) {           //  2009/05/31
+                        if (0 > (len = data2Stream(CONST_qyDataType_l64, CONST_qnmCfgId_messengerId, pMem.idInfo_ui64Id, Long.BYTES, ptr)))
                             return iErr;
                         total_len += len;
                     }
@@ -8261,7 +8272,7 @@ public class qnmCommProc_mis {
                         //
                         case CONST_qnmCfgId_messengerId:            //  2009/05/31
                         {
-                            if (0 > (pMem.idInfo.ui64Id = getFieldData_l64(pItem))) {
+                            if (0 > (pMem.idInfo_ui64Id = getFieldData_l64(pItem))) {
                                 return iErr;
                             }
                             break;
@@ -8503,8 +8514,8 @@ public class qnmCommProc_mis {
                     //
 
                     //
-                    if (pMem.idInfo.ui64Id != 0) {
-                        if (0 > (len = data2Stream(CONST_qyDataType_l64, CONST_qnmCfgId_messengerId, pMem.idInfo.ui64Id, Long.BYTES, ptr)))
+                    if (pMem.idInfo_ui64Id != 0) {
+                        if (0 > (len = data2Stream(CONST_qyDataType_l64, CONST_qnmCfgId_messengerId, pMem.idInfo_ui64Id, Long.BYTES, ptr)))
                             return iErr;
                         total_len += len;
                     }
@@ -8654,7 +8665,7 @@ public class qnmCommProc_mis {
                     }
                     switch (tmp_cfgId) {
                         case CONST_qnmCfgId_messengerId: {
-                            if (0 > (pMem.idInfo.ui64Id = getFieldData_l64(pItem)))
+                            if (0 > (pMem.idInfo_ui64Id = getFieldData_l64(pItem)))
                             {
                                 Log.e("pContent.uiTranNo_openAvDev < 0");
                                 return iErr;

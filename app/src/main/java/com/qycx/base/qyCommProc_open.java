@@ -350,7 +350,7 @@ public class qyCommProc_open {
         public static PF_transformGetSpsPps pf_transformGetSpsPps;        //  
         public static PF_transformGetBih pf_transformGetBih;            //  (  void  *  pQY_TRANSFORM, bitmapinfoheader  pBih, void *  p2  )
         //
-        public static PF_getNextVPkt pf_getNextVPkt;                //   int  getNextVPkt(  myDRAW_VIDEO_DATA  *  pCurPkt,  GENERIC_Q  *	pInDataCacheQ,  QY_Q2  *	pVideoQ2  )
+        public static PF_getNextVPkt unused_pf_getNextVPkt;                //   int  getNextVPkt(  myDRAW_VIDEO_DATA  *  pCurPkt,  GENERIC_Q  *	pInDataCacheQ,  QY_Q2  *	pVideoQ2  )
         //
         public static PF_parseDecVPkt_o pf_parseDecVPkt_o;
         public static PF_detachPkt pf_detachPkt;              //  pPkt,  0

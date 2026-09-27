@@ -244,7 +244,7 @@ public class qyMcMainMediaProc_decVideo_rtsp {
                                 if (pMem.uiPts != pTransform.audio.decInfo.pts.uiPts_lastRecvd + 1) {
                                     String str;
                                     //str = String.format("dec_parseEncAPkt_i: %s: pts err, pkt %s, last %s", pMem.idInfo.ui64Id, pMem.uiPts, pTransform.audio.decInfo.pts.uiPts_lastRecvd);
-                                    str = "l245: dec_parseEncAPkt_i: " + pMem.idInfo.ui64Id + " pts err, pkt " + pMem.uiPts + " last " + pTransform.audio.decInfo.pts.uiPts_lastRecvd;
+                                    str = "l245: dec_parseEncAPkt_i: " + pMem.idInfo_ui64Id + " pts err, pkt " + pMem.uiPts + " last " + pTransform.audio.decInfo.pts.uiPts_lastRecvd;
                                     showInfo_open.qyFuncs.showInfo_open(str);
                                     Log.e(str);
 
@@ -372,7 +372,7 @@ public class qyMcMainMediaProc_decVideo_rtsp {
                         } else {
                             if (pMem.uiPts != pTransform.audio.decInfo.pts.uiPts_lastRecvd + 1) {
                                 String str;
-                                str = String.format("dec_parseEncAPkt_i: %s: pts err, pkt %s, last %s", pMem.idInfo.ui64Id, pMem.uiPts, pTransform.audio.decInfo.pts.uiPts_lastRecvd);
+                                str = String.format("dec_parseEncAPkt_i: %s: pts err, pkt %s, last %s", pMem.idInfo_ui64Id, pMem.uiPts, pTransform.audio.decInfo.pts.uiPts_lastRecvd);
                                 //
                                 Log.d(str);
 
@@ -507,7 +507,7 @@ public class qyMcMainMediaProc_decVideo_rtsp {
                             pTransform.video.decInfo.pts.dwTickCnt_start = tmpFunc.qyFuncs.myGetTickCount(null);
                         } else {
                             if (pMem.uiPts != pTransform.video.decInfo.pts.uiPts_lastRecvd + 1) {
-                                str = String.format("dec_parseEncVPkt_i: %s: pts err, pkt %s, last %s", pMem.idInfo.ui64Id, pMem.uiPts, pTransform.video.decInfo.pts.uiPts_lastRecvd);
+                                str = String.format("dec_parseEncVPkt_i: %s: pts err, pkt %s, last %s", pMem.idInfo_ui64Id, pMem.uiPts, pTransform.video.decInfo.pts.uiPts_lastRecvd);
                                 showInfo_open.qyFuncs.showInfo_open(0, null,str);
                                 //  2015/02/20
                                 return iErr;

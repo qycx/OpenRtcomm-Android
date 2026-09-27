@@ -254,9 +254,9 @@ public class dec_parseEncVPkt_i {
                 if (pMem.uiTranNo_openAvDev == 0) {
                     pMem.uiTranNo_openAvDev = pReq.uiTranNo_openAvDev;
                 }
-                if (pMem.idInfo.ui64Id == 0) {
+                if (pMem.idInfo_ui64Id == 0) {
                     qnmCommProc_mis.MIS_MSG_INPUT input = (qnmCommProc_mis.MIS_MSG_INPUT) pMsg;
-                    pMem.idInfo.ui64Id = input.data.route.idInfo_from.ui64Id;
+                    pMem.idInfo_ui64Id = input.data.route.idInfo_from.ui64Id;
                 }
 
                 if (pTransform.video.decInfo.iNextIndex_preDec >= MAX_cnt_preDec_array) {
@@ -295,7 +295,7 @@ public class dec_parseEncVPkt_i {
                             } else {
                                 if (pMem.uiPts != pTransform.video.decInfo.pts.uiPts_lastRecvd + 1) {
                                     //
-                                    str = String.format("dec_parseEncVPkt_i: {%s}: pts err, pkt {%s}, last {%s}", pMem.idInfo.ui64Id, pMem.uiPts, pTransform.video.decInfo.pts.uiPts_lastRecvd);
+                                    str = String.format("dec_parseEncVPkt_i: {%s}: pts err, pkt {%s}, last {%s}", pMem.idInfo_ui64Id, pMem.uiPts, pTransform.video.decInfo.pts.uiPts_lastRecvd);
                                     showInfo_open.qyFuncs.showInfo_open(str);
                                     com.qycx.base.util.Log.e(str);
                                     //  2015/02/20
@@ -380,7 +380,7 @@ public class dec_parseEncVPkt_i {
 
                     if (pTransform.video.ucbInited) {
                         if (pTransform.video.index_activeMems_from != index_activeMems_from
-                                || pTransform.video.idInfo.ui64Id != pMem.idInfo.ui64Id
+                                || pTransform.video.idInfo.ui64Id != pMem.idInfo_ui64Id
                                 || pTransform.video.tv.uiTranNo_openAvDev != pMem.uiTranNo_openAvDev
                                 || pTransform.video.status.ucbDecFailed                                            //  2012/03/19
                         ) {
@@ -391,7 +391,7 @@ public class dec_parseEncVPkt_i {
                                     + ",id " + pTransform.video.idInfo.ui64Id
                                     + ",tn " + pTransform.video.tv.uiTranNo_openAvDev
                                     + ",decFailed " + pTransform.video.status.ucbDecFailed
-                                    + "!= " + index_activeMems_from + "," + pMem.idInfo.ui64Id + "," + pMem.uiTranNo_openAvDev + "," + 0;
+                                    + "!= " + index_activeMems_from + "," + pMem.idInfo_ui64Id + "," + pMem.uiTranNo_openAvDev + "," + 0;
                             showInfo_open.qyFuncs.showInfo_open(0, null,str);
                             return iErr;
                         }

@@ -1307,7 +1307,7 @@ public class qyMcMainProc_isCli_media {
                                     int  ii;
                                     for  (  ii  =  0;  ii  <  tvd.usCnt;ii++)  {
                                         qnmCommProc_mis.TRANSFER_VIDEO_dataMemHead mem  =  tvd.mems[ii];
-                                         str +=  " mem"  +  ii  +  ":"  +  mem.idInfo.ui64Id  +  " tn "  +  mem.uiTranNo_openAvDev;
+                                         str +=  " mem"  +  ii  +  ":"  +  mem.idInfo_ui64Id  +  " tn "  +  mem.uiTranNo_openAvDev;
                                     }
                                     //
                                     Log.d("qy",str);

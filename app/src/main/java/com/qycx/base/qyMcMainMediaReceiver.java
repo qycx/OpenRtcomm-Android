@@ -83,7 +83,7 @@ public class qyMcMainMediaReceiver {
                             //mymemset((byte[])resp, 0, sizeof(TRANSFER_VIDEO_dataResp));
                             resp.uiType = CONST_imCommType_transferVideoDataResp;
                             //
-                            resp.idInfo.ui64Id = pMem.idInfo.ui64Id;
+                            resp.idInfo.ui64Id = pMem.idInfo_ui64Id;
                             resp.uiTranNo_openAvDev = pMem.uiTranNo_openAvDev;
                             if (0 == resp.uiTranNo_openAvDev) {
                                 resp.uiTranNo_openAvDev = transferVideoData.uiTranNo_openAvDev;
@@ -192,7 +192,7 @@ public class qyMcMainMediaReceiver {
                             //mymemset((byte[])resp, 0, sizeof(TRANSFER_VIDEO_dataResp));
                             resp.uiType = CONST_imCommType_transferVideoDataResp;
                             //
-                            resp.idInfo.ui64Id = pMem.idInfo.ui64Id;
+                            resp.idInfo.ui64Id = pMem.idInfo_ui64Id;
                             resp.uiTranNo_openAvDev = pMem.uiTranNo_openAvDev;
                             if (0 == resp.uiTranNo_openAvDev) {
                                 resp.uiTranNo_openAvDev = transferVideoData.uiTranNo_openAvDev;
@@ -539,7 +539,7 @@ public class qyMcMainMediaReceiver {
 
                         //
                         //mymemset(pPkt, 0, sizeof(myPlayAudioData.myPLAY_AUDIO_DATA));
-                        pPkt.head.idInfo.ui64Id = 0;
+                        pPkt.head.idInfo_ui64Id = 0;
                         pPkt.head.uiSampleTimeInMs = (int) iSampleTimeInMs;
 
                         //
@@ -717,7 +717,7 @@ public class qyMcMainMediaReceiver {
                     return -1;
                 }
 
-                idInfo_recorder.ui64Id = p.head.idInfo.ui64Id;
+                idInfo_recorder.ui64Id = p.head.idInfo_ui64Id;
                 uiTranNo = p.head.uiTranNo_openAvDev;      //  2016/12/16
                 if (0 == uiTranNo) uiTranNo = p.head.tmpInternal.uiTranNo_org;     //  2016/12/16
 
@@ -1018,14 +1018,14 @@ public class qyMcMainMediaReceiver {
                 if (0 != pMem.uiTranNo_openAvDev) {   //  2013/08/04. 会议时,参会人如果第2次进入会议,那么需要区分前后2次的音频流是不同的,靠的就是tn
                     if (pMem.uiTranNo_openAvDev != pActiveMem_from.avStream.obj.tranInfo.audio.uiTranNo_openAvDev) {
                         //
-                        str = String.format("transformTaskAudio: err, %d, mem.uiTranNo_openAvDev %d != from.audio. %d. skipped", pMem.idInfo.ui64Id, pMem.uiTranNo_openAvDev, pActiveMem_from.avStream.obj.tranInfo.audio.uiTranNo_openAvDev);
+                        str = String.format("transformTaskAudio: err, %d, mem.uiTranNo_openAvDev %d != from.audio. %d. skipped", pMem.idInfo_ui64Id, pMem.uiTranNo_openAvDev, pActiveMem_from.avStream.obj.tranInfo.audio.uiTranNo_openAvDev);
                         //
                         Log.d("anc",str);
                         continue;
                     }
                 }
-                if (pMem.idInfo.ui64Id != 0) {
-                    pPkt_dec.head.idInfo.ui64Id = pMem.idInfo.ui64Id;
+                if (pMem.idInfo_ui64Id != 0) {
+                    pPkt_dec.head.idInfo_ui64Id = pMem.idInfo_ui64Id;
 
                     pPkt_dec.head.tmpInternal.uiTranNo_org = pMem.uiTranNo_openAvDev;
                 } else {

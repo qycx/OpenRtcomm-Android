@@ -1373,7 +1373,7 @@ public class qyMcMainProc_isCli_robot {
                         int jj;
                         for  (  jj  =  0;  jj  <  pReq.usCnt;jj++ )  {
                             qnmCommProc_mis.TRANSFER_VIDEO_dataMemHead mem  = pReq.mems[jj];
-                            str  =  "chnType "  +  pChannel.uiType  +  ": dbg_sn"  +  pMsgInput.dbg_sn  +  " tvd: "  + mem.idInfo.ui64Id  +  ": cnt "  +  pReq.usCnt  +  " mem"  +  jj  +  " pts "  +  mem.uiPts;
+                            str  =  "chnType "  +  pChannel.uiType  +  ": dbg_sn"  +  pMsgInput.dbg_sn  +  " tvd: "  + mem.idInfo_ui64Id  +  ": cnt "  +  pReq.usCnt  +  " mem"  +  jj  +  " pts "  +  mem.uiPts;
                             showInfo_open.qyFuncs.showInfo_open(str);
                         }
 

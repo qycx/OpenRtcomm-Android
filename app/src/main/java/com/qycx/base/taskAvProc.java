@@ -501,7 +501,9 @@ public class taskAvProc {
                     compressor.common.pf_bTransformVideoQuit = qyMcMainMediaProc_decVideo_rtsp.qyFuncs.bTransformVideoQuit;
                     compressor.common.pf_transformGetSpsPps = qyMcMainMediaProc_decVideo_rtsp.qyFuncs.transformGetSpsPps;
                     compressor.common.pf_transformGetBih = qyMcMainMediaProc_decVideo_rtsp.qyFuncs.transformGetBih;
-                    compressor.common.pf_getNextVPkt = getNextVPkt.qyFuncs.getNextVPkt;
+                    //
+                    //compressor.common.pf_getNextVPkt = getNextVPkt.qyFuncs.getNextVPkt;
+                    //
                     //compressor.common.pf_parseVPkt_i  =  dec_parseEncVPkt_i;
                     compressor.common.pf_parseDecVPkt_o = getNextVPkt.qyFuncs.parseDecVPkt_o;
 
