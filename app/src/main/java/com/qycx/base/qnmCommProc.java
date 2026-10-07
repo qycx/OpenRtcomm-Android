@@ -3,7 +3,7 @@
 
 package com.qycx.base;
 
-import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCfgId_base_common;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCfgId_base_common;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCfgId_mem;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCfgId_messengerId;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCfgId_messengerId_from;
@@ -138,7 +138,7 @@ public class qnmCommProc {
         public final static short CONST_qnmCfgId_null = 0;                   //  È¡cfgsµÄ½áÊø·û
 
         // 2007/04/02
-        public final static short CONST_qnmCfgId_base_common = CONST_ancCfgId_base_common;//1000;
+        public final static short CONST_qnmCfgId_base_common = CONST_anCfgId_base_common;//1000;
         //
         //  CONST_qnmCfgId_base_common  ->  CONST_qnmCfgId_base_common  +  999
         public final static short CONST_qnmCfgId_start = CONST_ancCfgId_start;  //(CONST_qnmCfgId_base_common + 100);
@@ -214,6 +214,7 @@ public class qnmCommProc {
         public final static short CONST_qnmCfgId_ulIp = (CONST_qnmCfgId_base_common + 2301);             //  ulIp
         public final static short CONST_qnmCfgId_ip6 = (CONST_qnmCfgId_base_common + 2302);              //  reserved
         public final static short CONST_qnmCfgId_pcName = (CONST_qnmCfgId_base_common + 2303);
+        public final static short CONST_qnmCfgId_devName = CONST_qnmCfgId_pcName;             //  2026/09/28, c++ qnmCommProc.h 中 pcName 即 devName 的别名
         public final static short CONST_qnmCfgId_domainName = (CONST_qnmCfgId_base_common + 2304);
         public final static short CONST_qnmCfgId_osUsrName = (CONST_qnmCfgId_base_common + 2305);
         public final static short CONST_qnmCfgId_langId = (CONST_qnmCfgId_base_common + 2306);

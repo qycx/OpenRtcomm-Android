@@ -3,7 +3,7 @@
 
 package com.qycx.base;
 
-import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCommType_base;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_base;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_mem;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_msgRoute;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_transferAudioData;
@@ -16,7 +16,7 @@ public class imCommType_defs
 public static class Consts
 {
     //public final static int CONST_imCommType_base = 3000;
-    public final static int CONST_imCommType_base = CONST_ancCommType_base;
+    public final static int CONST_imCommType_base = CONST_anCommType_base;
 
 
 

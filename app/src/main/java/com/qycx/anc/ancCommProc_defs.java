@@ -11,10 +11,10 @@ public class ancCommProc_defs {
          */
 
         //
-        public final static short CONST_ancCfgId_base_common = 4100;
+        public final static short CONST_anCfgId_base_common = 4100;
 
         //
-        public final static int CONST_ancCommType_base  =  4000;
+        public final static int CONST_anCommType_base  =  4000;
 
 
         //  这里定义重要的cfgId < 4096
@@ -44,7 +44,16 @@ public class ancCommProc_defs {
         public final static short CONST_ancCfgId_ucbKeyFrame  =  31;
 
         //
-        public final static short CONST_ancCfgId_conf_ui64Id  =  40;
+        public final static short CONST_anCfgId_conf_ui64Id  =  40;             //  2026/09/28, 对应 c++ anCommProcDefs.h，与 CONST_ancCfgId_conf_ui64Id 同值
+
+        //
+        public final static short CONST_anCfgId_lfcs_tn  =  50;             //  2026/09/23, 对应 c++ anCommProc_defs.h
+        public final static short CONST_anCfgId_mfcs_tn  =  51;
+        public final static short CONST_anCfgId_hfcs_tn  =  52;
+        public final static short CONST_anCfgId_hfcs_cliNetstats  =  53;    //
+        public final static short CONST_anCfgId_hfcs_cliPktLoss  =  54;
+
+        //
 
 
 

@@ -1,5 +1,6 @@
 package com.qycx.base;
 
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_refreshRecentFriendsReq1;
 import static com.qycx.base.Consts.CONST_channelType_media;
 import static com.qycx.base.Consts.CONST_channelType_rtMedia;
 import static com.qycx.base.Consts.CONST_channelType_talking;
@@ -425,8 +426,15 @@ public class qyMcMainWndProc_isCli {
                                                 idInfo_peer = input.data.route.idInfo_from;
                                             //
                                             hWnd = guiShare.GuiShare.pf_findTalker.call(pQyMc, pMisCnt, idInfo_peer);
-                                            if (hWnd == null) break;
-                                            dlgTalk_OnQyComm(hWnd, wParam, input);
+                                            if (hWnd != null) {
+                                                dlgTalk_OnQyComm(hWnd, wParam, input);
+                                            }
+                                            else  {
+                                                CIsTalker talker = findIsTalker(pMisCnt,idInfo_peer.ui64Id);
+                                                if  (  talker==null)  break;
+                                                talker.talker_OnQyComm(talker.m_var,0,input);
+
+                                            }
 
                                         }
                                     }
@@ -453,7 +461,30 @@ public class qyMcMainWndProc_isCli {
                                     }
                                     //
                                     break;
+                                    case  CONST_anCommType_refreshRecentFriendsReq1:
+                                    {
+                                        //
+                                        bMsgProcessed = true;
+                                        //
+                                        qyDefs.QY_MESSENGER_ID idInfo_peer = new qyDefs.QY_MESSENGER_ID();
+                                        idInfo_peer.ui64Id = pProcInfo.m_peerId_toShowConfMem;
+                                        if (idInfo_peer.ui64Id == 0) break;
+                                        //
+                                        CIsTalker talker = findIsTalker(pMisCnt,idInfo_peer.ui64Id);
+                                        if  (  talker==null)  break;
+                                        talker.gui_procMsg(input);
+                                        //
+                                        /*
+                                        hWnd = guiShare.GuiShare.pf_findTalker.call(pQyMc, pMisCnt, idInfo_peer);
+                                        if (hWnd == null) break;
+                                        dlgTalk_OnQyComm(hWnd, wParam, input);
 
+                                         */
+
+                                    }
+
+
+                                        break;
                                     case  CONST_imCommType_transferLocData: {
                                         bMsgProcessed = true;
 
@@ -497,6 +528,7 @@ public class qyMcMainWndProc_isCli {
 
                                 if (pContent.uiType == CONST_imCommType_confNvrInfo) {
                                     int a = 3;
+                                    Log.d("at","mainWnd_ONQyPostComm: get confNvrInfo");
                                 }
 
                                 //

@@ -2,7 +2,7 @@
 package com.qycx.base;
 
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_refreshRecentFriendsReq1;
-import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCfgId_conf_ui64Id;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCfgId_conf_ui64Id;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_mem;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_transferAudioData;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_transferVideoData;
@@ -1049,7 +1049,7 @@ public class isProtocolFunc {
                     pResp.mems[index].ulDetectedIp = lVal;
 
                     break;
-                case  CONST_ancCfgId_conf_ui64Id:
+                case  CONST_anCfgId_conf_ui64Id:
                     index = pResp.usCnt_mems - 1;
                     if (index < 0) {
                         return  iErr;

@@ -10,6 +10,8 @@ import static com.qycx.base.Consts.CONST_channelType_media;
 import static com.qycx.base.Consts.IO_TAG;
 import static com.qycx.base.avCallProc.doTask_av_accept;
 import static com.qycx.base.dlgTalkProc.qyFuncs_Droid.dlgTalk_bConfCompere;
+import static com.qycx.base.dlgTalkProc.qyFuncs_Droid.dlgTalk_do_pleaseSpeak;
+import static com.qycx.base.dlgTalkProc.qyFuncs_Droid.dlgTalk_do_pleaseStopSpeaking;
 import static com.qycx.base.dlgTalkProc_help.qyFuncs_Droid.dlgTalk_canSpeak;
 import static com.qycx.base.dlgTalk_videoConference.qyFuncs_Droid.confOthers_sendStreamInfo;
 import static com.qycx.base.dlgTalk_videoConference_public.qyFuncs.isActiveMem;
@@ -32,6 +34,7 @@ import static com.qycx.base.qnmCommProc_mis.Consts.CONST_imOp_switchTransmission
 import static com.qycx.base.qnmMainFunc_isCli.qyFuncs.getChannelByType;
 import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendMedia;
 import static com.qycx.base.qyComm.Consts.CONST_qyCmd_sendTask;
+import static com.qycx.base.qyComm.qyFuncs.isUcFlgResp;
 import static com.qycx.base.qyCommProc_open.Consts.CONST_fourcc_I420;
 import static com.qycx.base.qyCusResHelp.qyFuncs.getResStr;
 import static com.qycx.base.qyCusResPublic.Consts.CONST_usRunningStatus_online;
@@ -476,7 +479,7 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
 
     //////////////////////
-    public static boolean g_bUse_anRefreshRecentFriends_new  =  false;  //true;
+    public static boolean g_bUse_anRefreshRecentFriends_new  =  true;//false;  //true;
 
     //
     int confMem_startToRefreshRecentFriends_all() {
@@ -641,7 +644,7 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
         //
         if  (  pProcInfo.cfg.debugStatusInfo.bDbgDetail_refreshRecentFriends) {
-            showInfo_open.qyFuncs.showInfo_open(0, 0, "anc", "confMem_startToRefresh: Start to retrieve all members status (" + m_confMems.size() + ")");
+            showInfo_open.qyFuncs.showInfo_open(0, 0, "anc", "confMem_startToRefresh_new: Start to retrieve all members status (" + m_confMems.size() + ")");
         }
 
         // 2. 初始化请求包
@@ -661,7 +664,12 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
             // 过滤条件：
             // A. 跳过发言人 (ConfMemType_speaker)，因为发言人状态由 AV 流决定
             // B. 跳过无效 ID (如 footer "没有更多了")
+            /*
             if (mem.iConfMemType == CONST_confMemType_speaker || mem.ui64Id == 0) {
+                continue;
+            }
+             */
+            if  (  mem.ui64Id==0)  {
                 continue;
             }
 
@@ -670,6 +678,13 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
                 rrr.mems[rrr.usCnt].ui64Id = mem.ui64Id;
                 // 如果需要记录上次刷新时间，可以在这里赋值
                 // rrr.mems[rrr.usCnt].tLastRefreshedTime_misServ = mem.tLastRefreshedTickCnt;
+
+                //
+                rrr.mems[rrr.usCnt].req.lfcs_tn = mem.m_lfcs.tn;
+                rrr.mems[rrr.usCnt].req.mfcs_tn=mem.m_mfcs.tn;
+                rrr.mems[rrr.usCnt].req.hfcs_tn=mem.m_hfcs.tn;
+
+                //
                 rrr.usCnt++;
             }
 
@@ -682,7 +697,7 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
                 // 重置请求包，准备下一批
                 rrr = new qnmCommProc_mis.AnRefreshRecentFriendsReq1_h();
-                rrr.uiType = CONST_imCommType_refreshRecentFriendsReq;
+                rrr.uiType = CONST_anCommType_refreshRecentFriendsReq1;
                 rrr.usCnt = 0;
             }
         }
@@ -714,7 +729,7 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
         //
         if  (  pProcInfo.cfg.debugStatusInfo.bDbgDetail_refreshRecentFriends) {
-            showInfo_open.qyFuncs.showInfo_open(0, 0, "anc", "confMem_startToRefreshRecentFriends called");
+            showInfo_open.qyFuncs.showInfo_open(0, 0, "anc", "confMem_startToRefreshRecentFriends_new called");
         }
 
         //
@@ -739,7 +754,12 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
                 Log.d("anc", "可见条目 " + i + ": " + mem.ui64Id + " " + mem.desc);
 
                 //
+                /*
                 if (mem.iConfMemType == CONST_confMemType_speaker) {  //  发言人肯定在线
+                    continue;
+                }
+                 */
+                if  (  mem.ui64Id==0)  {    //  跳过无效id
                     continue;
                 }
 
@@ -747,6 +767,13 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
                 if (rrr.usCnt < rrr.mems.length) {
                     rrr.mems[rrr.usCnt].ui64Id = mem.ui64Id;
                     //req.mems[req.usCnt].tLastRefreshedTime_misServ = pQMemObj -> tLastRefreshedTickCnt_misServ;
+
+                    //
+                    rrr.mems[rrr.usCnt].req.lfcs_tn = mem.m_lfcs.tn;
+                    rrr.mems[rrr.usCnt].req.mfcs_tn=mem.m_mfcs.tn;
+                    rrr.mems[rrr.usCnt].req.hfcs_tn=mem.m_hfcs.tn;
+
+                    //
                     rrr.usCnt++;
                 }
 
@@ -2938,7 +2965,7 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
                 if  (  mem.ui64Id  ==  ui64Id)  {
                     //
                     if ( mem_dst!=null)  {
-                        mem_dst.usRunningStatus  =  mem.usRunningStatus;
+                        mem_dst.m_mfcs.data.usRunningStatus  =  mem.m_mfcs.data.usRunningStatus;
                     }
                     //
                     break;
@@ -3859,15 +3886,26 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
                 //
                 Log.d("anc", "sel: " + mem.ui64Id + " " + mem.desc);
                 //
-                if (mem.iConfMemType  ==  Consts.CONST_confMemType_grpMem)  {
-                    confCompere_pleaseSpeak(talker_ui64Id,mem.ui64Id,true);
-                }
-                else  {
-                    confCompere_pleaseSpeak(talker_ui64Id,mem.ui64Id,false);
+                if  (  mem.ui64Id==pMisCnt.idInfo.ui64Id) {
+
                     //
-                    if  (  mem.ui64Id  == pMisCnt.idInfo.ui64Id)  {
-                        //  停止自动发言
-                        m_var.av.m_bState_canSpeak  =  false;
+                    if  (  mem.iConfMemType==CONST_confMemType_grpMem) {
+                        //boolean canSpeak = dlgTalk_canSpeak(m_var.addr.idInfo.ui64Id);
+                        do_request(true);
+                    }
+                    else  {
+                          do_request(false);
+                    }
+
+                    //  停止自动发言
+                    m_var.av.m_bState_canSpeak = false;
+                }
+                else {
+
+                    if (mem.iConfMemType == Consts.CONST_confMemType_grpMem) {
+                        confCompere_pleaseSpeak(talker_ui64Id, mem.ui64Id, true);
+                    } else {
+                        confCompere_pleaseSpeak(talker_ui64Id, mem.ui64Id, false);
                     }
                 }
             }
@@ -4241,12 +4279,34 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
             qnmCommProc_mis.MIS_MSG_INPUT pMsgInput  =(qnmCommProc_mis.MIS_MSG_INPUT)pMsgU;
 
             qnmCommProc_mis.IM_CONTENTU pContent = pMsgInput.data.buf;
-            ;
+
 
             switch (pContent.uiType) {
+                case  CONST_imCommType_taskInteractionReq:  {
+                    qnmCommProc_mis.TASK_INTERACTION_REQ taskInteractionReq = (qnmCommProc_mis.TASK_INTERACTION_REQ) pContent;
+                    if  (  isUcFlgResp(pMsgInput.ucFlg))  {
+                        Log.d("qy","dlgTalk_OnQyComm: taskInteractionResp, from "  +  pMsgInput.data.route.idInfo_from.ui64Id  +  " ucstep "  + taskInteractionReq.ucStep );
+                    }
+                    else  {
+                        //
+                        if  (  taskInteractionReq.usOp  ==  CONST_imOp_pleaseSpeak  )  {
+                            dlgTalk_do_pleaseSpeak(m_talker.m_var.addr.idInfo.ui64Id,pMsgInput.data.route.idInfo_from.ui64Id);
+                        }
+                        else  if  (  taskInteractionReq.usOp  ==  CONST_imOp_pleaseStopSpeaking) {
+                            dlgTalk_do_pleaseStopSpeaking(m_talker,pMsgInput.data.route.idInfo_from.ui64Id);
+                        }
+
+                    }
+                }
+                break;
+
                 case CONST_imCommType_refreshRecentFriendsResp:
                     procRefreshRecentFriendsResp((qnmCommProc_mis.REFRESH_RECENTFRIENDS_RESP) pContent);
                     break;
+                case  CONST_anCommType_refreshRecentFriendsReq1:
+
+                      procAnRefreshRecentFriendsReq1((qnmCommProc_mis.AnRefreshRecentFriendsReq1_h) pContent);
+                      break;
                 default:
                     break;
             }
@@ -4281,13 +4341,13 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
             for (j = 0; j < m_confMems.size(); j++) {
                 ConfMember mem = m_confMems.get(j);
                 if (mem.ui64Id == resp.mems[i].ui64Id) {
-                    if (mem.usRunningStatus != resp.mems[i].usRunningStatus) {
-                        mem.usRunningStatus = resp.mems[i].usRunningStatus;
+                    if (mem.m_mfcs.data.usRunningStatus != resp.mems[i].usRunningStatus) {
+                        mem.m_mfcs.data.usRunningStatus = resp.mems[i].usRunningStatus;
                         //
                         bChanged=true;
                     }
-                    if (  mem.conf_ui64Id!=resp.mems[i].conf_ui64Id )  {
-                        mem.conf_ui64Id=resp.mems[i].conf_ui64Id;
+                    if (  mem.m_mfcs.data.conf_ui64Id!=resp.mems[i].conf_ui64Id )  {
+                        mem.m_mfcs.data.conf_ui64Id=resp.mems[i].conf_ui64Id;
                         bChanged=true;
                     }
                     mem.conf_ui64Id_dwTickCnt_refreshed  =  myGetTickCount(null);
@@ -4326,6 +4386,138 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
         return  0;
     }
 
+
+    public int procAnRefreshRecentFriendsReq1(qnmCommProc_mis.AnRefreshRecentFriendsReq1_h resp)
+    {
+        int i ;
+        boolean bChanged =false;
+        String str;
+
+        //
+        if  (  true  )  {
+            for  (  i=0;i<resp.usCnt;i++) {
+                qnmCommProc_mis.AnRefreshRecentFriendReq1_h mem  =  resp.mems[i];
+                //
+                str = "proc: AnRefreshRecentFriendsReq1.mem["  + i  +  "]: "  +  mem.ui64Id  +  "";
+                str +=  " lfcs.tn "  +  mem.resp.lfcs.tn  +  " devType "  +  mem.resp.lfcs.data.uiDevType  +  " devName "  +  mem.resp.lfcs.data.devName;
+                showInfo_open.qyFuncs.showInfo_open(0,0,"proc", str);
+                str = "";
+                str +=  " mfcs.tn "  +  mem.resp.mfcs.tn  +  "  runningStatus "  +  mem.resp.mfcs.data.usRunningStatus  +  " ip "  +  mem.resp.mfcs.data.ulIp;
+                showInfo_open.qyFuncs.showInfo_open(0,0,"proc", str);
+                str = "";
+                str +=  " hfcs.tn "  +  mem.resp.hfcs.tn  +  " t."  +  mem.resp.hfcs.data.t.uiInSpeedInKbps  +  ","  +  mem.resp.hfcs.data.t.uiOutSpeedInKbps;
+                str+= " a." + mem.resp.hfcs.data.a.uiInSpeedInKbps  +  ","  +  mem.resp.hfcs.data.a.uiOutSpeedInKbps;
+                str+= " v."  + mem.resp.hfcs.data.v.uiInSpeedInKbps  +  ","  +  mem.resp.hfcs.data.v.uiOutSpeedInKbps;
+                showInfo_open.qyFuncs.showInfo_open(0,0,"proc", str);
+
+
+                //
+                if  (  mem.ui64Id  ==  109)  {
+                    if  (  mem.resp.hfcs.tn!=0 &&  mem.resp.hfcs.data.v.uiInSpeedInKbps!=0)  {
+                        Log.d("at","l4385");
+                    };
+                }
+
+
+            }
+
+        }
+
+
+        //
+        for  (  i=0;i<resp.usCnt;i++) {
+
+            int j;
+            for (j = 0; j < m_confMems.size(); j++) {
+                ConfMember mem = m_confMems.get(j);
+                if (mem.ui64Id == resp.mems[i].ui64Id) {
+
+                    //
+                    if  (  resp.mems[i].resp.lfcs.tn!=0)  {
+                        mem.m_lfcs.copyFrom(resp.mems[i].resp.lfcs);
+                        //
+                        bChanged=true;
+                    }
+                    if  (  resp.mems[i].resp.mfcs.tn!=0) {
+                        mem.m_mfcs.copyFrom(resp.mems[i].resp.mfcs);
+                        //
+                        bChanged=true;
+                    }
+                    if  (  resp.mems[i].resp.hfcs.tn!=0) {
+                        mem.m_hfcs.copyFrom(resp.mems[i].resp.hfcs);
+                        //
+                        bChanged=true;
+                    }
+                    //
+                    /*
+                    if  (  0!=resp.mems[i].resp.hfcs.data.a.uiInSpeedInKbps
+                    ||  0!=resp.mems[i].resp.hfcs.data.a.uiOutSpeedInKbps
+                    ||  0!=resp.mems[i].resp.hfcs.data.v.uiInSpeedInKbps
+                    ||  0!=resp.mems[i].resp.hfcs.data.v.uiOutSpeedInKbps)
+                    {
+                        mem.m_hfcs.data.a.copyFrom(resp.mems[i].resp.hfcs.data.a);
+                        mem.m_hfcs.data.v.copyFrom(resp.mems[i].resp.hfcs.data.v);
+                        //
+                        bChanged=true;
+                    }
+
+                     */
+
+                    /*
+                    //
+                    if (mem.usRunningStatus != resp.mems[i].usRunningStatus) {
+                        mem.usRunningStatus = resp.mems[i].usRunningStatus;
+                        //
+                        bChanged=true;
+                    }
+                    if (  mem.conf_ui64Id!=resp.mems[i].conf_ui64Id )  {
+                        mem.conf_ui64Id=resp.mems[i].conf_ui64Id;
+                        bChanged=true;
+                    }
+
+                     */
+
+                    //
+                    mem.conf_ui64Id_dwTickCnt_refreshed  =  myGetTickCount(null);
+                }
+            }
+        }
+
+
+
+        //
+        if  (  bChanged)  {
+
+            if  (  true  )  {
+                ConfMember mem = m_confMems.get(0);
+                if  (  mem.iConfMemType==CONST_confMemType_grpMem)  {
+                    //
+                    Log.d("anc","mmmmmm");
+                }
+            }
+
+            //
+            sortMems();
+
+            //
+            if  (  true  )  {
+                ConfMember mem = m_confMems.get(0);
+                if  (  mem.iConfMemType==CONST_confMemType_grpMem)  {
+                    //
+                    Log.d("anc","mmmmmm");
+                }
+            }
+
+            //
+            m_confMemAdapter.notifyDataSetChanged();
+        }
+
+        //
+        return  0;
+    }
+
+
+
     //
     public int  sortMems()
     {
@@ -4355,8 +4547,8 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
                 }
 
                 // 2) 非 speaker: 在线排前
-                boolean o1Online = (o1.usRunningStatus == CONST_usRunningStatus_online);
-                boolean o2Online = (o2.usRunningStatus == CONST_usRunningStatus_online);
+                boolean o1Online = (o1.m_mfcs.data.usRunningStatus == CONST_usRunningStatus_online);
+                boolean o2Online = (o2.m_mfcs.data.usRunningStatus == CONST_usRunningStatus_online);
 
                 if (o1Online && !o2Online) return -1;
                 if (!o1Online && o2Online) return 1;
@@ -4793,8 +4985,17 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
     public List<qnmCommProc_mis.IpcInfo> ipcInfoList = new ArrayList<>();
 
     public void showNvrList() {
+        //  2026/10/01 修正：
+        //  1) MainActivity 悬浮窗宿主下 initPopWindows() 原来整体被 instanceof 门禁挡掉，
+        //     nvrListAdapter 一直为 null，走到 nvrListAdapter.notifyDataSetChanged() 就 NPE。
+        //  2) 这里补上视图/空判断，任何宿主下都不会因为 adapter/popupWindow 为空而崩。
+        if (!isAdded()) return;
+        if (nvr_channel_name == null) return;
+
         ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        if (pQyMc == null) return;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
+        if (pProcInfo == null) return;
 
         int i;
         qnmCommProc_mis.NvrInfo nvrInfo = pProcInfo.m_ipcProc.op.nvrInfo;
@@ -4816,8 +5017,12 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
                 pMem.name = "切换布局";//, 128);
                 ipcInfoList.add(0, pMem);
 
-                nvrListAdapter.notifyDataSetChanged();
-                popupWindow.showAsDropDown(nvr_channel_name);
+                if (nvrListAdapter != null) {
+                    nvrListAdapter.notifyDataSetChanged();
+                }
+                if (popupWindow != null) {
+                    popupWindow.showAsDropDown(nvr_channel_name);
+                }
             }
             nvr_channel_name.setCompoundDrawables(null, null, pull_downDrawable, null);
         }
@@ -4825,41 +5030,72 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
     public void initPopWindows() {
 
+        //  2026/10/01 修正：原来要求宿主必须是 Activity_dlgTalk_av，MainActivity
+        //  （m_floatingView_fg 悬浮窗）宿主下整个分支被跳过 → nvrListAdapter 永远 null。
+        //  现在只依赖 Fragment 自身 + 宿主 Activity，两种宿主都能建出下拉列表。
         Activity act = getActivity();
-        if  (  act instanceof  Activity_dlgTalk_av) {
-            Activity_dlgTalk_av mOwner_wnd=(Activity_dlgTalk_av)act;
-            //
-            View view = LayoutInflater.from(mOwner_wnd).inflate(R.layout.popwin_layout, null);
-            RecyclerView popListView = view.findViewById(R.id.pop_list_view);
+        if (act == null) return;
+        if (nvr_channel_name == null) return;
 
-            popListView.addItemDecoration(new DividerItemDecoration(mOwner_wnd, 1));
-            nvrListAdapter = new NvrListAdapter(mOwner_wnd, ipcInfoList);
-            popListView.setLayoutManager(new LinearLayoutManager(mOwner_wnd));
-            popListView.setAdapter(nvrListAdapter);
-            popupWindow = new PopupWindow(view, nvr_channel_name.getWidth(), mOwner_wnd.getWindow().getDecorView().getHeight() / 4, true);
-            popupWindow.setAnimationStyle(R.anim.anim_pop);
-            //popupWindow.Touchable = true;
-            popupWindow.setOutsideTouchable(false);
-            popupWindow.setFocusable(false);
-//        popupWindow.setTouchInterceptor((v, event) -> true);
-            popupWindow.setBackgroundDrawable(new ColorDrawable(Color.parseColor("#50000000")));
-            popupWindow.setOnDismissListener(this);
+        //  先清掉上一次的引用：本方法中途 return 时，showNvrList() 里的
+        //  nvrListAdapter / popupWindow 判空就能拦住，不会拿旧的弹窗去 show。
+        if (popupWindow != null) {
+            if (popupWindow.isShowing()) {
+                popupWindow.dismiss();
+            }
+            popupWindow = null;
         }
+        nvrListAdapter = null;
+
+        View view = LayoutInflater.from(act).inflate(R.layout.popwin_layout, null);
+        RecyclerView popListView = view.findViewById(R.id.pop_list_view);
+
+        popListView.addItemDecoration(new DividerItemDecoration(act, 1));
+        //  适配器改为持有本 Fragment（点击回调不再依赖 Activity_dlgTalk_av.m_fg_dlgTalk_av2）
+        nvrListAdapter = new NvrListAdapter(this, ipcInfoList);
+        popListView.setLayoutManager(new LinearLayoutManager(act));
+        popListView.setAdapter(nvrListAdapter);
+
+        //  锚点可能还没测量完（getWidth()==0），给个兜底宽度，否则弹窗宽 0 看不见
+        int iWidth = nvr_channel_name.getWidth();
+        if (iWidth <= 0) {
+            iWidth = (int) (160 * act.getResources().getDisplayMetrics().density);
+        }
+        int iHeight = 0;
+        if (act.getWindow() != null && act.getWindow().getDecorView() != null) {
+            iHeight = act.getWindow().getDecorView().getHeight() / 4;
+        }
+        if (iHeight <= 0) {
+            iHeight = (int) (240 * act.getResources().getDisplayMetrics().density);
+        }
+
+        popupWindow = new PopupWindow(view, iWidth, iHeight, true);
+        popupWindow.setAnimationStyle(R.anim.anim_pop);
+        //popupWindow.Touchable = true;
+        popupWindow.setOutsideTouchable(false);
+        popupWindow.setFocusable(false);
+//        popupWindow.setTouchInterceptor((v, event) -> true);
+        popupWindow.setBackgroundDrawable(new ColorDrawable(Color.parseColor("#50000000")));
+        popupWindow.setOnDismissListener(this);
     }
 
     public static class NvrListAdapter extends RecyclerView.Adapter {
-        private final Activity_dlgTalk_av mOwner_wnd;
+        //  2026/10/01 修正：原来持有 Activity_dlgTalk_av，点击时靠
+        //  mOwner_wnd.m_fg_dlgTalk_av2 反查 Fragment——MainActivity 宿主既没有该类型
+        //  也没有 m_fg_dlgTalk_av2 字段，所以在 MainActivity 下根本建不起来。
+        //  改为直接持有本 Fragment，两种宿主行为一致。
+        private final Fragment_dlgTalk_av2 mFg;
         private final List<qnmCommProc_mis.IpcInfo> ipcInfoList;
 
-        public NvrListAdapter(Activity_dlgTalk_av mOwner_wnd, List<qnmCommProc_mis.IpcInfo> ipcInfoList) {
+        public NvrListAdapter(Fragment_dlgTalk_av2 fg, List<qnmCommProc_mis.IpcInfo> ipcInfoList) {
             this.ipcInfoList = ipcInfoList;
-            this.mOwner_wnd = mOwner_wnd;
+            this.mFg = fg;
         }
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             Log.d(TAG, "onCreateViewHolder");
-            View view = LayoutInflater.from(mOwner_wnd).inflate(R.layout.popwin_item, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.popwin_item, parent, false);
             return new CloudViewHolder(view);
         }
 
@@ -4875,32 +5111,39 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
             Log.d("nvr_name_tv.Click");
             ((CloudViewHolder) holder).nvr_name_tv.setOnClickListener(v -> {
+                final Fragment_dlgTalk_av2 fg = mFg;
+                if (fg == null || !fg.isAdded()) return;
+
                 qnmCommProc_mis.IpcInfo ipcInfo1 = ipcInfoList.get(position);
                 int clickItemChannel = ipcInfo1.iChannel;
 
                 Log.d(position + "position");
 
-                mOwner_wnd.m_fg_dlgTalk_av2.sendCurrentQiuJIEnableControl(clickItemChannel);
+                fg.sendCurrentQiuJIEnableControl(clickItemChannel);
                 if (nvrName.contains("(球机)")) {
-                    mOwner_wnd.m_fg_dlgTalk_av2.showOperationRelativeLayout(true);
+                    fg.showOperationRelativeLayout(true);
                 } else {
-                    mOwner_wnd.m_fg_dlgTalk_av2.showOperationRelativeLayout(false);
-                    mOwner_wnd.m_fg_dlgTalk_av2.nvr_control.setVisibility(View.INVISIBLE);
+                    fg.showOperationRelativeLayout(false);
+                    if (fg.nvr_control != null) {
+                        fg.nvr_control.setVisibility(View.INVISIBLE);
+                    }
                 }
-                mOwner_wnd.m_fg_dlgTalk_av2.popupWindow.dismiss();
-                mOwner_wnd.m_fg_dlgTalk_av2.nvr_channel_name.setText(nvrName);
+                if (fg.popupWindow != null) {
+                    fg.popupWindow.dismiss();
+                }
+                if (fg.nvr_channel_name != null) {
+                    fg.nvr_channel_name.setText(nvrName);
+                }
 
                 //
                 if  (  nvrName.contains("(3D)"))  {
                     //
-
-                    //
-                    mOwner_wnd.m_fg_dlgTalk_av2.m_b3ddw  =  true;
+                    fg.m_b3ddw  =  true;
                 }
                 else  {
 
                     //
-                    mOwner_wnd.m_fg_dlgTalk_av2.m_b3ddw = false;
+                    fg.m_b3ddw = false;
                 }
 
                 //
@@ -4915,58 +5158,63 @@ public class Fragment_dlgTalk_av2 extends Fragment implements PopupWindow.OnDism
 
     public void sendCurrentQiuJIEnableControl(int clickItemChannel) {
         ctxQyMc.CCtxQyMc pQyMc = g_pQyMc;
+        if (pQyMc == null) return;
         ctxQmc.CCtxQmc pProcInfo = pQyMc.get_pProcInfo();
+        if (pProcInfo == null) return;
         CIsTalker talker = findIsTalker(pProcInfo.pMisCnt,talker_ui64Id);
         if  (  talker  ==  null)  return;
         dlgTalkProc.DLG_TALK_var m_var = talker.m_var;
+        if (m_var == null) return;
 
-        Activity act = getActivity();
-        if ( act instanceof  Activity_dlgTalk_av) {
-            Activity_dlgTalk_av mOwner_wnd = (Activity_dlgTalk_av)act;
-            //组名
-            qyDefs.QY_MESSENGER_ID idInfo_imGrp_related = new qyDefs.QY_MESSENGER_ID();
-            idInfo_imGrp_related.ui64Id = mOwner_wnd.mOwner_hTalk.get().m_talker.m_var.addr.idInfo.ui64Id;
+        //  2026/10/01 修正：原来门禁是"宿主必须是 Activity_dlgTalk_av"，
+        //  并且靠 mOwner_wnd.mOwner_hTalk.get().m_talker.m_var 取会话变量——
+        //  MainActivity(悬浮窗)宿主下这两条都不成立，点球机不会有任何反应。
+        //  这里直接用上面 findIsTalker() 拿到的同一个 CIsTalker / m_var，两种宿主完全等价。
+        if (m_var.av == null || m_var.av.taskInfo == null) return;
 
-            // 我
-            qyDefs.QY_MESSENGER_ID idInfo_requester = new qyDefs.QY_MESSENGER_ID();
-            idInfo_requester.ui64Id = 0;
+        //组名
+        qyDefs.QY_MESSENGER_ID idInfo_imGrp_related = new qyDefs.QY_MESSENGER_ID();
+        idInfo_imGrp_related.ui64Id = m_var.addr.idInfo.ui64Id;
 
-            //mcu 的
-            qyDefs.QY_MESSENGER_ID idInfo_to = new qyDefs.QY_MESSENGER_ID();
-            idInfo_to.ui64Id = mOwner_wnd.mOwner_hTalk.get().m_talker.m_var.av.taskInfo.idInfo_starter.ui64Id;
+        // 我
+        qyDefs.QY_MESSENGER_ID idInfo_requester = new qyDefs.QY_MESSENGER_ID();
+        idInfo_requester.ui64Id = 0;
+
+        //mcu 的
+        qyDefs.QY_MESSENGER_ID idInfo_to = new qyDefs.QY_MESSENGER_ID();
+        idInfo_to.ui64Id = m_var.av.taskInfo.idInfo_starter.ui64Id;
 
 
 
 
-            qnmCommProc_mis.ConfLayoutParam layoutParam = new qnmCommProc_mis.ConfLayoutParam();
-            layoutParam.enlargeParam.usEnlargeType = CONST_enlargeType_img;
+        qnmCommProc_mis.ConfLayoutParam layoutParam = new qnmCommProc_mis.ConfLayoutParam();
+        layoutParam.enlargeParam.usEnlargeType = CONST_enlargeType_img;
 
-            layoutParam.enlargeParam.ui64Id = pProcInfo.m_ipcProc.op.nvrInfo.ui64Id;
-            layoutParam.ipcParam.iChannel = clickItemChannel;
+        layoutParam.enlargeParam.ui64Id = pProcInfo.m_ipcProc.op.nvrInfo.ui64Id;
+        layoutParam.ipcParam.iChannel = clickItemChannel;
 
-            mOwner_wnd.mOwner_hTalk.get().m_talker.m_var.currentSelectQiuJiChannel = clickItemChannel;
+        m_var.currentSelectQiuJiChannel = clickItemChannel;
 
-            dlgTalk_videoConference.qyFuncs_Droid.sendConfLayout(m_var.addr.idInfo.ui64Id, (byte) 0, (short) 0, (short) CONST_imOp_enlargeChannel, layoutParam, idInfo_imGrp_related, idInfo_requester, idInfo_to, "");
-            Log.d("##球机sendConfLayout sendCurrentQiuJIEnableControl:" + clickItemChannel);
-        }
+        dlgTalk_videoConference.qyFuncs_Droid.sendConfLayout(m_var.addr.idInfo.ui64Id, (byte) 0, (short) 0, (short) CONST_imOp_enlargeChannel, layoutParam, idInfo_imGrp_related, idInfo_requester, idInfo_to, "");
+        Log.d("##球机sendConfLayout sendCurrentQiuJIEnableControl:" + clickItemChannel);
     }
 
     public void showOperationRelativeLayout(boolean show) {
-        Activity act = getActivity();
-        if  (  act instanceof  Activity_dlgTalk_av) {
-            Activity_dlgTalk_av mOwner_wnd = (Activity_dlgTalk_av) act;
-            //
-            if (show) {
-                nvr_control.setImageResource(R.drawable.nvr_control);
-                mOwner_wnd.m_fg_dlgTalk_av2.nvr_control.setVisibility(View.VISIBLE);
-                mOwner_wnd.m_fg_dlgTalk_av2.left_menu_relative.setVisibility(View.VISIBLE);
-                mOwner_wnd.m_fg_dlgTalk_av2.right_menu_relative.setVisibility(View.VISIBLE);
-            } else {
-                //  mOwner_wnd.m_fg_dlgTalk_av2.nvr_control.setVisibility(android.view.View.INVISIBLE);
-                nvr_control.setImageResource(R.drawable.close_nvr_control);
-                mOwner_wnd.m_fg_dlgTalk_av2.left_menu_relative.setVisibility(android.view.View.INVISIBLE);
-                mOwner_wnd.m_fg_dlgTalk_av2.right_menu_relative.setVisibility(android.view.View.INVISIBLE);
-            }
+        //  2026/10/01 修正：原来只认 Activity_dlgTalk_av 宿主，MainActivity 悬浮窗里
+        //  选中球机后左右控制菜单不会出现。这里直接操作本 Fragment 自己的控件
+        //  （原代码里 mOwner_wnd.m_fg_dlgTalk_av2.nvr_control 与 this.nvr_control 本就是同一对象）。
+        if (nvr_control == null) return;
+
+        if (show) {
+            nvr_control.setImageResource(R.drawable.nvr_control);
+            nvr_control.setVisibility(View.VISIBLE);
+            if (left_menu_relative  != null) left_menu_relative.setVisibility(View.VISIBLE);
+            if (right_menu_relative != null) right_menu_relative.setVisibility(View.VISIBLE);
+        } else {
+            //  nvr_control.setVisibility(android.view.View.INVISIBLE);
+            nvr_control.setImageResource(R.drawable.close_nvr_control);
+            if (left_menu_relative  != null) left_menu_relative.setVisibility(android.view.View.INVISIBLE);
+            if (right_menu_relative != null) right_menu_relative.setVisibility(android.view.View.INVISIBLE);
         }
     }
 

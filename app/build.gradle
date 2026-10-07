@@ -10,8 +10,8 @@ android {
         applicationId "com.qycx"
         minSdk 23
         targetSdk 34
-        versionCode 810
-        versionName "8.10"
+        versionCode 811
+        versionName "8.11"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         ndk{

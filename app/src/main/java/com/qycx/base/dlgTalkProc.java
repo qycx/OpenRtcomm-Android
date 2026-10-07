@@ -2,6 +2,7 @@ package com.qycx.base;
 
 import static com.qycx.Fragment_dlgTalk_msgList.talk_addNewMsg;
 import static com.qycx.anc.Consts.CONST_usConfType_emergencyCommand;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_refreshRecentFriendsReq1;
 import static com.qycx.base.Consts.CONST_channelType_talking;
 import static com.qycx.base.dlgTalkProc_help.qyFuncs_Droid.askToRefreshLayout_mgr;
 import static com.qycx.base.dlgTalkProc_help.qyFuncs_Droid.dlgTalk_canSpeak;
@@ -20,6 +21,7 @@ import static com.qycx.base.dyn_isCliD3d.qyFuncs.dyn_d3dWall_refreshImgs;
 import static com.qycx.base.getTalkerDesc.Consts.CONST_maxConfMgrMems;
 import static com.qycx.base.getTalkerDesc.qyFuncs.getMsgDesc;
 import static com.qycx.base.get_funcs_for_isCliHelp.qyFuncs.QY_GET_FUNCS_for_isCliHelp;
+import static com.qycx.base.imCommType_defs.Consts.CONST_ancCommType_muxStreamsCfg;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_confKey;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_htmlContent;
 import static com.qycx.base.imCommType_defs.Consts.CONST_imCommType_refreshRecentFriendsResp;
@@ -2581,7 +2583,7 @@ public class dlgTalkProc {
                                             dlgTalk_do_pleaseSpeak(hDlg.m_talker.m_var.addr.idInfo.ui64Id,pMsg.data.route.idInfo_from.ui64Id);
                                         }
                                         else  if  (  taskInteractionReq.usOp  ==  CONST_imOp_pleaseStopSpeaking) {
-                                                  dlgTalk_do_pleaseStopSpeaking(hDlg,pMsg.data.route.idInfo_from.ui64Id);
+                                                  dlgTalk_do_pleaseStopSpeaking(hDlg.m_talker,pMsg.data.route.idInfo_from.ui64Id);
                                         }
 
                                   }
@@ -2604,6 +2606,22 @@ public class dlgTalkProc {
 
 
                             }
+                                  //
+                                  break;
+                            case  CONST_anCommType_refreshRecentFriendsReq1:
+                                  //
+                                  if  (  !isUcFlgResp(pMsg.ucFlg))  break;
+                                  //
+                                Object mhToolDlgTalkAv = hDlg.m_talker.m_var.m_hTool_dlgTalk_av;
+                                if  (  mhToolDlgTalkAv!=null) {
+                                    if  (  mhToolDlgTalkAv instanceof Activity_dlgTalk_av ) {
+                                        Activity_dlgTalk_av hTalk_av = (Activity_dlgTalk_av) mhToolDlgTalkAv;
+                                        if (hTalk_av.m_fg_dlgTalk_av2 != null) {
+                                            hTalk_av.m_fg_dlgTalk_av2.fg_OnQyComm(pMsg);
+                                        }
+                                    }
+                                }
+
                                   //
                                   break;
 
@@ -2727,9 +2745,20 @@ public class dlgTalkProc {
 
             //
             if  (  m_var.m_hTool_dlgTalk_av !=null  )  {
-                Activity_dlgTalk_av  hTalk_av  =  (Activity_dlgTalk_av)m_var.m_hTool_dlgTalk_av;
-                if  (  hTalk_av.m_fg_dlgTalk_av2!=null){
-                    hTalk_av.m_fg_dlgTalk_av2.do_request(true);
+                if  (  m_var.m_hTool_dlgTalk_av instanceof Activity_dlgTalk_av) {
+                    Activity_dlgTalk_av hTalk_av = (Activity_dlgTalk_av) m_var.m_hTool_dlgTalk_av;
+                    if (hTalk_av.m_fg_dlgTalk_av2 != null) {
+                        hTalk_av.m_fg_dlgTalk_av2.do_request(true);
+                    }
+                }
+                else if  (  m_var.m_hTool_dlgTalk_av instanceof  MainActivity)  {
+                    MainActivity mainWnd = (MainActivity) m_var.m_hTool_dlgTalk_av;
+                    if  (  mainWnd.m_floatingView_fg!=null)  {
+                        if  (  mainWnd.m_floatingView_fg instanceof  Fragment_dlgTalk_av2)  {
+                            Fragment_dlgTalk_av2 fg_av2 = (Fragment_dlgTalk_av2) mainWnd.m_floatingView_fg;;
+                            fg_av2.do_request(true);
+                        }
+                    }
                 }
             }
 
@@ -2746,13 +2775,13 @@ public class dlgTalkProc {
         }
 
         //
-        public static int dlgTalk_do_pleaseStopSpeaking(Object hDlgTalk,long idInfo_from)
+        public static int dlgTalk_do_pleaseStopSpeaking(CIsTalker talker,long idInfo_from)
         {
-            if  (  hDlgTalk  ==  null)  return  -1;
-            Activity_dlgTalk hTalk  =  (Activity_dlgTalk) hDlgTalk;
-            DLG_TALK_var m_var=hTalk.m_talker.m_var;
+            if  (  talker  ==  null)  return  -1;
+            //Activity_dlgTalk hTalk  =  (Activity_dlgTalk) hDlgTalk;
+            DLG_TALK_var m_var=talker.m_var;
             //
-            Activity_dlgTalk hMgr  =  hTalk;
+            //Activity_dlgTalk hMgr  =  hTalk;
             DLG_TALK_var pMgrVar = m_var;
 
             ctxQyMc.CCtxQyMc  pQyMc = g_pQyMc;
@@ -2775,10 +2804,22 @@ public class dlgTalkProc {
 
             //
             if  (  m_var.m_hTool_dlgTalk_av !=null  )  {
-                Activity_dlgTalk_av  hTalk_av  =  (Activity_dlgTalk_av)m_var.m_hTool_dlgTalk_av;
-                if  (  hTalk_av.m_fg_dlgTalk_av2!=null){
-                    hTalk_av.m_fg_dlgTalk_av2.do_request(false);
+                if  (  m_var.m_hTool_dlgTalk_av instanceof Activity_dlgTalk_av) {
+                    Activity_dlgTalk_av hTalk_av = (Activity_dlgTalk_av) m_var.m_hTool_dlgTalk_av;
+                    if (hTalk_av.m_fg_dlgTalk_av2 != null) {
+                        hTalk_av.m_fg_dlgTalk_av2.do_request(false);
+                    }
                 }
+                else if  (  m_var.m_hTool_dlgTalk_av instanceof  MainActivity)  {
+                    MainActivity mainWnd = (MainActivity) m_var.m_hTool_dlgTalk_av;
+                    if  (  mainWnd.m_floatingView_fg!=null)  {
+                        if  (  mainWnd.m_floatingView_fg instanceof  Fragment_dlgTalk_av2)  {
+                            Fragment_dlgTalk_av2 fg_av2 = (Fragment_dlgTalk_av2) mainWnd.m_floatingView_fg;;
+                            fg_av2.do_request(false);
+                        }
+                    }
+                }
+
             }
 
             //

@@ -1,6 +1,7 @@
 
 package com.qycx.base;
 
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_refreshRecentFriendsReq1;
 import static com.qycx.base.Consts.*;
 import static com.qycx.base.QYThreadCtx.getCtxThreadTmpVar;
 import static com.qycx.base.findOrgMsgAndProcess_is.qyFuncs.*;
@@ -470,6 +471,32 @@ public class qyMcMainDaemon_isCli_mgr {
                         guiShare.GuiShare.pf_PostMessage.call(pQyMc.gui.hMainWnd, CONST_qyWm_postComm, CONST_qyWmParam_msgArrive, 0);
                     }
                     break;
+
+                    case  CONST_anCommType_refreshRecentFriendsReq1:
+                    {
+                        //
+                        if (!isRcOk(pMsgInput.usCode)) return iErr;
+                        //
+                        qnmCommProc_mis.AnRefreshRecentFriendsReq1_h resp = (qnmCommProc_mis.AnRefreshRecentFriendsReq1_h ) pMsgInput.data.buf;
+                        //
+                        if  (  resp.ucbResp ==0  )  {
+                            return  iErr;
+                        }
+
+                        //
+                        if (pProcInfo.cfg.debugStatusInfo.bDbgDetail_refreshRecentFriends) {
+                            showInfo_open.qyFuncs.showInfo_open(0, 0, "input_mgr_resp", "get recentFriendsResp. " + resp.usCnt);
+                        }
+
+                        //
+                        if (0 != qPostMsg(pMsgInput, pQyMc.gui.processQ)) {
+                            return iErr;
+                        }
+                        //
+                        guiShare.GuiShare.pf_PostMessage.call(pQyMc.gui.hMainWnd, CONST_qyWm_postComm, CONST_qyWmParam_msgArrive, 0);
+                    }
+                    break;
+
 
                     //
                     case  CONST_imCommType_procLocReq:  //  2015/08/02

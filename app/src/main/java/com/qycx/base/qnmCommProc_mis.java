@@ -3,6 +3,12 @@ package com.qycx.base;
 
 import static com.qycx.anc.Consts.__USE_old_msgHead_n__;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_refreshRecentFriendsReq1;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCfgId_lfcs_tn;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCfgId_mfcs_tn;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCfgId_hfcs_tn;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCfgId_hfcs_cliNetstats;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCfgId_hfcs_cliPktLoss;
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCfgId_conf_ui64Id;
 import static com.qycx.anc.ancCommProc_defs.Consts.CONST_ancCfgId_usElapseInMs_fromLastPkt;
 import static com.qycx.base.imCommType_defs.Consts.*;
 import static com.qycx.base.isProtocolFunc.qyFuncs.commAuthInfo2Stream_mis;
@@ -3290,9 +3296,175 @@ public class qnmCommProc_mis {
 
 
     //
+    //
+    //  2026/09/28, 以下为 c++ qnmCommProc_mis.h 中 ImObjLfcsData/ImObjLfcs/ImObjMfcsData/ImObjMfcs/
+    //  Hfcs_cliNetStat/HfcsPktLoss/ImObjHfcsData/ImObjHfcs/HfcsCliNetStats_n/HfcsPktLoss_n 的移植
+    public static class ImObjLfcsData {
+        public int uiDevType;
+        public String devName = "";                     //  c++ TCHAR devName[128]
+
+        //
+        public int copyFrom(ImObjLfcsData src)
+        {
+            if  (  src==null)  return -1;
+            uiDevType  = src.uiDevType;
+            devName=src.devName;
+            return  0;
+        }
+
+    };
+
+    //Low frequencyChangingState
+    public static class ImObjLfcs {
+        public ImObjLfcsData data = new ImObjLfcsData();
+        public int tn;
+
+        public int copyFrom(ImObjLfcs src)
+        {
+            if  (  src==null)  return  -1;
+            data.copyFrom(src.data);
+            tn=src.tn;
+            return  0;
+        }
+
+    };
+
+    public static class ImObjMfcsData {
+        public long ulIp;                               //  c++ unsigned long(32bit)
+        public long ulDetectedIp;
+        public int usRunningStatus;                     //  c++ unsigned short
+        public long conf_ui64Id;
+
+        public int copyFrom(ImObjMfcsData src)
+        {
+            if  (  src==null) return -1;
+            ulIp=src.ulIp;
+            ulDetectedIp=src.ulDetectedIp;
+            usRunningStatus=src.usRunningStatus;
+            conf_ui64Id=src.conf_ui64Id;
+            return 0;
+        }
+    };
+
+    //MidiumFrequencyChangingState
+    public static class ImObjMfcs {
+        public ImObjMfcsData data = new ImObjMfcsData();
+        public int tn;
+
+        public int copyFrom(ImObjMfcs src)
+        {
+            if ( src==null) return  -1;
+            data.copyFrom(src.data);
+            tn=src.tn;
+            return 0;
+        }
+    };
+
+    public static class Hfcs_cliNetStat {
+        public int uiInSpeedInKbps;                     //  bps
+        public int uiOutSpeedInKbps;
+
+        //
+        public int copyFrom(Hfcs_cliNetStat src)
+        {
+            if  (  src==null)  return -1;
+            uiInSpeedInKbps = src.uiInSpeedInKbps;
+            uiOutSpeedInKbps = src.uiOutSpeedInKbps;
+            return  0;
+        }
+    };
+
+    public static class HfcsPktLoss {
+        public int a_pktLoss_bp;                        //  c++ ushort, 万分比
+        public int v_pktLoss_bp;
+
+        public int copyFrom(HfcsPktLoss src)
+        {
+            if  (  src==null)  return  -1;
+            a_pktLoss_bp=src.a_pktLoss_bp;
+            v_pktLoss_bp=src.v_pktLoss_bp;
+            return  0;
+        }
+    };
+
+    public static class ImObjHfcsData {
+        public Hfcs_cliNetStat t = new Hfcs_cliNetStat();
+        public Hfcs_cliNetStat f = new Hfcs_cliNetStat();
+        public Hfcs_cliNetStat a = new Hfcs_cliNetStat();
+        public Hfcs_cliNetStat v = new Hfcs_cliNetStat();
+        public HfcsPktLoss pktLoss = new HfcsPktLoss();
+
+        //
+        public int copyFrom(ImObjHfcsData src)
+        {
+            if  (  src==null)  return  -1;
+            t.copyFrom(src.t);
+            f.copyFrom(src.f);
+            a.copyFrom(src.a);
+            v.copyFrom(src.v);
+            pktLoss.copyFrom(src.pktLoss);
+
+            return  0;
+        }
+
+    };
+
+    //High frequencyChangingState
+    public static class ImObjHfcs {
+        public ImObjHfcsData data = new ImObjHfcsData();
+        public int tn;
+
+        //
+        public int copyFrom(ImObjHfcs src)
+        {
+            if  (  src==null)  return  -1;
+            data.copyFrom(src.data);
+            tn=src.tn;
+            return 0;
+        }
+
+    };
+
+    //  流上的字节型 hfcs 网速(8字节)/丢包率(2字节)，对应 c++ HfcsCliNetStats_n / HfcsPktLoss_n
+    public static class HfcsCliNetStats_n {
+        public byte t_i, t_o, f_i, f_o, a_i, a_o, v_i, v_o;
+        public byte[] toByteArray() {
+            return new byte[]{t_i, t_o, f_i, f_o, a_i, a_o, v_i, v_o};
+        }
+    };
+
+    public static class HfcsPktLoss_n {
+        public byte a_pktLoss;
+        public byte v_pktLoss;
+        public byte[] toByteArray() {
+            return new byte[]{a_pktLoss, v_pktLoss};
+        }
+    };
+
+    //  AnRefreshRecentFriendReq1_h 的 req/resp 子结构，对应 c++ 匿名 struct
+    public static class AnRefreshRecentFriendReq1_req_t {
+        public int lfcs_tn;
+        public int mfcs_tn;
+        public int hfcs_tn;
+    };
+
+    public static class AnRefreshRecentFriendReq1_resp_t {
+        //
+        public ImObjLfcs lfcs = new ImObjLfcs();
+        public ImObjMfcs mfcs = new ImObjMfcs();
+        public ImObjHfcs hfcs = new ImObjHfcs();
+    };
+
     public static class AnRefreshRecentFriendReq1_h						{									//  µ¥¸öÁªÏµÈËµÄË¢ÐÂÇëÇó
         public long									ui64Id;
         public long									tLastRefreshedTime_misServ;			//  ±íÃ÷¸ÃÁªÏµÈËÊÇÊ²Ã´Ê±¼ä£¨·þÎñÆ÷Ê±¼ä£©µÄ×´Ì¬
+
+        //
+        //  2026/09/28, from c++ qnmCommProc_mis.h AnRefreshRecentFriendReq1_h
+        public AnRefreshRecentFriendReq1_req_t req = new AnRefreshRecentFriendReq1_req_t();
+
+        //
+        public AnRefreshRecentFriendReq1_resp_t resp = new AnRefreshRecentFriendReq1_resp_t();
     };
 
     //
@@ -3301,6 +3473,9 @@ public class qnmCommProc_mis {
 
     public static class AnRefreshRecentFriendsReq1_h extends IM_CONTENTU  {									//  ×ÜµÄÁªÏµÈËµÄË¢ÐÂÇëÇó
         //unsigned  int										uiType;
+
+        public byte ucbResp;
+
         public long											tLastRefreshedTime_misServ;			//  ÉÏ´ÎµÄË¢ÐÂ¹¤×÷µÄ·þÎñÆ÷Ê±¼ä¡£
         public short									usCnt;
         public AnRefreshRecentFriendReq1_h			[]				mems = new AnRefreshRecentFriendReq1_h[CONST_maxCnt_recentFriends];
@@ -8738,6 +8913,51 @@ public class qnmCommProc_mis {
         //
         //////////////////////////////////////////////
 
+    //
+    //  2026/09/28, from c++ qnmCommProc_mis.cpp fr_encode_kbps/fr_value_kbps/plr_encode_bp/plr_value_bp
+    //  flow rate: 万分比 bp -> 1 字节, 1 字节 -> 万分比 bp
+    public static byte fr_encode_kbps(int kbps) {
+        int units;
+        if (kbps <= 99)                     //  线性区：最高位 0，最多表示 100Kbps
+            return (byte) (kbps & 0x7F);
+        units = kbps / 100;                 //  单位区：以 100Kbps 为一档，向下取整
+        if (units >= 126)                   //  超出低 7 位能表示的档数 -> 全 1
+            return (byte) 0xFF;
+        return (byte) (0x80 | units);
+    }
+
+    public static int fr_value_kbps(int code) {
+        if (code == 0xFF) {
+            return 12700;                   //  饱和: >= 12700 Kbps
+        }
+        if (code < 0x80) {
+            return code;                    //  0 ~ 99 Kbps, 精确值
+        }
+        return (code - 0x80) * 100;         //  >= 100 Kbps, 所在档下界
+    }
+
+    public static byte plr_encode_bp(int bp) {
+        int units;
+        if (bp < 100) {
+            return (byte) bp;               //  0.00% ~ 0.99%, 最高位 0
+        }
+        units = bp / 100;                   //  转成百分比, 向下取整
+        if (units >= 127) {
+            return (byte) 0xFF;             //  >= 127% -> 全 1
+        }
+        return (byte) (0x80 | units);       //  >= 1%, 最高位 1
+    }
+
+    public static int plr_value_bp(int code) {
+        if (code == 0xFF) {
+            return 12700;                   //  饱和: >= 127%, 真值可能更大
+        }
+        if (code < 0x80) {
+            return code;                    //  0.00% ~ 0.99%, 精确值
+        }
+        return (code - 0x80) * 100;         //  整百分比, 下界
+    }
+
         public static int AnRefreshRecentFriendsReq12Stream(int uiStreamId, AnRefreshRecentFriendsReq1_h pReq, ByteBuffer ptr) {
             int iErr = -1;
             int i = 0;
@@ -8755,6 +8975,13 @@ public class qnmCommProc_mis {
 
             //  qyShowInfo1(  CONST_qyShowType_debug,  (  ""  ),  (  ""  ),  0,  (  ""  ),  (  ""  ),  (  "    transferVideoData2stream: uiTranNo_openAvDev %d"  ),  pReq.uiTranNo_openAvDev  );
 
+
+            if (0 != pReq.ucbResp) {
+                if (0 > (len = data2Stream(CONST_qyDataType_char, CONST_qnmCfgId_ucbResp, pReq.ucbResp, 0, ptr))) {
+                    return iErr;
+                }
+                total_len += len;
+            }
 
             /*
             if (0 != pReq.uiTranNo_openAvDev) {
@@ -8802,6 +9029,105 @@ public class qnmCommProc_mis {
 
 
 
+
+                    //
+                    //  2026/09/28, from c++ anRefreshRecentFriendsReq12Stream
+                    if (0 == pReq.ucbResp) {
+                        //  req 侧的 tn
+                        if (0 != pMem.req.lfcs_tn) {
+                            if (0 > (len = data2Stream(CONST_qyDataType_long, CONST_anCfgId_lfcs_tn, pMem.req.lfcs_tn, 0, ptr)))
+                                return iErr;
+                            total_len += len;
+                        }
+                        if (0 != pMem.req.mfcs_tn) {
+                            if (0 > (len = data2Stream(CONST_qyDataType_long, CONST_anCfgId_mfcs_tn, pMem.req.mfcs_tn, 0, ptr)))
+                                return iErr;
+                            total_len += len;
+                        }
+                        if (0 != pMem.req.hfcs_tn) {
+                            if (0 > (len = data2Stream(CONST_qyDataType_long, CONST_anCfgId_hfcs_tn, pMem.req.hfcs_tn, 0, ptr)))
+                                return iErr;
+                            total_len += len;
+                        }
+                    }
+
+                    //
+                    if (0 != pReq.ucbResp) {
+                        //  lfcs
+                        if (0 != pMem.resp.lfcs.tn) {
+                            if (0 != pMem.resp.lfcs.data.uiDevType) {
+                                if (0 > (len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_uiDevType_from, pMem.resp.lfcs.data.uiDevType, 0, ptr)))
+                                    return iErr;
+                                total_len += len;
+                            }
+                            //
+                            if (null != pMem.resp.lfcs.data.devName && !pMem.resp.lfcs.data.devName.isEmpty()) {
+                                if (0 > (len = data2Stream(CONST_qyDataType_utf8Str, CONST_qnmCfgId_devName, pMem.resp.lfcs.data.devName, pMem.resp.lfcs.data.devName.getBytes().length, ptr)))
+                                    return iErr;
+                                total_len += len;
+                            }
+                            //
+                            if (0 > (len = data2Stream(CONST_qyDataType_long, CONST_anCfgId_lfcs_tn, pMem.resp.lfcs.tn, 0, ptr)))
+                                return iErr;
+                            total_len += len;
+                        }
+
+                        //  mfcs
+                        if (0 != pMem.resp.mfcs.tn) {
+                            if (0 != pMem.resp.mfcs.data.usRunningStatus) {
+                                if (0 > (len = data2Stream(CONST_qyDataType_short, CONST_qnmCfgId_usRunningStatus, (short) pMem.resp.mfcs.data.usRunningStatus, 0, ptr)))
+                                    return iErr;
+                                total_len += len;
+                            }
+                            if (0 != pMem.resp.mfcs.data.ulIp) {
+                                if (0 > (len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_ulIp, (int) pMem.resp.mfcs.data.ulIp, 0, ptr)))
+                                    return iErr;
+                                total_len += len;
+                            }
+                            if (0 != pMem.resp.mfcs.data.ulDetectedIp) {
+                                if (0 > (len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_ulDetectedIp, (int) pMem.resp.mfcs.data.ulDetectedIp, 0, ptr)))
+                                    return iErr;
+                                total_len += len;
+                            }
+                            //
+                            if (0 != pMem.resp.mfcs.data.conf_ui64Id) {
+                                if (0 > (len = data2Stream(CONST_qyDataType_l64, CONST_anCfgId_conf_ui64Id, pMem.resp.mfcs.data.conf_ui64Id, Long.BYTES, ptr)))
+                                    return iErr;
+                                total_len += len;
+                            }
+                            //
+                            if (0 > (len = data2Stream(CONST_qyDataType_long, CONST_anCfgId_mfcs_tn, pMem.resp.mfcs.tn, 0, ptr)))
+                                return iErr;
+                            total_len += len;
+                        }
+
+                        //  hfcs
+                        if (0 != pMem.resp.hfcs.tn) {
+                            HfcsCliNetStats_n nn = new HfcsCliNetStats_n();
+                            nn.t_i = fr_encode_kbps(pMem.resp.hfcs.data.t.uiInSpeedInKbps);
+                            nn.t_o = fr_encode_kbps(pMem.resp.hfcs.data.t.uiOutSpeedInKbps);
+                            nn.f_i = fr_encode_kbps(pMem.resp.hfcs.data.f.uiInSpeedInKbps);
+                            nn.f_o = fr_encode_kbps(pMem.resp.hfcs.data.f.uiOutSpeedInKbps);
+                            nn.a_i = fr_encode_kbps(pMem.resp.hfcs.data.a.uiInSpeedInKbps);
+                            nn.a_o = fr_encode_kbps(pMem.resp.hfcs.data.a.uiOutSpeedInKbps);
+                            nn.v_i = fr_encode_kbps(pMem.resp.hfcs.data.v.uiInSpeedInKbps);
+                            nn.v_o = fr_encode_kbps(pMem.resp.hfcs.data.v.uiOutSpeedInKbps);
+                            //
+                            byte[] nnBuf = nn.toByteArray();
+                            if (0 > (len = data2Stream(CONST_qyDataType_lData, CONST_anCfgId_hfcs_cliNetstats, nnBuf, nnBuf.length, ptr)))
+                                return iErr;
+                            total_len += len;
+
+                            //  还有丢包率
+                            HfcsPktLoss_n pn = new HfcsPktLoss_n();
+                            pn.a_pktLoss = plr_encode_bp(pMem.resp.hfcs.data.pktLoss.a_pktLoss_bp);
+                            pn.v_pktLoss = plr_encode_bp(pMem.resp.hfcs.data.pktLoss.v_pktLoss_bp);
+                            byte[] pnBuf = pn.toByteArray();
+                            if (0 > (len = data2Stream(CONST_qyDataType_lData, CONST_anCfgId_hfcs_cliPktLoss, pnBuf, pnBuf.length, ptr)))
+                                return iErr;
+                            total_len += len;
+                        }
+                    }
 
                     if (0 > (len = data2Stream(CONST_qyDataType_long, CONST_qnmCfgId_null, null, 0, ptr)))
                         return iErr;
@@ -8853,6 +9179,9 @@ public class qnmCommProc_mis {
                             break;
 
                              */
+                        case  CONST_qnmCfgId_ucbResp:
+                             pContent.ucbResp=getFieldData_byte(pItem);
+                             break;
 
                         case CONST_qnmCfgId_usCnt:
                             if (0 > (pContent.usCnt = getFieldData_short(pItem)))
@@ -8905,6 +9234,76 @@ public class qnmCommProc_mis {
 
 
 
+                        //
+                        //  2026/09/28, from c++ tmpHandler_stream2AnRefreshRecentFriendsReq1
+                        case CONST_anCfgId_lfcs_tn:
+                            if (0 == pContent.ucbResp) {
+                                pMem.req.lfcs_tn = getFieldData_long(pItem);
+                            } else {
+                                pMem.resp.lfcs.tn = getFieldData_long(pItem);
+                            }
+                            break;
+                        case CONST_anCfgId_mfcs_tn:
+                            if (0 == pContent.ucbResp) {
+                                pMem.req.mfcs_tn = getFieldData_long(pItem);
+                            } else {
+                                pMem.resp.mfcs.tn = getFieldData_long(pItem);
+                            }
+                            break;
+                        case CONST_anCfgId_hfcs_tn:
+                            if (0 == pContent.ucbResp) {
+                                pMem.req.hfcs_tn = getFieldData_long(pItem);
+                            } else {
+                                pMem.resp.hfcs.tn = getFieldData_long(pItem);
+                            }
+                            break;
+                        //
+                        case CONST_qnmCfgId_uiDevType_from:
+                            pMem.resp.lfcs.data.uiDevType = getFieldData_long(pItem);
+                            break;
+                        case CONST_qnmCfgId_devName:
+                            pMem.resp.lfcs.data.devName = getFieldData_wStr(pItem);
+                            break;
+                        //
+                        case CONST_qnmCfgId_usRunningStatus:
+                            pMem.resp.mfcs.data.usRunningStatus = getFieldData_short(pItem);
+                            break;
+                        case CONST_qnmCfgId_ulIp:
+                            pMem.resp.mfcs.data.ulIp = getFieldData_long(pItem);
+                            break;
+                        case CONST_qnmCfgId_ulDetectedIp:
+                            pMem.resp.mfcs.data.ulDetectedIp = getFieldData_long(pItem);
+                            break;
+                        case CONST_anCfgId_conf_ui64Id:
+                            pMem.resp.mfcs.data.conf_ui64Id = getFieldData_l64(pItem);
+                            break;
+                        //
+                        case CONST_anCfgId_hfcs_cliNetstats: {
+                            ByteBuffer nnBuf = getFieldData_lData(pItem);
+                            if (null == nnBuf || nnBuf.remaining() < 8) {
+                                Log.e("hfcs_cliNetstats: buf too small");
+                                return iErr;
+                            }
+                            pMem.resp.hfcs.data.t.uiInSpeedInKbps = fr_value_kbps(nnBuf.get() & 0xFF);
+                            pMem.resp.hfcs.data.t.uiOutSpeedInKbps = fr_value_kbps(nnBuf.get() & 0xFF);
+                            pMem.resp.hfcs.data.f.uiInSpeedInKbps = fr_value_kbps(nnBuf.get() & 0xFF);
+                            pMem.resp.hfcs.data.f.uiOutSpeedInKbps = fr_value_kbps(nnBuf.get() & 0xFF);
+                            pMem.resp.hfcs.data.a.uiInSpeedInKbps = fr_value_kbps(nnBuf.get() & 0xFF);
+                            pMem.resp.hfcs.data.a.uiOutSpeedInKbps = fr_value_kbps(nnBuf.get() & 0xFF);
+                            pMem.resp.hfcs.data.v.uiInSpeedInKbps = fr_value_kbps(nnBuf.get() & 0xFF);
+                            pMem.resp.hfcs.data.v.uiOutSpeedInKbps = fr_value_kbps(nnBuf.get() & 0xFF);
+                        }
+                            break;
+                        case CONST_anCfgId_hfcs_cliPktLoss: {
+                            ByteBuffer plBuf = getFieldData_lData(pItem);
+                            if (null == plBuf || plBuf.remaining() < 2) {
+                                Log.e("hfcs_cliPktLoss: buf too small");
+                                return iErr;
+                            }
+                            pMem.resp.hfcs.data.pktLoss.a_pktLoss_bp = plr_value_bp(plBuf.get() & 0xFF);
+                            pMem.resp.hfcs.data.pktLoss.v_pktLoss_bp = plr_value_bp(plBuf.get() & 0xFF);
+                        }
+                            break;
                         case CONST_qnmCfgId_null:
                             pContent.tmpInternal.usCnt_mems++;
                             break;

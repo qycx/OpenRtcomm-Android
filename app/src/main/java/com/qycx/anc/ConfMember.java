@@ -42,10 +42,19 @@ public class ConfMember {
     public String statusStr  =  "";
 
     //
+    /*
     public short usRunningStatus  =  0;
-
     //
     public long conf_ui64Id;
+
+     */
+
+    //
+    public qnmCommProc_mis.ImObjLfcs m_lfcs=new qnmCommProc_mis.ImObjLfcs();
+    public qnmCommProc_mis.ImObjMfcs m_mfcs = new qnmCommProc_mis.ImObjMfcs();
+    public qnmCommProc_mis.ImObjHfcs m_hfcs = new qnmCommProc_mis.ImObjHfcs();
+
+    //
     public long conf_ui64Id_dwTickCnt_refreshed;
 
     //

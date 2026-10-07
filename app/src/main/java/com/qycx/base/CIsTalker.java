@@ -1,5 +1,6 @@
 package com.qycx.base;
 
+import static com.qycx.anc.ancCommProc_defs.Consts.CONST_anCommType_refreshRecentFriendsReq1;
 import static com.qycx.base.avCallProc.talk_doAvCall;
 import static com.qycx.base.dlgTalkProc.qyFuncs_Droid.dlgTalk_OnQyComm;
 import static com.qycx.base.dlgTalkProc.qyFuncs_Droid.isTalkerShadowMgr;
@@ -451,6 +452,15 @@ public class CIsTalker {
                                     Activity_dlgTalk_av hTalk_av = (Activity_dlgTalk_av) m_var.m_hTool_dlgTalk_av;
                                     hTalk_av.m_fg_dlgTalk_av2.showNvrList();
                                 }
+                                else  if  (  m_var.m_hTool_dlgTalk_av instanceof MainActivity)  {
+                                    MainActivity mainWnd = (MainActivity) m_var.m_hTool_dlgTalk_av;
+                                    if  (  null!=mainWnd.m_floatingView_fg  )  {
+                                        if  (  mainWnd.m_floatingView_fg instanceof  Fragment_dlgTalk_av2)  {
+                                            Fragment_dlgTalk_av2 fg_av2 = ( Fragment_dlgTalk_av2) mainWnd.m_floatingView_fg;
+                                            fg_av2.showNvrList();
+                                        }
+                                    }
+                                }
 
                             }
 
@@ -561,6 +571,11 @@ public class CIsTalker {
                           this.talker_OnQyComm(m_var,0,pMsg);
 
                           }
+                          break;
+                    case  CONST_anCommType_refreshRecentFriendsReq1:
+
+                          this.talker_OnQyComm(m_var,0,pMsg);
+
                           break;
                     default:
                         break;

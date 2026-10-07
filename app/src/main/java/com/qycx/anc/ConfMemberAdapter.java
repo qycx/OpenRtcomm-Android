@@ -79,7 +79,7 @@ public class ConfMemberAdapter extends BaseAdapter {
                 holder.iv_avatar.setImageResource(R.mipmap.avatar_speaker_selected);
             } else {
                 //
-                if  (  member.usRunningStatus== CONST_usRunningStatus_online)  {
+                if  (  member.m_mfcs.data.usRunningStatus== CONST_usRunningStatus_online)  {
                     //
                     holder.iv_avatar.setImageResource(R.mipmap.avatar2);
                 }
@@ -91,7 +91,7 @@ public class ConfMemberAdapter extends BaseAdapter {
         } else {
             //
             // 用户未被选中，显示原来的头像
-            if  (  member.usRunningStatus  ==  CONST_usRunningStatus_online )   {
+            if  (  member.m_mfcs.data.usRunningStatus  ==  CONST_usRunningStatus_online )   {
                 //
                 holder.iv_avatar.setImageResource(R.mipmap.avatar2);
             }
@@ -114,16 +114,22 @@ public class ConfMemberAdapter extends BaseAdapter {
         //
         String statusStr = member.getStatusStr();
         //
-        if(member.usRunningStatus  ==  CONST_usRunningStatus_online) statusStr +=" 在线";
+        if(member.m_mfcs.data.usRunningStatus  ==  CONST_usRunningStatus_online) statusStr +=" 在线";
 
         //
         long curTickCnt  =  myGetTickCount(null);
         long  iDiffInMs  = curTickCnt - member.conf_ui64Id_dwTickCnt_refreshed;
         if  (  iDiffInMs  < 40000)  {
-            if  (  member.conf_ui64Id!=0) {
-                statusStr += " 参会"  +  member.conf_ui64Id;
+            if  (  member.m_mfcs.data.conf_ui64Id!=0) {
+                statusStr += " 参会"  +  member.m_mfcs.data.conf_ui64Id;
             }
         }
+
+        //
+        statusStr  +=  " a:"  +  member.m_hfcs.data.a.uiInSpeedInKbps + ","  +  member.m_hfcs.data.a.uiOutSpeedInKbps;
+        statusStr+= " v:"  +  member.m_hfcs.data.v.uiInSpeedInKbps + ","  +  member.m_hfcs.data.v.uiOutSpeedInKbps;
+
+        //
 
 
         //
